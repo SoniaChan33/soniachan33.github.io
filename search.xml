@@ -74,9 +74,9 @@
             
             <tag> hexo </tag>
             
-            <tag> Git </tag>
-            
             <tag> CloudFlare </tag>
+            
+            <tag> Git </tag>
             
             <tag> Typora </tag>
             
@@ -269,11 +269,11 @@
       
         <tags>
             
+            <tag> 踩雷 </tag>
+            
             <tag> MySQL </tag>
             
             <tag> macOS </tag>
-            
-            <tag> 踩雷 </tag>
             
         </tags>
       
@@ -531,9 +531,9 @@
       
         <tags>
             
-            <tag> web </tag>
-            
             <tag> Java </tag>
+            
+            <tag> web </tag>
             
         </tags>
       
@@ -658,11 +658,11 @@
       
         <tags>
             
+            <tag> JDBC </tag>
+            
             <tag> Java </tag>
             
             <tag> DataBase </tag>
-            
-            <tag> JDBC </tag>
             
         </tags>
       
@@ -687,9 +687,9 @@
       
         <tags>
             
-            <tag> MySQL </tag>
-            
             <tag> DataBase </tag>
+            
+            <tag> MySQL </tag>
             
         </tags>
       
