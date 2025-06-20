@@ -531,9 +531,9 @@
       
         <tags>
             
-            <tag> Java </tag>
-            
             <tag> web </tag>
+            
+            <tag> Java </tag>
             
         </tags>
       
@@ -658,11 +658,11 @@
       
         <tags>
             
-            <tag> JDBC </tag>
-            
             <tag> Java </tag>
             
             <tag> DataBase </tag>
+            
+            <tag> JDBC </tag>
             
         </tags>
       
@@ -687,9 +687,9 @@
       
         <tags>
             
-            <tag> DataBase </tag>
-            
             <tag> MySQL </tag>
+            
+            <tag> DataBase </tag>
             
         </tags>
       
