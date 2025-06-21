@@ -336,146 +336,6 @@ npm install hexo -g #安装Hexonpm update hexo -g #升级hexo init #初始化博
       </tags>
   </entry>
   <entry>
-    <title>CSS</title>
-    <url>/2021/06/15/CSS/</url>
-    <content><![CDATA[cascading style sheets
-样式
-行内样式（优先级最高）、内部样式、外部样式(最常用的)
-
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;!--        【书写方式2:内部样式】        --&gt;        &lt;style type=&quot;text/css&quot;&gt;            h1&#123;                color: pink;                font-family: &quot;宋体&quot;;            &#125;        &lt;/style&gt;        &lt;!--        【书写方式3:外部样式】        --&gt;        &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/样式.css&quot; /&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;!--        【书写方式1：行内样式】        --&gt;        &lt;h1 style=&quot;color: deeppink;font-family: &#x27;宋体&#x27;;&quot;&gt;This is a h1 title&lt;/h1&gt;    &lt;/body&gt;&lt;/html&gt;
-
-选择器
-1.基本选择器
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style&gt;            /*            * [1]基本选择器：元素选择器            */            h1&#123;                color: red;                font-family: &quot;楷体&quot;;            &#125;            i&#123;                color: blue;                font-family: &quot;黑体&quot;;            &#125;            /*            * [2]基本选择器：类选择器            */            .mycls&#123;                color: green;                font-family: &quot;宋体&quot;;            &#125;            /*            * [3]基本选择器：唯一选择器            */            #myid&#123;                color: yellow;                font-family: &quot;微软雅黑&quot;;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;h1&gt;我是&lt;i&gt;一个&lt;/i&gt;标题&lt;/h1&gt;        &lt;h1&gt;我是一个标题&lt;/h1&gt;        &lt;h1 class=&quot;mycls&quot;&gt;我是一个标题&lt;/h1&gt;        &lt;h1&gt;我是一个标题&lt;/h1&gt;        &lt;h2 class=&quot;mycls&quot;&gt;我是h2标题&lt;/h2&gt;        &lt;h2&gt;我是h2标题&lt;/h2&gt;        &lt;h2 id=&quot;myid&quot;&gt;我是h2标题&lt;/h2&gt;    &lt;/body&gt;&lt;/html&gt;
-效果
-2.关系选择器
-div和span标签
-
-div属于块级元素–》换行
-span属于行内元素–》没有换行效果：里面的内容占多大，span包裹的区域就多大
-
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            /*            我们可以通俗的理解，把div理解为一个“塑料袋”            div属于块级元素--》换行            span属于行内元素--》没有换行效果            span:里面的内容占多大，span包裹的区域就多大*/            div&#123;                border: 1px red solid;            &#125;            span&#123;                border: 1px greenyellow solid;             &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div&gt;马士兵马士兵&lt;br /&gt;马士兵马士兵&lt;/div&gt;        &lt;div&gt;马士兵&lt;/div&gt;        &lt;span&gt;马士兵马士兵&lt;/span&gt;        &lt;span&gt;马士兵&lt;/span&gt;        &lt;span&gt;马士兵&lt;/span&gt;    &lt;/body&gt;&lt;/html&gt;
-效果：
-
-选择器
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            /*关系选择器:            * 后代选择器：只要是这个元素的后代，样式都会发生变化            * div下面的所有h1标签样式都会改变            */            /*div h1&#123;            color: red;            &#125;*/            /*关系选择器：子代选择器            只改变子标签的样式*/            div&gt;h1&#123;                color: royalblue;            &#125;            span&gt;h1&#123;                color: yellow;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div&gt;            &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;span&gt;                &lt;h1&gt;这是标题&lt;/h1&gt;                &lt;h1&gt;这是标题&lt;/h1&gt;                &lt;h1&gt;这是标题&lt;/h1&gt;                &lt;h1&gt;这是标题&lt;/h1&gt;                &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;/span&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
-效果：
-
-3.属性选择器
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            /*属性选择器*/            input[type=&quot;password&quot;]&#123;                background-color: red;            &#125;            input[type=&quot;text&quot;][value=&quot;zhaoss1&quot;]&#123;                background-color: yellow;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;form&gt;            用户名：&lt;input type=&quot;text&quot; value=&quot;zhaoss1&quot; /&gt;            用户名2：&lt;input type=&quot;text&quot; value=&quot;zhaoss2&quot; /&gt;            密码：&lt;input type=&quot;password&quot; value=&quot;123123&quot; /&gt;            &lt;input type=&quot;submit&quot; value=&quot;登录&quot; /&gt;        &lt;/form&gt;    &lt;/body&gt;&lt;/html&gt;
-4.伪类选择器
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            .mycls:hover&#123;                color: red;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;h1 class=&quot;mycls&quot;&gt;我是标题&lt;/h1&gt;    &lt;/body&gt;&lt;/html&gt;
-一般伪类选择器都应用在超链接上
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            /*设置静止状态*/            a:link&#123;                color: yellow;            &#125;            /*设置鼠标悬浮状态*/            a:hover&#123;                color: red;            &#125;            /*设置触发状态*/            a:active&#123;                color: blue;            &#125;            /*设置完成状态*/            a:visited&#123;                color: green;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;a href=&quot;index.html&quot;&gt;超链接&lt;/a&gt;    &lt;/body&gt;&lt;/html&gt;
-例子：百度导航条
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            ul&#123;                list-style-type: none;/*将无序列表前面的图标取消*/            &#125;            li&#123;                float:left;/*向左浮动*/                margin-left: 20px;/*设置间隔20px*/            &#125;            a&#123;                text-decoration: none;/*去掉下划线*/                font-size: 13px;/*字号*/                color: black;/*字体颜色*/            &#125;            a:hover&#123;                color: #0000FF;            &#125;            div&#123;                /*定位：*/                position: absolute;/*绝对定位*/                right:200px;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div&gt;            &lt;ul&gt;                &lt;li&gt;                    &lt;a href=&quot;aaaa&quot;&gt;新闻&lt;/a&gt;                &lt;/li&gt;                &lt;li&gt;                    &lt;a href=&quot;aaaa&quot;&gt;hao123&lt;/a&gt;                &lt;/li&gt;                &lt;li&gt;                    &lt;a href=&quot;aaaa&quot;&gt;地图&lt;/a&gt;                &lt;/li&gt;                &lt;li&gt;                    &lt;a href=&quot;aaaa&quot;&gt;视频&lt;/a&gt;                &lt;/li&gt;            &lt;/ul&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
-效果：
-
-
-浮动效果
-文字环绕图片
-​		浮动设计的初衷为了解决文字环绕图片问题，浮动后一定不会将文字挡住，这是设计初衷，不能违背的。
-
-原理
-​		CSS 的 Float（浮动）使元素脱离文档流，按照指定的方向（左或右发生移动），直到它的外边缘碰到包含框或另一个浮动框的边框为止。文档流是文档中可显示对象在排列时所占用的位置/空间，而脱离文档流就是在页面中不占位置了。
-语法
-
-实例展示
-设置一个大的div，里面放三个小的div
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;!--外层div--&gt;        &lt;div style=&quot;background-color: pink;&quot;&gt;            &lt;div style=&quot;width: 100px;height: 100px;background-color: chartreuse;&quot;&gt;11&lt;/div&gt;            &lt;div style=&quot;width: 200px;height: 200px;background-color: coral;&quot;&gt;22&lt;/div&gt;            &lt;div style=&quot;width: 300px;height: 300px;background-color: yellow&quot;&gt;33&lt;/div&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
-没有任何浮动
-
-给绿div设置浮动
-&lt;div style=&quot;width: 100px;height: 100px;background-color: chartreuse;&quot;&gt;11&lt;/div&gt;
-
-给橘色小块设置浮动
-&lt;div style=&quot;width: 200px;height: 200px;background-color: coral;&quot;&gt;22&lt;/div&gt;
-
-给黄色小块设置浮动
-&lt;div style=&quot;width: 300px;height: 300px;background-color: yellow;float: left;&quot;&gt;33&lt;/div&gt;
-
-因为所有的小div都浮到上面，大div里没有东西填充，所以就消失了。
-这样如果有其他的div块，就会变位置
-
-消除浮动影响
-
-
-给浮动的父节点加入一个属性overflow:hidden
-
-
-
-
-给父节点加一个高度，让粉色div“撑起来”
-
-
-
-
-被影响的元素紫色div：给它加入一个属性clear:both;
-
-
-
-
-定位
-静态定位(static)
-就是默认的定位
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;!--静态定位:默认效果 效果就是元素出现在本来应该出现的位置 一般就省略不写--&gt;        &lt;img src=&quot;img/1.jpg&quot; style=&quot;position: static;&quot; /&gt;    &lt;/body&gt;&lt;/html&gt;
-相对定位(relative)
-相对元素自身所在的原来的位置进行定位,可以设置left,color,bottom,top这四个属性
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;!--相对定位        相对元素自身所在的原来的位置进行定位        可以设置left,color,bottom,top这四个属性        --&gt;        &lt;div style=&quot;width: 500px; height: 500px; background-color: pink;&quot;&gt;            &lt;div style=&quot;width: 100px; height: 100px; background-color: green;&quot;&gt;&lt;/div&gt;            &lt;div style=&quot;width: 100px; height: 100px; background-color: red; position: relative; bottom: 10px;&quot; &gt;&lt;/div&gt;            &lt;div style=&quot;width: 100px; height: 100px; background-color: blue;&quot;&gt;&lt;/div&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
-z-index属性：
-设置堆叠顺序，设置元素谁在上谁在下。注意：z-index属性要设置在定位的元素上,
-应用场合：
-（1）元素在小范围移动的时候
-（2）结合绝对定位使用
-绝对定位(absolute)
-
-设置子块div为绝对定位
-
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            #outer&#123;                width: 500px;                height: 500px;                background-color: pink;                margin-left:300px;            &#125;            #div01&#123;                width: 100px;                height: 100px;                background-color: cornflowerblue;                position: absolute;/*设置一个绝对定位*/                left: 30px;                top: 50px;            &#125;            #div02&#123;                width: 100px;                height: 100px;                background-color: coral;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div id=&quot;outer&quot;&gt;            &lt;div id=&quot;div01&quot;&gt;111&lt;/div&gt;            &lt;div id=&quot;div02&quot;&gt;222&lt;/div&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
-效果
-
-蓝色div相对body产生的位移，相对body进行位置的改变，然后蓝色div发生位移以后，原位置得到了释放。橙色div移动上去了！
-
-实际开发中，我们往往让蓝色div在粉色div中发生位移效果
-配合定位来使用：
-
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            #outer&#123;                /*父块设置一个相对定位*/                width: 500px;                height: 500px;                background-color: pink;                margin-left:300px;                position: relative;            &#125;            #div01&#123;                width: 100px;                height: 100px;                background-color: cornflowerblue;                position: absolute;                left: 30px;                top: 50px;            &#125;            #div02&#123;                width: 100px;                height: 100px;                background-color: coral;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div id=&quot;outer&quot;&gt;            &lt;div id=&quot;div01&quot;&gt;111&lt;/div&gt;            &lt;div id=&quot;div02&quot;&gt;222&lt;/div&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
-效果
-
-总结：
-当给一个元素设置了绝对定位的时候，它相对谁变化呢？它会向上一层一层的找父级节点是否有定位，如果直到找到body了也没有定位，那么就相对body进行变化，如果父级节点有定位（绝对定位，相对定位，固定定位），但是一般我们会配合使用父级为相对定位，当前元素为绝对定位，这样这个元素就会相对父级位置产生变化。无论是上面的哪一种，都会释放原来的位置，然后其他元素会占用那个位置。
-开发中建议使用：父级节点relative定位，子级节点使用绝对定位。
-固定定位(fixed)
-应用场合：在页面过长的时候，将某个元素固定在浏览器的某个位置上，当拉动滚动条的时候，这个元素位置不动。
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            #mydiv&#123;                width: 50px;                height: 400px;                background-color: cadetblue;                /*固定定位*/                position: fixed;                right: 0px;                top: 300px;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div id=&quot;mydiv&quot;&gt;&lt;/div&gt;        &lt;p&gt;你好&lt;/p&gt;        ...(省略很多行)        &lt;p&gt;你好&lt;/p&gt;            &lt;/body&gt;&lt;/html&gt;
-效果
-
-盒子模型
-​		页面上也有很多元素，元素之间的布局/设计 依靠 盒子模型：
-​		所有HTML元素可以看作盒子，在CSS中，&quot;box model&quot;这一术语是用来设计和布局时使用。
-​		CSS盒模型本质上是一个盒子，封装周围的HTML元素，它包括：边距，边框，填充，和实际内容。
-​		盒模型允许我们在其它元素和周围元素边框之间的空间放置元素。
-​		下面的图片说明了盒子模型(Box Model)：
-
-
-感受盒子模型
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;!--代码感受盒子的具体含义--&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            /*将所有元素的样式：外边距，边框，内边距全部设置为0*/            /*没有单独设置盒子模型样式的就遵照总的设置*/            *&#123;                margin:0px;                padding: 0px;                border: 0px;            &#125;            #outer&#123;                /*修改了内边距padding需要更改原来的长和宽 */                width:450px;                height: 450px;                background-color: pink;                margin-left: 50px;                margin-top: 50px;                padding-left: 50px;                padding-top: 50px;            &#125;            #mydiv&#123;                width: 60px;                height: 60px;                background-color: yellowgreen;                padding-left: 40px;                padding-top: 40px;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div id=&quot;outer&quot;&gt;            &lt;div id=&quot;mydiv&quot;&gt;111&lt;/div&gt;        &lt;/div&gt;                &lt;div style=&quot;background-color: blue;width: 100px; height: 100px;&quot;&gt;&lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
-注意修改了内边距以后需要修改原本的长和宽
-效果
-
-H+C练习
-&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            #bigdiv&#123;                width: 65px;                border: solid #D70000 ;                background-color:#FBEECF ;                /*设置div里中文字的效果*/                font-size: 17px;                font-family: &quot;微软雅黑&quot;;                color: #D70000;                /*设置固定定位*/                position: fixed;                right: 0px;				                top: 50px;                /*背景图大小的设置*/            &#125;            #mydiv&#123;                height: 60px;                /*先写背景图，再写背景色*/                background: url(img/小喇叭.png) no-repeat 8px 12px;                padding-top: 60px;/*盒子模型的页内边距*/                padding-right: 2px;                text-align: center;/*设置水平居中*/            &#125;            #mydiv2&#123;                height: 60px;                /*先写背景图，再写背景色*/                background: url(img/联系客服.png) no-repeat 3px 8px;                padding-top: 70px;/*盒子模型的页内边距*/                text-align: center;/*设置水平居中*/            &#125;            #mydiv3&#123;                height: 60px;                /*先写背景图，再写背景色*/                background: url(img/二维码.png) no-repeat 3px 8px;                padding-top: 70px;/*盒子模型的页内边距*/                text-align: center;/*设置水平居中*/            &#125;            #mydiv4&#123;                /*先写背景图，再写背景色*/                background: url(img/呵护.png) no-repeat 3px 8px;                padding-top: 60px;/*盒子模型的页内边距*/                text-align: center;/*设置水平居中*/            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div id=&quot;bigdiv&quot; &gt;            &lt;div id=&quot;mydiv&quot;&gt;                最新&lt;br /&gt;发布            &lt;/div&gt;            &lt;hr width=&quot;50px&quot; align=&quot;center&quot; color=&quot;black&quot;  /&gt;            &lt;div id=&quot;mydiv2&quot;&gt;                联系&lt;br /&gt;客服            &lt;/div&gt;            &lt;hr width=&quot;50px&quot; align=&quot;center&quot; color=&quot;black&quot;  /&gt;            &lt;div id=&quot;mydiv3&quot;&gt;                APP&lt;br /&gt;下载            &lt;/div&gt;            &lt;hr width=&quot;50px&quot; align=&quot;center&quot; color=&quot;black&quot;  /&gt;            &lt;div id=&quot;mydiv4&quot;&gt;                旅游&lt;br /&gt;出行&lt;br /&gt;温馨&lt;br /&gt;提示            &lt;/div&gt;        &lt;/div&gt;        &lt;p&gt;hello&lt;/p&gt;		...省略很多个hello        &lt;p&gt;hello&lt;/p&gt;    &lt;/body&gt;&lt;/html&gt;
-效果：
-
-]]></content>
-      <categories>
-        <category>前端</category>
-      </categories>
-      <tags>
-        <tag>CSS</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>JQuery</title>
     <url>/2021/06/18/JQuery/</url>
     <content><![CDATA[引入
@@ -699,6 +559,146 @@ Bootstrap 4 网格系统有以下 5 个类:
       </categories>
       <tags>
         <tag>JQuery</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CSS</title>
+    <url>/2021/06/15/CSS/</url>
+    <content><![CDATA[cascading style sheets
+样式
+行内样式（优先级最高）、内部样式、外部样式(最常用的)
+
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;!--        【书写方式2:内部样式】        --&gt;        &lt;style type=&quot;text/css&quot;&gt;            h1&#123;                color: pink;                font-family: &quot;宋体&quot;;            &#125;        &lt;/style&gt;        &lt;!--        【书写方式3:外部样式】        --&gt;        &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/样式.css&quot; /&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;!--        【书写方式1：行内样式】        --&gt;        &lt;h1 style=&quot;color: deeppink;font-family: &#x27;宋体&#x27;;&quot;&gt;This is a h1 title&lt;/h1&gt;    &lt;/body&gt;&lt;/html&gt;
+
+选择器
+1.基本选择器
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style&gt;            /*            * [1]基本选择器：元素选择器            */            h1&#123;                color: red;                font-family: &quot;楷体&quot;;            &#125;            i&#123;                color: blue;                font-family: &quot;黑体&quot;;            &#125;            /*            * [2]基本选择器：类选择器            */            .mycls&#123;                color: green;                font-family: &quot;宋体&quot;;            &#125;            /*            * [3]基本选择器：唯一选择器            */            #myid&#123;                color: yellow;                font-family: &quot;微软雅黑&quot;;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;h1&gt;我是&lt;i&gt;一个&lt;/i&gt;标题&lt;/h1&gt;        &lt;h1&gt;我是一个标题&lt;/h1&gt;        &lt;h1 class=&quot;mycls&quot;&gt;我是一个标题&lt;/h1&gt;        &lt;h1&gt;我是一个标题&lt;/h1&gt;        &lt;h2 class=&quot;mycls&quot;&gt;我是h2标题&lt;/h2&gt;        &lt;h2&gt;我是h2标题&lt;/h2&gt;        &lt;h2 id=&quot;myid&quot;&gt;我是h2标题&lt;/h2&gt;    &lt;/body&gt;&lt;/html&gt;
+效果
+2.关系选择器
+div和span标签
+
+div属于块级元素–》换行
+span属于行内元素–》没有换行效果：里面的内容占多大，span包裹的区域就多大
+
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            /*            我们可以通俗的理解，把div理解为一个“塑料袋”            div属于块级元素--》换行            span属于行内元素--》没有换行效果            span:里面的内容占多大，span包裹的区域就多大*/            div&#123;                border: 1px red solid;            &#125;            span&#123;                border: 1px greenyellow solid;             &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div&gt;马士兵马士兵&lt;br /&gt;马士兵马士兵&lt;/div&gt;        &lt;div&gt;马士兵&lt;/div&gt;        &lt;span&gt;马士兵马士兵&lt;/span&gt;        &lt;span&gt;马士兵&lt;/span&gt;        &lt;span&gt;马士兵&lt;/span&gt;    &lt;/body&gt;&lt;/html&gt;
+效果：
+
+选择器
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            /*关系选择器:            * 后代选择器：只要是这个元素的后代，样式都会发生变化            * div下面的所有h1标签样式都会改变            */            /*div h1&#123;            color: red;            &#125;*/            /*关系选择器：子代选择器            只改变子标签的样式*/            div&gt;h1&#123;                color: royalblue;            &#125;            span&gt;h1&#123;                color: yellow;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div&gt;            &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;span&gt;                &lt;h1&gt;这是标题&lt;/h1&gt;                &lt;h1&gt;这是标题&lt;/h1&gt;                &lt;h1&gt;这是标题&lt;/h1&gt;                &lt;h1&gt;这是标题&lt;/h1&gt;                &lt;h1&gt;这是标题&lt;/h1&gt;            &lt;/span&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
+效果：
+
+3.属性选择器
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            /*属性选择器*/            input[type=&quot;password&quot;]&#123;                background-color: red;            &#125;            input[type=&quot;text&quot;][value=&quot;zhaoss1&quot;]&#123;                background-color: yellow;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;form&gt;            用户名：&lt;input type=&quot;text&quot; value=&quot;zhaoss1&quot; /&gt;            用户名2：&lt;input type=&quot;text&quot; value=&quot;zhaoss2&quot; /&gt;            密码：&lt;input type=&quot;password&quot; value=&quot;123123&quot; /&gt;            &lt;input type=&quot;submit&quot; value=&quot;登录&quot; /&gt;        &lt;/form&gt;    &lt;/body&gt;&lt;/html&gt;
+4.伪类选择器
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            .mycls:hover&#123;                color: red;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;h1 class=&quot;mycls&quot;&gt;我是标题&lt;/h1&gt;    &lt;/body&gt;&lt;/html&gt;
+一般伪类选择器都应用在超链接上
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            /*设置静止状态*/            a:link&#123;                color: yellow;            &#125;            /*设置鼠标悬浮状态*/            a:hover&#123;                color: red;            &#125;            /*设置触发状态*/            a:active&#123;                color: blue;            &#125;            /*设置完成状态*/            a:visited&#123;                color: green;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;a href=&quot;index.html&quot;&gt;超链接&lt;/a&gt;    &lt;/body&gt;&lt;/html&gt;
+例子：百度导航条
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            ul&#123;                list-style-type: none;/*将无序列表前面的图标取消*/            &#125;            li&#123;                float:left;/*向左浮动*/                margin-left: 20px;/*设置间隔20px*/            &#125;            a&#123;                text-decoration: none;/*去掉下划线*/                font-size: 13px;/*字号*/                color: black;/*字体颜色*/            &#125;            a:hover&#123;                color: #0000FF;            &#125;            div&#123;                /*定位：*/                position: absolute;/*绝对定位*/                right:200px;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div&gt;            &lt;ul&gt;                &lt;li&gt;                    &lt;a href=&quot;aaaa&quot;&gt;新闻&lt;/a&gt;                &lt;/li&gt;                &lt;li&gt;                    &lt;a href=&quot;aaaa&quot;&gt;hao123&lt;/a&gt;                &lt;/li&gt;                &lt;li&gt;                    &lt;a href=&quot;aaaa&quot;&gt;地图&lt;/a&gt;                &lt;/li&gt;                &lt;li&gt;                    &lt;a href=&quot;aaaa&quot;&gt;视频&lt;/a&gt;                &lt;/li&gt;            &lt;/ul&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
+效果：
+
+
+浮动效果
+文字环绕图片
+​		浮动设计的初衷为了解决文字环绕图片问题，浮动后一定不会将文字挡住，这是设计初衷，不能违背的。
+
+原理
+​		CSS 的 Float（浮动）使元素脱离文档流，按照指定的方向（左或右发生移动），直到它的外边缘碰到包含框或另一个浮动框的边框为止。文档流是文档中可显示对象在排列时所占用的位置/空间，而脱离文档流就是在页面中不占位置了。
+语法
+
+实例展示
+设置一个大的div，里面放三个小的div
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;!--外层div--&gt;        &lt;div style=&quot;background-color: pink;&quot;&gt;            &lt;div style=&quot;width: 100px;height: 100px;background-color: chartreuse;&quot;&gt;11&lt;/div&gt;            &lt;div style=&quot;width: 200px;height: 200px;background-color: coral;&quot;&gt;22&lt;/div&gt;            &lt;div style=&quot;width: 300px;height: 300px;background-color: yellow&quot;&gt;33&lt;/div&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
+没有任何浮动
+
+给绿div设置浮动
+&lt;div style=&quot;width: 100px;height: 100px;background-color: chartreuse;&quot;&gt;11&lt;/div&gt;
+
+给橘色小块设置浮动
+&lt;div style=&quot;width: 200px;height: 200px;background-color: coral;&quot;&gt;22&lt;/div&gt;
+
+给黄色小块设置浮动
+&lt;div style=&quot;width: 300px;height: 300px;background-color: yellow;float: left;&quot;&gt;33&lt;/div&gt;
+
+因为所有的小div都浮到上面，大div里没有东西填充，所以就消失了。
+这样如果有其他的div块，就会变位置
+
+消除浮动影响
+
+
+给浮动的父节点加入一个属性overflow:hidden
+
+
+
+
+给父节点加一个高度，让粉色div“撑起来”
+
+
+
+
+被影响的元素紫色div：给它加入一个属性clear:both;
+
+
+
+
+定位
+静态定位(static)
+就是默认的定位
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;!--静态定位:默认效果 效果就是元素出现在本来应该出现的位置 一般就省略不写--&gt;        &lt;img src=&quot;img/1.jpg&quot; style=&quot;position: static;&quot; /&gt;    &lt;/body&gt;&lt;/html&gt;
+相对定位(relative)
+相对元素自身所在的原来的位置进行定位,可以设置left,color,bottom,top这四个属性
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;!--相对定位        相对元素自身所在的原来的位置进行定位        可以设置left,color,bottom,top这四个属性        --&gt;        &lt;div style=&quot;width: 500px; height: 500px; background-color: pink;&quot;&gt;            &lt;div style=&quot;width: 100px; height: 100px; background-color: green;&quot;&gt;&lt;/div&gt;            &lt;div style=&quot;width: 100px; height: 100px; background-color: red; position: relative; bottom: 10px;&quot; &gt;&lt;/div&gt;            &lt;div style=&quot;width: 100px; height: 100px; background-color: blue;&quot;&gt;&lt;/div&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
+z-index属性：
+设置堆叠顺序，设置元素谁在上谁在下。注意：z-index属性要设置在定位的元素上,
+应用场合：
+（1）元素在小范围移动的时候
+（2）结合绝对定位使用
+绝对定位(absolute)
+
+设置子块div为绝对定位
+
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            #outer&#123;                width: 500px;                height: 500px;                background-color: pink;                margin-left:300px;            &#125;            #div01&#123;                width: 100px;                height: 100px;                background-color: cornflowerblue;                position: absolute;/*设置一个绝对定位*/                left: 30px;                top: 50px;            &#125;            #div02&#123;                width: 100px;                height: 100px;                background-color: coral;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div id=&quot;outer&quot;&gt;            &lt;div id=&quot;div01&quot;&gt;111&lt;/div&gt;            &lt;div id=&quot;div02&quot;&gt;222&lt;/div&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
+效果
+
+蓝色div相对body产生的位移，相对body进行位置的改变，然后蓝色div发生位移以后，原位置得到了释放。橙色div移动上去了！
+
+实际开发中，我们往往让蓝色div在粉色div中发生位移效果
+配合定位来使用：
+
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            #outer&#123;                /*父块设置一个相对定位*/                width: 500px;                height: 500px;                background-color: pink;                margin-left:300px;                position: relative;            &#125;            #div01&#123;                width: 100px;                height: 100px;                background-color: cornflowerblue;                position: absolute;                left: 30px;                top: 50px;            &#125;            #div02&#123;                width: 100px;                height: 100px;                background-color: coral;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div id=&quot;outer&quot;&gt;            &lt;div id=&quot;div01&quot;&gt;111&lt;/div&gt;            &lt;div id=&quot;div02&quot;&gt;222&lt;/div&gt;        &lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
+效果
+
+总结：
+当给一个元素设置了绝对定位的时候，它相对谁变化呢？它会向上一层一层的找父级节点是否有定位，如果直到找到body了也没有定位，那么就相对body进行变化，如果父级节点有定位（绝对定位，相对定位，固定定位），但是一般我们会配合使用父级为相对定位，当前元素为绝对定位，这样这个元素就会相对父级位置产生变化。无论是上面的哪一种，都会释放原来的位置，然后其他元素会占用那个位置。
+开发中建议使用：父级节点relative定位，子级节点使用绝对定位。
+固定定位(fixed)
+应用场合：在页面过长的时候，将某个元素固定在浏览器的某个位置上，当拉动滚动条的时候，这个元素位置不动。
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            #mydiv&#123;                width: 50px;                height: 400px;                background-color: cadetblue;                /*固定定位*/                position: fixed;                right: 0px;                top: 300px;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div id=&quot;mydiv&quot;&gt;&lt;/div&gt;        &lt;p&gt;你好&lt;/p&gt;        ...(省略很多行)        &lt;p&gt;你好&lt;/p&gt;            &lt;/body&gt;&lt;/html&gt;
+效果
+
+盒子模型
+​		页面上也有很多元素，元素之间的布局/设计 依靠 盒子模型：
+​		所有HTML元素可以看作盒子，在CSS中，&quot;box model&quot;这一术语是用来设计和布局时使用。
+​		CSS盒模型本质上是一个盒子，封装周围的HTML元素，它包括：边距，边框，填充，和实际内容。
+​		盒模型允许我们在其它元素和周围元素边框之间的空间放置元素。
+​		下面的图片说明了盒子模型(Box Model)：
+
+
+感受盒子模型
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;!--代码感受盒子的具体含义--&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            /*将所有元素的样式：外边距，边框，内边距全部设置为0*/            /*没有单独设置盒子模型样式的就遵照总的设置*/            *&#123;                margin:0px;                padding: 0px;                border: 0px;            &#125;            #outer&#123;                /*修改了内边距padding需要更改原来的长和宽 */                width:450px;                height: 450px;                background-color: pink;                margin-left: 50px;                margin-top: 50px;                padding-left: 50px;                padding-top: 50px;            &#125;            #mydiv&#123;                width: 60px;                height: 60px;                background-color: yellowgreen;                padding-left: 40px;                padding-top: 40px;            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div id=&quot;outer&quot;&gt;            &lt;div id=&quot;mydiv&quot;&gt;111&lt;/div&gt;        &lt;/div&gt;                &lt;div style=&quot;background-color: blue;width: 100px; height: 100px;&quot;&gt;&lt;/div&gt;    &lt;/body&gt;&lt;/html&gt;
+注意修改了内边距以后需要修改原本的长和宽
+效果
+
+H+C练习
+&lt;!DOCTYPE html&gt;&lt;html&gt;    &lt;head&gt;        &lt;meta charset=&quot;UTF-8&quot;&gt;        &lt;title&gt;&lt;/title&gt;        &lt;style type=&quot;text/css&quot;&gt;            #bigdiv&#123;                width: 65px;                border: solid #D70000 ;                background-color:#FBEECF ;                /*设置div里中文字的效果*/                font-size: 17px;                font-family: &quot;微软雅黑&quot;;                color: #D70000;                /*设置固定定位*/                position: fixed;                right: 0px;				                top: 50px;                /*背景图大小的设置*/            &#125;            #mydiv&#123;                height: 60px;                /*先写背景图，再写背景色*/                background: url(img/小喇叭.png) no-repeat 8px 12px;                padding-top: 60px;/*盒子模型的页内边距*/                padding-right: 2px;                text-align: center;/*设置水平居中*/            &#125;            #mydiv2&#123;                height: 60px;                /*先写背景图，再写背景色*/                background: url(img/联系客服.png) no-repeat 3px 8px;                padding-top: 70px;/*盒子模型的页内边距*/                text-align: center;/*设置水平居中*/            &#125;            #mydiv3&#123;                height: 60px;                /*先写背景图，再写背景色*/                background: url(img/二维码.png) no-repeat 3px 8px;                padding-top: 70px;/*盒子模型的页内边距*/                text-align: center;/*设置水平居中*/            &#125;            #mydiv4&#123;                /*先写背景图，再写背景色*/                background: url(img/呵护.png) no-repeat 3px 8px;                padding-top: 60px;/*盒子模型的页内边距*/                text-align: center;/*设置水平居中*/            &#125;        &lt;/style&gt;    &lt;/head&gt;    &lt;body&gt;        &lt;div id=&quot;bigdiv&quot; &gt;            &lt;div id=&quot;mydiv&quot;&gt;                最新&lt;br /&gt;发布            &lt;/div&gt;            &lt;hr width=&quot;50px&quot; align=&quot;center&quot; color=&quot;black&quot;  /&gt;            &lt;div id=&quot;mydiv2&quot;&gt;                联系&lt;br /&gt;客服            &lt;/div&gt;            &lt;hr width=&quot;50px&quot; align=&quot;center&quot; color=&quot;black&quot;  /&gt;            &lt;div id=&quot;mydiv3&quot;&gt;                APP&lt;br /&gt;下载            &lt;/div&gt;            &lt;hr width=&quot;50px&quot; align=&quot;center&quot; color=&quot;black&quot;  /&gt;            &lt;div id=&quot;mydiv4&quot;&gt;                旅游&lt;br /&gt;出行&lt;br /&gt;温馨&lt;br /&gt;提示            &lt;/div&gt;        &lt;/div&gt;        &lt;p&gt;hello&lt;/p&gt;		...省略很多个hello        &lt;p&gt;hello&lt;/p&gt;    &lt;/body&gt;&lt;/html&gt;
+效果：
+
+]]></content>
+      <categories>
+        <category>前端</category>
+      </categories>
+      <tags>
+        <tag>CSS</tag>
       </tags>
   </entry>
   <entry>
@@ -2961,6 +2961,251 @@ Memcache与Redis的区别都有哪些？
       </tags>
   </entry>
   <entry>
+    <title>Twikoo评论系统的Cloudflare部署方案</title>
+    <url>/2025/06/17/Twikoo%E8%AF%84%E8%AE%BA%E7%B3%BB%E7%BB%9F%E7%9A%84Cloudflare%E9%83%A8%E7%BD%B2%E6%96%B9%E6%A1%88/</url>
+    <content><![CDATA[Twikoo评论系统的Cloudflare部署方案
+Twikoo是一款简洁、安全且免费的静态网站评论系统，在提升网站互动性方面表现出色。通常，Twikoo可部署在诸如腾讯云开发环境、Vercel等平台，但借助Cloudflare进行部署，能极大改善冷启动延迟问题，实现快速加载，为用户带来更流畅的评论体验，同时利用Cloudflare强大的全球网络提升访问速度。以下为详细的Cloudflare部署Twikoo评论系统的步骤与要点。
+一、前期准备
+在开始部署前，需提前准备好相关工具与资源：
+
+Cloudflare账户：若尚未注册，前往Cloudflare官网完成注册流程。
+Node.js环境：确保本地开发环境安装了Node.js，可通过Node.js官网下载并安装对应系统的最新版本，安装完成后，在命令行输入node -v验证是否安装成功及查看版本号。
+文本编辑器：推荐使用Visual Studio Code、Sublime Text等，方便进行代码编辑与配置文件修改。
+
+二、安装依赖包
+
+首先，创建一个新的项目目录，用于存放Twikoo相关代码与配置文件，在命令行中进入该目录，执行以下命令安装项目依赖：
+
+npm install
+
+由于Cloudflare Workers的免费套餐对捆绑包大小有严格的1MiB限制，部分与Cloudflare Workers的Node.js兼容性存在问题的包即便安装了也无法使用，为控制捆绑包大小，需手动删除这些包，在命令行中依次执行：
+
+echo &quot;&quot; &gt; node_modules/jsdom/lib/api.jsecho &quot;&quot; &gt; node_modules/tencentcloud-sdk-nodejs/tencentcloud/index.jsecho &quot;&quot; &gt; node_modules/nodemailer/lib/nodemailer.js
+上述命令会清空jsdom、tencentcloud-sdk-nodejs、nodemailer这三个包中特定文件的内容，使其不占用捆绑包空间，同时规避兼容性问题。
+三、登录Cloudflare账户
+通过Wrangler工具登录Cloudflare账户，Wrangler是Cloudflare提供的用于管理Workers、D1数据库等资源的命令行工具，执行以下命令进行登录：
+npx wrangler login
+运行该命令后，系统会自动打开浏览器，跳转到Cloudflare的授权页面，按照提示完成授权操作，授权成功后，Wrangler便与你的Cloudflare账户建立连接，后续可通过它对Cloudflare资源进行操作。
+四、创建Cloudflare D1数据库并设置架构
+
+使用Wrangler创建名为twikoo的D1数据库，在命令行执行：
+
+npx wrangler d1 create twikoo
+执行此命令后，终端会输出数据库的相关信息，其中database_name和database_id这两行信息至关重要，需将其复制下来，用于后续配置。
+&#123;  &quot;d1_databases&quot;: [    &#123;      &quot;binding&quot;: &quot;DB&quot;,      &quot;database_name&quot;: &quot;twikoo&quot;,      &quot;database_id&quot;: &quot;56def18d-b46a-42c8-bc99-0214e58f9a54&quot;    &#125;  ]&#125;
+
+打开项目目录下的wrangler.toml文件（若不存在，可手动创建），将刚刚复制的database_name和database_id粘贴进去，替换原有的对应值，使项目与创建的D1数据库建立关联。
+为D1数据库设置架构，Twikoo项目中包含定义数据库表结构和初始数据的schema.sql文件，执行以下命令，将该架构应用到Cloudflare D1数据库：
+
+npx wrangler d1 execute twikoo --remote --file=./schema.sql
+此命令会远程连接到之前创建的twikoo数据库，并依据schema.sql文件的内容创建相应的表结构及可能的初始数据，确保数据库满足Twikoo评论系统的存储需求。
+
+五、创建Cloudflare R2存储
+Cloudflare R2可用于存储Twikoo评论系统相关的文件，如上传的图片等（尽管当前部署方案中对R2的使用存在一定限制，但创建步骤仍需完成），通过以下命令创建名为twikoo的R2存储桶：
+npx wrangler r2 bucket create twikoo
+创建完成后，找到wrangler.toml文件中r2_public_url字段，将其值更新为新创建的R2存储桶的域名，确保项目能正确访问R2存储资源。
+[vars]
+R2_PUBLIC_URL = “https://twikoo.soniachen.com”
+
+六、部署Cloudflare Worker
+完成上述配置后，即可将Twikoo评论系统部署到Cloudflare Workers，执行以下命令进行部署：
+npx wrangler deploy --minify
+--minify参数用于对代码进行压缩，以进一步减小捆绑包大小，提升部署效率与性能。部署过程可能需要一些时间，完成后，命令行中会输出类似https://twikoo-cloudflare.&lt;your username&gt;.workers.dev的访问地址。若部署成功，在浏览器中访问该地址，应能看到类似于&#123;&quot;code&quot;: 100, &quot;message&quot;: &quot;twikoo云函数运行正常，请参考https://twikoo.js.org/frontend.html完成前端的配置&quot;, &quot;version&quot;: &quot;1.6.33&quot;&#125;的提示信息，这表明Twikoo的后端服务已在Cloudflare上成功部署。
+七、前端配置
+
+在博客或网站的前端代码中，找到需要添加评论功能的页面。若使用Twikoo官方提供的前端初始化代码，需将其中的envId字段值设置为第六步中得到的Cloudflare Worker访问地址（包含https://前缀）。例如：
+
+twikoo.init(&#123;    envId: &quot;https://twikoo-cloudflare.&lt;your username&gt;.workers.dev&quot;,    el: &quot;#tcomment&quot;,    // region: &#x27;ap-guangzhou&#x27;, // 环境地域，默认为ap-shanghai，如果您的环境地域不是上海，需传此参数    // path: &#x27;window.location.pathname&#x27;, // 用于区分不同文章的自定义js路径，如果您的文章路径不是location.pathname，需传此参数    // lang: &#x27;zh-CN&#x27;, // 用于手动设定评论区语言，支持的语言列表https://github.com/imaegoo/twikoo/blob/dev/src/js/utils/i18n/index.js    // onCommentLoaded: function () &#123;    //     console.log(&quot;评论加载或评论成功&quot;);    // &#125;&#125;);
+
+确保前端页面包含用于显示评论区的HTML元素，其id需与上述代码中el字段指定的值一致（如&lt;div id=&quot;tcomment&quot;&gt;&lt;/div&gt;），这样Twikoo前端脚本才能正确渲染评论区。
+
+
+八、配置邮件通知（可选）
+Twikoo支持在有新评论时发送邮件通知管理员，由于nodemailer包的兼容性问题，在Cloudflare Workers环境中，无法直接通过SMTP集成发送邮件，而是通过SendGrid的HTTPS API实现邮件通知功能，具体步骤如下：
+
+注册一个可用的SendGrid账户（SendGrid提供免费套餐，每天可发送多达100封邮件）或Mailchannels账户（每月免费3000封邮件），并在账户设置中创建一个API Key，用于后续验证身份。
+在Twikoo的配置中设置相关邮件参数，找到配置文件中与邮件通知相关的部分，设置以下字段：
+
+sender_email: &quot;发件人邮箱地址&quot;, // 需在SendGrid中进行验证sender_name: &quot;显示的发件人名称&quot;,smtp_service: &quot;sendgrid&quot;,smtp_user: &quot;提供任意非空值&quot;,smtp_pass: &quot;之前创建的SendGrid API Key&quot;,
+此外，还可根据需求设置其他配置值，以自定义通知邮件的外观和内容。完成设置后，在配置页面点击“发送测试邮件”按钮，检查邮件通知功能是否正常工作，同时需确保邮件提供商不会将收到的通知邮件归类为垃圾邮件。
+九、常见问题及解决方法
+
+捆绑包大小超限：若在部署时遇到捆绑包大小超过Cloudflare Workers免费套餐1MiB限制的问题，除了前文提到的删除特定包文件内容外，还可检查项目中是否引入了不必要的大型依赖，精简代码，减少不必要的资源加载。
+数据库连接问题：若出现无法连接到Cloudflare D1数据库的情况，首先确认wrangler.toml文件中database_name和database_id是否填写正确，其次检查网络连接是否正常，确保能访问Cloudflare的服务。
+前端评论区无法显示：前端评论区无法正常显示时，检查浏览器控制台是否有报错信息，可能是envId配置错误、前端脚本加载失败或HTML元素id不匹配等原因导致，根据具体错误提示进行排查修复。
+
+通过以上详细的Cloudflare部署方案，可将Twikoo评论系统高效地集成到网站中，利用Cloudflare的优质服务提升评论系统的性能与稳定性，为网站访客打造良好的互动交流环境。
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>hexo</tag>
+        <tag>CloudFlare</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>WEB3 Day1 —— BlockChain Basic 1</title>
+    <url>/2025/06/17/WEB3%20Day1%20%E2%80%94%E2%80%94%20BlockChain%20Basic%201/</url>
+    <content><![CDATA[WEB3 Day1 —— BlockChain Basic 1
+转型方向
+从 Java 开发转型至智能合约开发。
+学习资源
+学习视频
+推荐 patrick collins 【Cyfrin】的教学视频 。
+同时，Cyfrin Updraft 官网提供了文字笔记和视频课程。不过，某些翻译插件的双语字幕不支持该网站，因此我选择在 YouTube 上观看完整视频，并且将两者结合起来学习。
+翻译插件推荐
+这里推荐一款翻译插件——沉浸式翻译
+创建自己的钱包
+安装 MetaMask 插件
+首先，进入 MetaMask 官网，将其作为 Chrome 浏览器插件添加到浏览器中。
+创建钱包
+创建自己的钱包后，会得到三个关键信息：私钥（private key）、助记词（Mnemonic Key）和公钥地址（public Address）。其中，私钥和助记词极其重要，务必安全保存！因为拥有私钥就可以直接访问你的钱包账户，所以千万不能有侥幸心理。建议将助记词记录在纸上，而不是存储在电脑里，如果能记在大脑中（如使用记忆宫殿的方法）则是最安全的。三者的重要性排序为：【Mnemonic &gt; Private Key &gt; public Address】。
+相关图示如下：
+
+
+模拟交易
+创建虚拟测试网络
+登录 Tenderly 测试网站（https://tenderly.co/?mtm_campaign=partner&amp;mtm_kwd=cyfrin ），通过该链接注册并创建账户是免费的。在网站左侧点击“virtual TestNets”，创建虚拟测试网络。
+
+网络设置
+进行简单设置，无特定要求。设置完成后，会创建一个模拟区块链，接下来可以将其添加到 MetaMask 中。
+
+手动添加网络问题处理
+在连接后，可能会遇到 MetaMask 中未显示创建的虚拟网络的问题，此时需要手动添加。注意，原系统默认的 chainId（11155111）无法修改，因此需要重新创建一个链，并在创建时在“custom”处修改自己的 ID。
+
+有其他开发者也遇到了同样的问题，可参考：https://github.com/Cyfrin/foundry-full-course-cu/discussions/4066?sort=old
+注资操作
+完成上述步骤后，进行注资。
+
+查看注资结果
+注资完成后，等待几分钟，就可以在自定义虚拟网络中看到资金到账啦，仿佛瞬间“暴富”（当然这只是模拟）。
+
+账户间转账
+在模拟网络中，从一个账户向另一个账户转账非常简单，直接进行发送操作即可。
+
+
+另外，Tenderly 与 Cypher 有合作，账户可以续期。
+
+区块链数据结构
+可以通过 BlockChain Demo 网站（https://andersbrownworth.com/blockchain/block ）来帮助理解区块链的底层数据结构。
+交易费用相关概念
+交易费用（Transaction Fee）
+交易费用是支付给区块生产者处理交易的奖励金额，通常通过以太币或者 Gwei 支付。
+燃气价格（Gas Price）
+同样以以太币或者 Gwei 来定义，燃气价格是交易中指定的每单位燃气（Gas）的成本。价格越高，交易被打包进区块的机会就越大，它用于设定交易中每单位燃气的成本。
+燃气（Gas）
+不要将燃气与燃气价格混淆。燃气指的是执行交易所需要的工作量，而燃气价格则是每单位工作量的成本。
+交易费用的计算公式为：
+Transaction fee =  gasPrice * gasUsed
+简单来说，当大量用户进行交易时，特定区块的空间竞争会变得激烈，此时提高燃气价格可以在拥堵时限制交易，并优先处理部分交易。
+]]></content>
+      <categories>
+        <category>Web3</category>
+      </categories>
+      <tags>
+        <tag>BlockChain</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>WEB3 Day2 —— BlockChain Basic 2</title>
+    <url>/2025/06/17/WEB3%20Day2%20%E2%80%94%E2%80%94%20BlockChain%20Basic%202/</url>
+    <content><![CDATA[WBE3 DAY2 —— BlockChain Basics 2
+Layer1
+​	blockChain的base layer，例如bitcoin、BNB chain、Solana,and Avalanche.
+Layer2
+构建在L1区块链外部但是也与之连接的任何应用application。有各种类型，比如for example ChainLink(去中心化预言机网络) ，以及像The Graph(事件索引网络)。
+RollUp
+是L2的扩容解决方案，通过将多笔交易打包成一笔来增加以太坊上的交易数量，从而降低gas费
+1 optimistic rollups
+默认链下交易是有效的，操作者回提出rollup链的有效状态，在挑战期间内，其他的操作者可以通过计算欺诈证明来质疑潜在的欺诈交易。
+2 zero-knowledge rollups
+零知识证明， 使用有效性证明来验证交易的批次。 zk证明即有效性证明，
+3 witness
+验证者通过检查zk证明来验证输出是否和预期匹配。 而这整个证明者(prover)用来展示输入满足zk证明中的数学方程的方案就是见证(witness).
+RollUp stage (Rollup 发展阶段)
+Stage 0
+在这个初始的阶段，RollUp的治理主要由运营方和安全委员会掌控，确保关键决策并且有可信的团体去专门监督（中心化的），此阶段的用户拥有退出机制，可以在七天内离开rollup，但是通常需要实体和运营方的操作进行结合。
+Stage 1
+中心化的治理演化为智能合约管理，当然安全委员会同时发挥作用。
+证明系统完全开始运作，支持去中心化的有效证明。
+退出机制也得到改进，用户可独立退出而无需运营方协调。
+Stage 2
+通过完全由智能合约管理的治理机制实现完全去中心化。
+无需运营方和安全委员会干预。
+证明系统是无许可的，退出机制也完全去中心化。
+ZKSync Risk Analysis[风险分析]
+https://l2beat.com/scaling/summary  L2Beat摘要中可以查看各Rollup所处的stage
+Risks那一列的饼图可以体现当前阶段的一些风险，例如ZkSync Era专属页面中：
+
+
+
+Data Availability: refers to the ability to reconstruct the L2 state from L1 data, ensuring that anyone can verify and rebuild the L2 state if necessary.
+能够从L1的数据中重建L2状态
+
+
+State Validation: involves verifying the legitimacy of a set of bundled transactions. For ZK Sync, this is done using zero-knowledge proofs through an algorithm known as PLONK (Permutations over Lagrange-bases for Oecumenical Noninteractive arguments of Knowledge).
+涉及验证一组打包交易的合法性。
+
+
+Sequencer Failure: describes the ability to process transactions even if the sequencer is down. In ZK Sync, transactions can still be submitted to L1, though not necessarily enforced immediately.
+排序器故障，描述了即使排序器宕机还能够处理交易的能力，这里黄色区块表示，在ZKsync中，交易仍然可以提交到L1，但不一定能够强制执行。
+
+排序器：是负责对打包的用户交易进行排序的操作方（运营商）
+The sequencer is the operator responsible for ordering user transactions and often batching them before committing them to Layer 1.
+
+
+
+Proposer Failure: describes the ability to process transactions even if the proposer is down. In this case, ZK Sync will halt all withdrawals and transactions executions.
+提议者宕机但是可以处理交易的能力。在Zksync中回暂停所有的提款和交易执行。
+
+
+Exit Window: In the current ZK Sync stage, there is no window for exit during unwanted upgrades.
+红色区块表示Zksync在非预期的升级时不存在退出窗口期。
+
+
+First Transaction On ZKSync
+chainList 官网搜索ZKsync sepolia
+https://chainlist.org/?search=zksync+sepolia&amp;testnets=true
+
+进行connect
+
+
+在zkSync官网的block explorer 中，可搜索到自己的账户，查看交易详情
+如何获取测试网络的基金？
+
+📒 NOTE
+Network Fauncets
+
+这里可以通过brige桥接源链和目标链来进行，也有两种方式，一种是lock和unlock 另一种是烧毁和铸造；
+可能会有安全问题，但是基于ZkSync使用过程的经验来说，是比较安全的。
+
+了解原理之后，我们在推荐的fauncet里获取我们的fund
+
+这里我recive失败了，重新找了其他funsets ，可以用回tenderly试试看
+Solidity
+Remix IDE
+
+first solidity program
+simpleStorge.sol
+// SPDX-License-Identifier: MITpragma solidity 0.8.19; // chose our solidity version contract SimpleStorage &#123;    uint256 public myFavoriteNumber; // 初始值就是0 而且是internal 也就是内部不可见的    function store(uint256 favoriteNumber) public &#123;        myFavoriteNumber = favoriteNumber;    &#125;&#125;
+
+Deployed contracts are the same as modifying the blockchain. Whenever we modify anything on the blockchain, it is actually done by sending a transaction. Therefore, deploying contracts will cost a gas fee.
+
+返回体函数：
+// view 可读不可写 pure 不可读不可写  function recive() public view returns (uint256) &#123;      return myFavoriteNumber;  &#125;
+数组与结构
+  // 数组  uint256[] public myFavoriteNumbers;  // 结构  struct Person &#123;      uint256 personNumber;      string name;  &#125;  Person public newPerson = Person(1, &#x27;jack&#x27;);  Person public myPerson;// 数组加结构  Person[] public myPersonArray;  function setPerson(string memory name, uint256 person_number) public &#123;      myPersonArray.push(Person(person_number,name));  &#125;
+// SPDX-License-Identifier: MITpragma solidity 0.8.19; // stating our version contract SimpleStorage &#123;    uint256 public myFavoriteNumber; // 初始值就是0 而且是internal 也就是内部不可见的    // 数组    uint256[] public myFavoriteNumbers;    // 结构    struct Person &#123;        uint256 personNumber;        string name;    &#125;    Person public newPerson = Person(1, &#x27;jack&#x27;);    Person public myPerson;    Person[] public myPersonArray;    function setPerson(string memory name, uint256 person_number) public &#123;        myPerson = Person(person_number, name);        myPersonArray.push(myPerson);    &#125;    function store(uint256 favoriteNumber) public &#123;// 存储        myFavoriteNumber = favoriteNumber;    &#125;    // view 可读不可写 pure 不可读不可写    function recive() public view returns (uint256) &#123;        return myFavoriteNumber;    &#125;&#125;
+]]></content>
+      <categories>
+        <category>Web3</category>
+      </categories>
+      <tags>
+        <tag>BlockChain</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>MySQL</title>
     <url>/2021/05/07/MySQL/</url>
     <content><![CDATA[引入
@@ -3733,490 +3978,6 @@ insert into myview01 (empno,ename,job,deptno) values (8888,&#x27;nana&#x27;,&#x2
       </tags>
   </entry>
   <entry>
-    <title>WEB3 Day2 —— BlockChain Basic 2</title>
-    <url>/2025/06/17/WEB3%20Day2%20%E2%80%94%E2%80%94%20BlockChain%20Basic%202/</url>
-    <content><![CDATA[WBE3 DAY2 —— BlockChain Basics 2
-Layer1
-​	blockChain的base layer，例如bitcoin、BNB chain、Solana,and Avalanche.
-Layer2
-构建在L1区块链外部但是也与之连接的任何应用application。有各种类型，比如for example ChainLink(去中心化预言机网络) ，以及像The Graph(事件索引网络)。
-RollUp
-是L2的扩容解决方案，通过将多笔交易打包成一笔来增加以太坊上的交易数量，从而降低gas费
-1 optimistic rollups
-默认链下交易是有效的，操作者回提出rollup链的有效状态，在挑战期间内，其他的操作者可以通过计算欺诈证明来质疑潜在的欺诈交易。
-2 zero-knowledge rollups
-零知识证明， 使用有效性证明来验证交易的批次。 zk证明即有效性证明，
-3 witness
-验证者通过检查zk证明来验证输出是否和预期匹配。 而这整个证明者(prover)用来展示输入满足zk证明中的数学方程的方案就是见证(witness).
-RollUp stage (Rollup 发展阶段)
-Stage 0
-在这个初始的阶段，RollUp的治理主要由运营方和安全委员会掌控，确保关键决策并且有可信的团体去专门监督（中心化的），此阶段的用户拥有退出机制，可以在七天内离开rollup，但是通常需要实体和运营方的操作进行结合。
-Stage 1
-中心化的治理演化为智能合约管理，当然安全委员会同时发挥作用。
-证明系统完全开始运作，支持去中心化的有效证明。
-退出机制也得到改进，用户可独立退出而无需运营方协调。
-Stage 2
-通过完全由智能合约管理的治理机制实现完全去中心化。
-无需运营方和安全委员会干预。
-证明系统是无许可的，退出机制也完全去中心化。
-ZKSync Risk Analysis[风险分析]
-https://l2beat.com/scaling/summary  L2Beat摘要中可以查看各Rollup所处的stage
-Risks那一列的饼图可以体现当前阶段的一些风险，例如ZkSync Era专属页面中：
-
-
-
-Data Availability: refers to the ability to reconstruct the L2 state from L1 data, ensuring that anyone can verify and rebuild the L2 state if necessary.
-能够从L1的数据中重建L2状态
-
-
-State Validation: involves verifying the legitimacy of a set of bundled transactions. For ZK Sync, this is done using zero-knowledge proofs through an algorithm known as PLONK (Permutations over Lagrange-bases for Oecumenical Noninteractive arguments of Knowledge).
-涉及验证一组打包交易的合法性。
-
-
-Sequencer Failure: describes the ability to process transactions even if the sequencer is down. In ZK Sync, transactions can still be submitted to L1, though not necessarily enforced immediately.
-排序器故障，描述了即使排序器宕机还能够处理交易的能力，这里黄色区块表示，在ZKsync中，交易仍然可以提交到L1，但不一定能够强制执行。
-
-排序器：是负责对打包的用户交易进行排序的操作方（运营商）
-The sequencer is the operator responsible for ordering user transactions and often batching them before committing them to Layer 1.
-
-
-
-Proposer Failure: describes the ability to process transactions even if the proposer is down. In this case, ZK Sync will halt all withdrawals and transactions executions.
-提议者宕机但是可以处理交易的能力。在Zksync中回暂停所有的提款和交易执行。
-
-
-Exit Window: In the current ZK Sync stage, there is no window for exit during unwanted upgrades.
-红色区块表示Zksync在非预期的升级时不存在退出窗口期。
-
-
-First Transaction On ZKSync
-chainList 官网搜索ZKsync sepolia
-https://chainlist.org/?search=zksync+sepolia&amp;testnets=true
-
-进行connect
-
-
-在zkSync官网的block explorer 中，可搜索到自己的账户，查看交易详情
-如何获取测试网络的基金？
-
-📒 NOTE
-Network Fauncets
-
-这里可以通过brige桥接源链和目标链来进行，也有两种方式，一种是lock和unlock 另一种是烧毁和铸造；
-可能会有安全问题，但是基于ZkSync使用过程的经验来说，是比较安全的。
-
-了解原理之后，我们在推荐的fauncet里获取我们的fund
-
-这里我recive失败了，重新找了其他funsets ，可以用回tenderly试试看
-Solidity
-Remix IDE
-
-first solidity program
-simpleStorge.sol
-// SPDX-License-Identifier: MITpragma solidity 0.8.19; // chose our solidity version contract SimpleStorage &#123;    uint256 public myFavoriteNumber; // 初始值就是0 而且是internal 也就是内部不可见的    function store(uint256 favoriteNumber) public &#123;        myFavoriteNumber = favoriteNumber;    &#125;&#125;
-
-Deployed contracts are the same as modifying the blockchain. Whenever we modify anything on the blockchain, it is actually done by sending a transaction. Therefore, deploying contracts will cost a gas fee.
-
-返回体函数：
-// view 可读不可写 pure 不可读不可写  function recive() public view returns (uint256) &#123;      return myFavoriteNumber;  &#125;
-数组与结构
-  // 数组  uint256[] public myFavoriteNumbers;  // 结构  struct Person &#123;      uint256 personNumber;      string name;  &#125;  Person public newPerson = Person(1, &#x27;jack&#x27;);  Person public myPerson;// 数组加结构  Person[] public myPersonArray;  function setPerson(string memory name, uint256 person_number) public &#123;      myPersonArray.push(Person(person_number,name));  &#125;
-// SPDX-License-Identifier: MITpragma solidity 0.8.19; // stating our version contract SimpleStorage &#123;    uint256 public myFavoriteNumber; // 初始值就是0 而且是internal 也就是内部不可见的    // 数组    uint256[] public myFavoriteNumbers;    // 结构    struct Person &#123;        uint256 personNumber;        string name;    &#125;    Person public newPerson = Person(1, &#x27;jack&#x27;);    Person public myPerson;    Person[] public myPersonArray;    function setPerson(string memory name, uint256 person_number) public &#123;        myPerson = Person(person_number, name);        myPersonArray.push(myPerson);    &#125;    function store(uint256 favoriteNumber) public &#123;// 存储        myFavoriteNumber = favoriteNumber;    &#125;    // view 可读不可写 pure 不可读不可写    function recive() public view returns (uint256) &#123;        return myFavoriteNumber;    &#125;&#125;
-]]></content>
-      <categories>
-        <category>Web3</category>
-      </categories>
-      <tags>
-        <tag>BlockChain</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>WEB3 Day1 —— BlockChain Basic 1</title>
-    <url>/2025/06/17/WEB3%20Day1%20%E2%80%94%E2%80%94%20BlockChain%20Basic%201/</url>
-    <content><![CDATA[WEB3 Day1 —— BlockChain Basic 1
-转型方向
-从 Java 开发转型至智能合约开发。
-学习资源
-学习视频
-推荐 patrick collins 【Cyfrin】的教学视频 。
-同时，Cyfrin Updraft 官网提供了文字笔记和视频课程。不过，某些翻译插件的双语字幕不支持该网站，因此我选择在 YouTube 上观看完整视频，并且将两者结合起来学习。
-翻译插件推荐
-这里推荐一款翻译插件——沉浸式翻译
-创建自己的钱包
-安装 MetaMask 插件
-首先，进入 MetaMask 官网，将其作为 Chrome 浏览器插件添加到浏览器中。
-创建钱包
-创建自己的钱包后，会得到三个关键信息：私钥（private key）、助记词（Mnemonic Key）和公钥地址（public Address）。其中，私钥和助记词极其重要，务必安全保存！因为拥有私钥就可以直接访问你的钱包账户，所以千万不能有侥幸心理。建议将助记词记录在纸上，而不是存储在电脑里，如果能记在大脑中（如使用记忆宫殿的方法）则是最安全的。三者的重要性排序为：【Mnemonic &gt; Private Key &gt; public Address】。
-相关图示如下：
-
-
-模拟交易
-创建虚拟测试网络
-登录 Tenderly 测试网站（https://tenderly.co/?mtm_campaign=partner&amp;mtm_kwd=cyfrin ），通过该链接注册并创建账户是免费的。在网站左侧点击“virtual TestNets”，创建虚拟测试网络。
-
-网络设置
-进行简单设置，无特定要求。设置完成后，会创建一个模拟区块链，接下来可以将其添加到 MetaMask 中。
-
-手动添加网络问题处理
-在连接后，可能会遇到 MetaMask 中未显示创建的虚拟网络的问题，此时需要手动添加。注意，原系统默认的 chainId（11155111）无法修改，因此需要重新创建一个链，并在创建时在“custom”处修改自己的 ID。
-
-有其他开发者也遇到了同样的问题，可参考：https://github.com/Cyfrin/foundry-full-course-cu/discussions/4066?sort=old
-注资操作
-完成上述步骤后，进行注资。
-
-查看注资结果
-注资完成后，等待几分钟，就可以在自定义虚拟网络中看到资金到账啦，仿佛瞬间“暴富”（当然这只是模拟）。
-
-账户间转账
-在模拟网络中，从一个账户向另一个账户转账非常简单，直接进行发送操作即可。
-
-
-另外，Tenderly 与 Cypher 有合作，账户可以续期。
-
-区块链数据结构
-可以通过 BlockChain Demo 网站（https://andersbrownworth.com/blockchain/block ）来帮助理解区块链的底层数据结构。
-交易费用相关概念
-交易费用（Transaction Fee）
-交易费用是支付给区块生产者处理交易的奖励金额，通常通过以太币或者 Gwei 支付。
-燃气价格（Gas Price）
-同样以以太币或者 Gwei 来定义，燃气价格是交易中指定的每单位燃气（Gas）的成本。价格越高，交易被打包进区块的机会就越大，它用于设定交易中每单位燃气的成本。
-燃气（Gas）
-不要将燃气与燃气价格混淆。燃气指的是执行交易所需要的工作量，而燃气价格则是每单位工作量的成本。
-交易费用的计算公式为：
-Transaction fee =  gasPrice * gasUsed
-简单来说，当大量用户进行交易时，特定区块的空间竞争会变得激烈，此时提高燃气价格可以在拥堵时限制交易，并优先处理部分交易。
-]]></content>
-      <categories>
-        <category>Web3</category>
-      </categories>
-      <tags>
-        <tag>BlockChain</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>git</title>
-    <url>/2021/08/13/git/</url>
-    <content><![CDATA[概念
-Git是一个免费的、开源的分布式版本控制系统，可以快速高效地处理从小型到大型的项目。
-版本控制：版本控制是一种记录一个或若干文件内容变化，以便将来查阅特定版本修订情况的系统 。
-代码托管中心
-我们已经有了本地库，本地库可以帮我们进行版本控制，为什么还需要代码托管中心呢？
-它的任务是帮我们维护远程库，下面说一下本地库和远程库的交互方式，也分为两种：
-
-
-团队内部协作
-
-
-
-跨团队协作
-
-https://github.com/SoniaChan33/SoniaChan33.github.io
-
-
-初始化本地仓库
-
-
-创建一个文件夹
-
-
-
-打开Git终端：Git Bash Here
-
-
-查看Git安装版本
-git --version
-
-
-清屏
-clear
-
-
-设置签名
-git config --global user.name &quot;TeaSea33&quot;git config --global user.email &quot;TeaSea33@outlook.com&quot;
-
-
-本地仓库的初始化操作(目录在本地仓库里)
-git init
-
-
-
-查看.git下的内容
-
-注意事项： .git目录下的本地库相关的子目录和子文件不要删除，不要胡乱修改。
-
-
-Git常用命令
-add和commit
-
-
-先创建文件
-
-
-将文件提交到暂存区
-git add Demo2.txt
-
-
-将暂存区的内容提交到本地库
-
-
-
-注意：
-
-不放在本地仓库中的文件，git是不进行管理
-即使放在本地仓库的文件，git也不管理，必须通过add,commit命令操作才可以将内容提交到本地库。
-
-
-
-Status
-查看工作区和暂存区的状态
-
-
-创建一个文件，然后查看状态
-git status
-
-
-
-然后将Demo2.txt通过git add命令提交到暂存区
-git add &quot;Demo3.txt&quot;
-
-
-status查看状态
-
-
-
-commit提交文件
-
-
-
-修改文件 并查看状态
-
-
-
-重新添加至暂存区 并查看状态
-
-
-
-提交以后查看状态
-
-
-
-
-log
-可以查看提交的日志，显示最近到最远的日志
-日志展示方式
-
-
-git log 
-   &lt;img src=&quot;git/20210716165040.png&quot; alt=&quot;image-20210716164533294&quot; style=&quot;zoom:67%;&quot; /&gt;   ---&gt; 分页   当历史记录过多的时候使用**空格**翻页，**b**  回到上一页，到尾页显示END,   退出：**q**2. ```shell   git log --pretty=oneline
-
-&lt;img src=&quot;git/20210716165022.png&quot; alt=&quot;image-20210716165022038&quot; style=&quot;zoom:67%;&quot; /&gt;
-
-
-
-
-git log --oneline
-   &lt;img src=&quot;git/20210716165148.png&quot; alt=&quot;image-20210716165147993&quot; style=&quot;zoom:67%;&quot; /&gt;4. ```shell   git reflog
-
-多了信息：HEAD@&#123;数字&#125;
-
-数字：指针回到当前这个历史版本需要多少步
-
-&lt;img src=&quot;git/20210716165501.png&quot; alt=&quot;image-20210716165500983&quot; style=&quot;zoom:67%;&quot; /&gt;
-
-
-
-
-reset
-前进或者后退历史版本
-
-先查看历史log状态
-
-
-
-
-将文件后退到版本1
-
-
-
-再次查看
-
-
-
-三个参数(hard\mixed\soft)
-git reset --[参数] [索引]
-
-
-hard
-本地库的指针移动的同时，重置暂存区，重置工作区
-
-
-
-mixed
-本地库的指针移动的同时，重置暂存区，但是工作区不动
-
-
-
-soft
-本地库的指针移动的时候，暂存区，工作区都不动
-
-
-
-用得最多的就是第一种hard参数
-hard
-1.找回本地库删除的文件
-
-
-新建一个Test2.txt文件 并将它add到暂存区中
-
-
-
-再通过commit提交到本地库
-
-
-
-删除工作区中的Test2.txt 并将删除操作同步到暂存区
-
-
-
-将删除操作同步到本地库
-
-
-
-查看日志
-
-
-
-找到本地库中删除的文件，实际上就是将历史版本切换到刚才添加文件的那个版本即可
-
-
-
-2.找回暂存区删除的文件
-
-
-删除工作区数据
-
-
-
-同步到缓存区
-
-
-
-查看日志
-
-
-
-找到当前指针 然后返回到该状态
-
-
-
-
-diff
-
-
-比对工作区和暂存区
-git diff [文件名]
-
-添加并提交一个内容为aaaa的Test3.txt
-
-
-
-更改工作区的文件加入bbb，再用dif进行比对，发现不同
-
-
-
-如果修改了多个文件，多个文件的比对命令直接是git diff
-
-
-
-
-比对暂存区和本地库 ：
-git diff [历史版本] [文件]
-
-
-文件添加不提交到本地库，此时暂存区就和工作区相同为aaaabbb
-
-
-查看日志
-
-此刻的本地库还停留在之前第一次修改
-
-
-比对暂存区和本地库中的HEAD当前指针状态
-
-发现不一样，说明没有提交的时候就是不一样的
-
-
-HEAD部分可以改成其他历史版本的标号
-
-
-
-
-
-分支
-查看分支
-
-创建新分支
-
-切换分支
-
-进入branch01分支，增加内容
-
-
-再次查看两个分支发现主分支没有改变
-
-查看文件
-
-将branch01合并到主分支
-
-因为在同一文件的同一位置修改了文件
-
-解决冲突：
-人为决定，留下想要的就可以，然后再添加
-
-提交冲突，不能带文件名
-
-
-Github
-创建远程库
-为远程库取别名
-
-将本地库数据推送到远程库中
-
-
-
-查看远程库
-
-SSH免密操作
-
-
-进入用户的主目录中：
-
-
-执行命令，生成一个.ssh目录
-
-
-
-发现.ssh目录下有两个文件
-
-
-
-第二个文件里面的密钥复制，去github下新建密钥
-
-
-密钥生成：
-
-
-
-免密操作使每次需要push仓库的时候，都不用再输入密码434
-]]></content>
-      <categories>
-        <category>Git</category>
-      </categories>
-      <tags>
-        <tag>Git</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>m1 2020配置java后端环境</title>
     <url>/2021/09/12/m1-2020%E9%85%8D%E7%BD%AEjava%E5%90%8E%E7%AB%AF%E7%8E%AF%E5%A2%83/</url>
     <content><![CDATA[m1 2020配置java后端环境
@@ -4291,389 +4052,6 @@ mysql&gt; show global variables like &#x27;port&#x27;;+---------------+-------+|
         <tag>MySQL</tag>
         <tag>macOS</tag>
         <tag>踩雷</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>四月面经</title>
-    <url>/2022/05/09/%E5%9B%9B%E6%9C%88%E9%9D%A2%E7%BB%8F/</url>
-    <content><![CDATA[这次春招拖到四月才面…先已收到兴业数金、华为、平安的offer，签了平安。
-总结几篇我认为有必要记录的面经：字节、华为（有时间就更新）
-
-字节面经
-第一次面字节 真的很紧张 其他面试也就经历过一两轮 面试小白真的害怕 没想到字节一面没有很刁钻也不会很难 都是简单的八股 算法也是简单dp
-
-
-自我介绍
-
-
-hashmap put() 工作流程 （讲了一下源码）
-
-
-concurrenthashmap怎么做到并发安全（简单讲了1.7/8 的锁实现）
-
-
-面试官从上面引出CAS 叫我描述一下（乐观、预值、新值、底层原理）
-
-
-java的其他锁（巴拉巴拉讲了sych、AQS框架下的几个锁）
-
-
-ThreadLocal什么时候使用（说了下底层、声明式事务保证同一个connection）
-
-
-垃圾回收（算法、回收器都简单讲了讲）
-
-
-网络http头有哪些字段、长连接短连接、状态码、https原理、hash不可逆（http请求头这里我真的弱，具体就私钥公钥，CA证书这里讲的还可以😭 然后还把hash说成可逆😭
-
-
-TCP三次、四次；timewait状态只有客户端吗？（还好猜对了，timewait只是针对一个发起者）、可靠性怎么理解
-
-
-I/O多路复用，哪些地方用到了（select poll epoll ，redis）
-
-
-掩码、网络地址转换（网络真的我软肋 后面要恶补呜呜
-
-
-堆 和建堆过程、 排序有哪些、快排过程
-
-
-算法：最小路径和，要求返回路径（返回路径这里我死脑阔 可以for循环dp就返回的 我在那duo键盘duo半天去搞了一个dfs去原矩阵找😓 最后面试官看出来我想干啥 就提示了一下 我就是一整个恍然大悟）
-
-
-反问
-因为面试经验很少，就问了面试官可不可以说一下我需要注意的点，面试官说很多时候知识比技巧更重要吧，很实诚就给我讲面试要把知识掌握全面，就比如我网络http这方面就需要加强。
-总结
-整体还是网络方面出问题，感觉面试官很耐心听我扯，没有像之前面的某公司老打断我，真的挺温柔的；然后我觉得后期应该多深入一下知识，把问题说得更加全面，一方面留好印象，一方面就可以让面试官少问点，少暴露自己的缺点，网络方面补一补
----------
-二面 4.25
-自我介绍之后挑了一个项目讲，通过项目问了一些扩展的点 在mybatis一些语句的细节上没有答出来 大概是35min左右就面完了 面试官很温柔 但是因为细节 我觉得多半寄了
-
-后续打电话捞我去面试说是重庆和北京的岗位，我因为已经签了，不想去卷，放弃了
-华为面经(已offer)
-大概流程
-
-机考
-总共三道算法，第一题就是简单的字符串转换器，第二题忘了，第三题是一个路径题，应该会用到图
-第一题过了百分之80% 第三题 过了15%
-总分一百分以上就过了，这个比较好过
-性格测评
-听说华为的性格测评还刷了很多人，反正秘诀我认为就是实话实说，然后在30分钟左右做完。
-专业面试1 4.16
-本来学的后端开发，然后报的是软件测试的岗位，以为面试会问很多测试方面知识，准备了很多，结果华为注重的大多是学校里的经历和获奖以及成绩。
-
-自我介绍完毕后简单问了一下比赛和成绩。
-问学了哪些课程，然后根据我说的课程问了些基础
-数据结构问了：排序、有哪些结构分别讲讲（说了说链表、图、栈、队列）
-计算机网路问了：http、RIP协议（不擅长的千万不要说出来！！我可能是因为这科拉胯了我的综测我一直记恨在心，没多想结果就说出口了）
-软件工程问了： 直接讲学了什么（我大概把程序从需求设计到实现然后再小心机的把测试部分讲了讲）
-
-还有细碎问题忘了
-主管面4.18
-主要就是聊天，然后问问对华为公司的了解，是否定居成都，然后想不想转岗，我都按着求稳来答的，也问了问在校成绩。
-4.18面结束以后就审批等了很久，然后hr人非常好，一直持续跟进，
-5.9 拒绝offer
-在5.6说我的offer稳了，综合考虑薪资待遇和工作环境，我认为我可能不适合测试岗，并且华为的环境我有所耳闻，如果9116，我受不了，前两年都需要时间去学习，而不是全部都栽进工作。
-]]></content>
-      <categories>
-        <category>面经</category>
-      </categories>
-      <tags>
-        <tag>后端</tag>
-        <tag>测试</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>从0到1:用Git+CloudFlare+PicGo+Typora+Hexo搭建个人博客全流程</title>
-    <url>/2025/06/17/%E4%BB%8E0%E5%88%B01-%E7%94%A8Git-CloudFlare-PicGo-Typora-Hexo%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2%E5%85%A8%E6%B5%81%E7%A8%8B/</url>
-    <content><![CDATA[从 0 到 1：用 Git、CloudFlare、PicGo、Typora、Hexo 搭建个人博客全流程
-一、前言
-22年，我用 Hexo + Next 主题搭起第一个个人博客。三年后，随着图床需求升级、对博客风格有了新想法，我决定重构 —— 替换图床工具、更换主题，用 Git、CloudFlare、PicGo、Typora 配合 Hexo 重新搭建。这篇文章复盘从旧版迭代到全新上线的全过程，既是对自己折腾经历的记录，也希望给想优化博客的朋友一份实操参考。
-二、环境准备与工具选型
-（一）核心工具简介
-
-Git：分布式版本控制系统，负责博客代码的版本管理与远程仓库同步，让博客部署、内容更新更高效。
-CloudFlare：提供 CDN 加速、DNS 解析、安全防护等功能，让博客访问更快、更稳定，还能隐藏真实服务器 IP 。
-PicGo：图床上传工具，写博客时本地图片能一键上传到图床，解决文章中图片存储与引用问题。
-Typora：简洁高效的 Markdown 编辑器，实时预览、语法简洁，专注内容创作。
-Hexo：静态博客生成框架，基于 Node.js，支持 Markdown 写作，能快速生成美观博客站点，部署灵活。
-
-（二）环境安装
-
-Git 安装：
-官网（https://git-scm.com/ ）下载对应系统版本，安装后通过 git --version 验证，看到版本号即成功。
-配置用户信息：git config --global user.name &quot;你的用户名&quot;git config --global user.email &quot;你的邮箱&quot;
-
-Node.js 与 Hexo 安装（Hexo 依赖 Node.js ）：
-Node.js 官网（https://nodejs.org/ ）下载 LTS 版本，安装后用 node -v、npm -v 验证。
-全局安装 Hexo：npm install -g hexo-cli
-验证 Hexo 安装：hexo -v 显示版本信息则成功。
-Typora 安装：官网（https://typora.io/ ）下载对应系统版本，按提示安装即可，简洁直观。
-PicGo 安装：官网（https://picgo.github.io/PicGo-Doc/ ）或应用商店下载，支持多平台，安装后配置图床（如 GitHub 图床、七牛云等，我用 GitHub 图床时需配置仓库、Token 等 ）。
-
-三、Hexo 初始化与博客基础搭建
-（一）初始化 Hexo 项目
-
-创建博客目录（如 my-blog ），进入目录：mkdir my-blog &amp;&amp; cd my-blog
-
-初始化 Hexo：hexo initnpm install
-执行后，目录会生成 Hexo 基础文件结构，包含 _config.yml（配置文件 ）、source（存放文章、资源 ）、themes（主题目录 ）等。
-
-（二）主题选择与配置
-
-主题下载：Hexo 官网（https://hexo.io/themes/ ）选心仪主题，比如我用的 anzhiyu 主题，克隆到 themes 目录：git clone https://github.com/Anzhiyu/hexo-theme-anzhiyu.git themes/anzhiyu
-
-主题配置：复制主题目录下的 _config.yml 到博客根目录，重命名为 _config.anzhiyu.yml ，修改基础配置（如站点标题、描述、头像、导航菜单等 ），让博客符合需求。
-
-（三）本地预览博客
-执行以下命令，启动本地服务器：
-hexo clean &amp;&amp; hexo g &amp;&amp; hexo s
-
-hexo clean：清理之前生成的静态文件。
-hexo g（hexo generate ）：生成静态博客文件到 public 目录。
-hexo s（hexo server ）：启动本地服务器，浏览器访问 http://localhost:4000 ，就能看到初始博客页面。
-
-四、内容创作与管理（Typora + PicGo [S3插件] + CloudFlareR2存储桶 ）
-一、Cloudflare R2 存储桶创建与基础配置
-（一）登录 Cloudflare 控制台
-
-访问 Cloudflare Dashboard 并登录账户（若无账户需先注册）。
-点击左侧菜单中的 R2 选项（若未显示，点击“更多产品”查找）。
-
-（二）创建存储桶
-
-
-点击 创建存储桶 按钮，进入创建流程：
-
-存储桶名称：自定义（如 blog-images），需全局唯一（建议包含个人标识）。
-区域：选择 自动（Auto）以获得最佳分布，或手动指定区域（如 亚洲 - 新加坡）。
-访问控制：勾选 公开访问（Public access），允许匿名读取图片（若仅个人使用可跳过）。
-加密：默认启用服务器端加密（SSE），无需修改。
-
-
-
-点击 创建存储桶，等待约 10 秒完成创建。
-
-
-（三）获取 API 访问凭证
-
-
-进入 存储桶详情页 → 权限 标签页：
-
-点击 创建访问密钥 按钮（若提示需要创建密钥对，点击“创建”）。
-记录生成的 Access Key ID 和 Secret Access Key（仅显示一次，需立即保存到安全位置）。
-
-
-
-复制存储桶端点（Endpoint）：
-
-存储桶详情页 → 概述 标签页，找到 外部访问 中的端点地址（格式为 https://&lt;账户ID&gt;.r2.cloudflarestorage.com）。
-
-
-
-二、PicGo 配置 S3 插件对接 R2
-（一）安装 S3 插件
-
-打开 PicGo 软件 → 插件管理 → 搜索 s3 并安装 PicGo-S3-Plugin（若已安装可跳过）。
-
-（二）配置插件参数
-
-
-进入 PicGo 图床设置 → 选择 S3 插件：
-
-Bucket：填写创建的存储桶名称（如 blog-images）。
-Region：填 auto（R2 不区分传统区域）。
-Access Key ID：粘贴 Cloudflare 生成的 Access Key。
-Secret Access Key：粘贴对应的 Secret Key。
-Endpoint：粘贴存储桶端点（如 https://abc123.r2.cloudflarestorage.com）。
-Path：自定义图片存储路径前缀（如 blog/，可留空）。
-Custom Domain：填写自定义域名（如 img.soniachen.com，后续配置）。
-SSL：勾选（启用 HTTPS 访问）。
-
-
-
-点击 设为默认图床，并点击 确定 保存配置。
-
-
-（三）测试上传
-
-在 PicGo 主界面点击 上传图片，选择本地图片：
-
-若上传成功，下方会显示图片 URL（如 https://img.soniachen.com/blog/test.jpg）。
-
-
-
-三、绑定自定义域名（CDN 加速）
-（一）添加域名到 Cloudflare
-
-登录 Cloudflare 控制台 → 域名 → 添加域名：
-
-输入自定义域名（如 img.soniachen.com），点击 继续。
-等待 Cloudflare 扫描 DNS 记录（约 1 - 5 分钟）。
-
-
-
-（二）配置 DNS 解析
-
-在域名管理界面 → DNS 标签页：
-
-添加一条 CNAME 记录：
-
-名称：填 @ 或 img（根据域名结构）。
-目标：填存储桶端点（如 abc123.r2.cloudflarestorage.com）。
-代理状态：选择 DNS Only（仅解析，不启用 CDN）或 Proxied（启用 CDN 加速）。
-
-
-
-
-
-（三）配置 R2 自定义域名
-
-回到 R2 存储桶 → 域名 标签页：
-
-点击 添加自定义域名，输入已添加到 Cloudflare 的域名（如 img.soniachen.com）。
-Cloudflare 会自动生成 SSL 证书（等待约 10 分钟生效）。
-
-
-
-四、Hexo 集成 R2 图床（可选）
-（一）安装 Hexo 插件
-
-在 Hexo 项目根目录执行：npm install hexo-s3-image --save
-
-
-（二）配置插件
-
-修改 _config.yml 添加以下配置：s3_image:  bucket: blog-images          # 存储桶名称  region: auto                 # 区域  accessKeyId: your-access-key # 替换为实际 Access Key  secretAccessKey: your-secret-key # 替换为实际 Secret Key  endpoint: https://abc123.r2.cloudflarestorage.com # 端点  path: blog/                  # 存储路径  customUrl: https://img.soniachen.com # 自定义域名  public: true                 # 公开访问
-
-
-（三）使用方式
-
-在 Markdown 中插入图片时，直接使用本地路径：![示例图片](/img/test.jpg)
-
-Hexo 生成时会自动上传图片到 R2，并替换为在线链接。
-
-五、常见问题与解决方案
-（一）403 Forbidden 错误
-
-原因：存储桶未启用公开访问或访问密钥错误。
-解决：
-
-存储桶 → 权限 → 确保 公开访问 已启用。
-重新核对 Access Key 和 Secret Key 是否正确。
-
-
-
-（二）图片链接返回 404
-
-原因：域名解析错误或路径配置错误。
-解决：
-
-检查 DNS 解析是否生效（可通过 ping img.soniachen.com 验证）。
-确认 PicGo 中 Custom Domain 与 Cloudflare 域名一致。
-
-
-
-（三）上传失败（网络错误）
-
-原因：Endpoint 填写错误或网络阻断。
-解决：
-
-存储桶详情页复制端点，确保无多余字符（如末尾空格）。
-尝试更换网络环境（如关闭 VPN）。
-
-
-
-六、进阶优化：缓存与安全
-（一）设置缓存策略
-
-Cloudflare 域名 → 规则 → 页面规则：
-
-添加规则 https://img.soniachen.com/*，设置 缓存级别 为 缓存所有，TTL 为 1 天（根据需求调整）。
-
-
-
-（二）启用防盗链
-
-存储桶 → 权限 → 添加 Origin Access：
-
-配置允许访问的域名（如 soniachen.com），拒绝其他域名盗用图片。
-
-
-
-/opt/homebrew/bin/node /opt/homebrew/bin/picgo upload
-
-五、博客部署（Git + GitHub Pages + CloudFlare ）
-（一）GitHub 仓库准备
-
-GitHub 新建仓库，命名规则：若为用户/组织页，仓库名填 你的GitHub用户名.github.io（如 soniachan33.github.io ）；若为项目页，仓库名自定义（后续需配置路径 ）。
-仓库创建后，复制仓库的 Git 地址（SSH 或 HTTPS 形式 ）。
-
-（二）Hexo 部署配置
-修改博客根目录 _config.yml 的 deploy 配置：
-deploy:  type: git  repo: git@github.com:你的GitHub用户名/你的仓库名.git  # 替换为实际仓库地址  branch: main  # 部署分支，GitHub Pages 常用 main 或 gh-pages
-安装 hexo-deployer-git 插件：
-npm install hexo-deployer-git --save
-（三）部署到 GitHub Pages
-执行部署命令：
-hexo clean &amp;&amp; hexo g &amp;&amp; hexo d
-Hexo 会把生成的静态文件（public 目录内容 ）推送到 GitHub 仓库对应分支，稍等片刻，访问 https://你的GitHub用户名.github.io（或项目页地址 ），能看到线上博客。
-（四）CloudFlare 加速与配置
-
-添加站点：CloudFlare 官网（https://www.cloudflare.com/ ）注册登录，添加站点（输入博客域名，若用 GitHub Pages 默认域名可跳过，若自定义域名需提前备案、解析 ）。
-DNS 解析设置：添加 DNS 记录，将域名解析到 GitHub Pages 对应的 IP（或直接解析到 你的GitHub用户名.github.io  ），让 CloudFlare 接管 DNS 解析。
-CDN 与安全配置：开启 CDN 加速，优化缓存、压缩等设置；启用安全防护（如 DDoS 防护、防火墙规则 ），提升博客访问速度与安全性。
-自定义域名（可选）：若用自定义域名（如 soniachen.com  ），在 GitHub Pages 仓库设置中填自定义域名，同时在 CloudFlare 配置域名解析、SSL 证书（推荐开启 Full 或 Strict 模式 ），确保 HTTPS 访问正常。
-
-六、博客优化与维护
-（一）SEO 优化
-
-站点地图（Sitemap ）：安装 hexo-generator-sitemap 插件，生成站点地图：npm install hexo-generator-sitemap --save
-修改 _config.yml 配置：sitemap:  path: sitemap.xml
-部署后，通过 https://你的域名/sitemap.xml 访问，提交给百度、必应、谷歌等搜索引擎，助力收录。
-Meta 标签与关键词：在主题配置或文章 Front-matter 中，设置标题、描述、关键词，让搜索引擎更好理解内容，提升搜索排名。
-
-（二）持续更新与备份
-
-内容更新：用 Typora 写新文章，存到 source/_posts 目录，执行 hexo clean &amp;&amp; hexo g &amp;&amp; hexo d 部署，持续输出优质内容。
-版本备份：借助 Git，定期提交代码到 GitHub 仓库，记录博客配置、文章修改历史，方便回退与协同。
-
-七、遇到的问题与解决（结合之前的疑问）
-（一）GitHub Pages 部署后 404
-
-原因：部署分支与 GitHub Pages 设置不一致、root 配置错误、CNAME 文件丢失等。
-解决：确保 _config.yml 中 deploy 分支正确，用户页 root 设为 / ；在 Hexo 项目 source 目录添加 CNAME 文件（填自定义域名 ），重新部署。
-
-（二）CloudFlare 部署后域名配置清空
-
-原因：Hexo 部署覆盖 GitHub Pages 分支内容，CNAME 文件未同步。
-解决：在 Hexo 项目 source 目录添加 CNAME 文件，内容填自定义域名，部署时同步到 GitHub 仓库，CloudFlare 配置就会保留。
-
-（三）必应收录验证问题
-
-方法：通过 XML 文件（下载 BingSiteAuth.xml 放 Hexo source 目录，部署后验证 ）、HTML Meta 标记（添加到博客首页 &lt;head&gt;  ）、DNS CNAME 记录（域名解析后台添加 ）完成验证，提交站点地图，让博客在必应搜索可见。
-
-八、总结
-从工具安装、Hexo 初始化，到内容创作、部署上线，再到用 CloudFlare 加速、优化 SEO ，整个流程虽有波折，但一步步搭建出专属博客，成就感满满。这五个工具相互配合，让博客从本地走向公网，成为展示自我的窗口。未来，继续用它们更新内容、优化体验，让博客持续生长～
-附录：关键命令与配置汇总，方便速查：
-
-Hexo 常用命令：hexo clean、hexo g、hexo s、hexo d 。
-Git 配置与部署：git config、hexo-deployer-git 插件配置。
-CloudFlare 核心操作：DNS 解析、CDN 加速、SSL 配置。
-PicGo + Typora 图床写作：Typora 上传图片设置、PicGo 图床配置。
-
-希望这篇复盘能帮到想搭建博客的你，一起用技术记录生活、分享世界～
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>hexo</tag>
-        <tag>Git</tag>
-        <tag>CloudFlare</tag>
-        <tag>Typora</tag>
-        <tag>PicGo</tag>
       </tags>
   </entry>
   <entry>
@@ -5645,6 +5023,1343 @@ LoginController登录时绑定监听器
       </tags>
   </entry>
   <entry>
+    <title>git</title>
+    <url>/2021/08/13/git/</url>
+    <content><![CDATA[概念
+Git是一个免费的、开源的分布式版本控制系统，可以快速高效地处理从小型到大型的项目。
+版本控制：版本控制是一种记录一个或若干文件内容变化，以便将来查阅特定版本修订情况的系统 。
+代码托管中心
+我们已经有了本地库，本地库可以帮我们进行版本控制，为什么还需要代码托管中心呢？
+它的任务是帮我们维护远程库，下面说一下本地库和远程库的交互方式，也分为两种：
+
+
+团队内部协作
+
+
+
+跨团队协作
+
+https://github.com/SoniaChan33/SoniaChan33.github.io
+
+
+初始化本地仓库
+
+
+创建一个文件夹
+
+
+
+打开Git终端：Git Bash Here
+
+
+查看Git安装版本
+git --version
+
+
+清屏
+clear
+
+
+设置签名
+git config --global user.name &quot;TeaSea33&quot;git config --global user.email &quot;TeaSea33@outlook.com&quot;
+
+
+本地仓库的初始化操作(目录在本地仓库里)
+git init
+
+
+
+查看.git下的内容
+
+注意事项： .git目录下的本地库相关的子目录和子文件不要删除，不要胡乱修改。
+
+
+Git常用命令
+add和commit
+
+
+先创建文件
+
+
+将文件提交到暂存区
+git add Demo2.txt
+
+
+将暂存区的内容提交到本地库
+
+
+
+注意：
+
+不放在本地仓库中的文件，git是不进行管理
+即使放在本地仓库的文件，git也不管理，必须通过add,commit命令操作才可以将内容提交到本地库。
+
+
+
+Status
+查看工作区和暂存区的状态
+
+
+创建一个文件，然后查看状态
+git status
+
+
+
+然后将Demo2.txt通过git add命令提交到暂存区
+git add &quot;Demo3.txt&quot;
+
+
+status查看状态
+
+
+
+commit提交文件
+
+
+
+修改文件 并查看状态
+
+
+
+重新添加至暂存区 并查看状态
+
+
+
+提交以后查看状态
+
+
+
+
+log
+可以查看提交的日志，显示最近到最远的日志
+日志展示方式
+
+
+git log 
+   &lt;img src=&quot;git/20210716165040.png&quot; alt=&quot;image-20210716164533294&quot; style=&quot;zoom:67%;&quot; /&gt;   ---&gt; 分页   当历史记录过多的时候使用**空格**翻页，**b**  回到上一页，到尾页显示END,   退出：**q**2. ```shell   git log --pretty=oneline
+
+&lt;img src=&quot;git/20210716165022.png&quot; alt=&quot;image-20210716165022038&quot; style=&quot;zoom:67%;&quot; /&gt;
+
+
+
+
+git log --oneline
+   &lt;img src=&quot;git/20210716165148.png&quot; alt=&quot;image-20210716165147993&quot; style=&quot;zoom:67%;&quot; /&gt;4. ```shell   git reflog
+
+多了信息：HEAD@&#123;数字&#125;
+
+数字：指针回到当前这个历史版本需要多少步
+
+&lt;img src=&quot;git/20210716165501.png&quot; alt=&quot;image-20210716165500983&quot; style=&quot;zoom:67%;&quot; /&gt;
+
+
+
+
+reset
+前进或者后退历史版本
+
+先查看历史log状态
+
+
+
+
+将文件后退到版本1
+
+
+
+再次查看
+
+
+
+三个参数(hard\mixed\soft)
+git reset --[参数] [索引]
+
+
+hard
+本地库的指针移动的同时，重置暂存区，重置工作区
+
+
+
+mixed
+本地库的指针移动的同时，重置暂存区，但是工作区不动
+
+
+
+soft
+本地库的指针移动的时候，暂存区，工作区都不动
+
+
+
+用得最多的就是第一种hard参数
+hard
+1.找回本地库删除的文件
+
+
+新建一个Test2.txt文件 并将它add到暂存区中
+
+
+
+再通过commit提交到本地库
+
+
+
+删除工作区中的Test2.txt 并将删除操作同步到暂存区
+
+
+
+将删除操作同步到本地库
+
+
+
+查看日志
+
+
+
+找到本地库中删除的文件，实际上就是将历史版本切换到刚才添加文件的那个版本即可
+
+
+
+2.找回暂存区删除的文件
+
+
+删除工作区数据
+
+
+
+同步到缓存区
+
+
+
+查看日志
+
+
+
+找到当前指针 然后返回到该状态
+
+
+
+
+diff
+
+
+比对工作区和暂存区
+git diff [文件名]
+
+添加并提交一个内容为aaaa的Test3.txt
+
+
+
+更改工作区的文件加入bbb，再用dif进行比对，发现不同
+
+
+
+如果修改了多个文件，多个文件的比对命令直接是git diff
+
+
+
+
+比对暂存区和本地库 ：
+git diff [历史版本] [文件]
+
+
+文件添加不提交到本地库，此时暂存区就和工作区相同为aaaabbb
+
+
+查看日志
+
+此刻的本地库还停留在之前第一次修改
+
+
+比对暂存区和本地库中的HEAD当前指针状态
+
+发现不一样，说明没有提交的时候就是不一样的
+
+
+HEAD部分可以改成其他历史版本的标号
+
+
+
+
+
+分支
+查看分支
+
+创建新分支
+
+切换分支
+
+进入branch01分支，增加内容
+
+
+再次查看两个分支发现主分支没有改变
+
+查看文件
+
+将branch01合并到主分支
+
+因为在同一文件的同一位置修改了文件
+
+解决冲突：
+人为决定，留下想要的就可以，然后再添加
+
+提交冲突，不能带文件名
+
+
+Github
+创建远程库
+为远程库取别名
+
+将本地库数据推送到远程库中
+
+
+
+查看远程库
+
+SSH免密操作
+
+
+进入用户的主目录中：
+
+
+执行命令，生成一个.ssh目录
+
+
+
+发现.ssh目录下有两个文件
+
+
+
+第二个文件里面的密钥复制，去github下新建密钥
+
+
+密钥生成：
+
+
+
+免密操作使每次需要push仓库的时候，都不用再输入密码434
+]]></content>
+      <categories>
+        <category>Git</category>
+      </categories>
+      <tags>
+        <tag>Git</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>从0到1:用Git+CloudFlare+PicGo+Typora+Hexo搭建个人博客全流程</title>
+    <url>/2025/06/17/%E4%BB%8E0%E5%88%B01-%E7%94%A8Git-CloudFlare-PicGo-Typora-Hexo%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2%E5%85%A8%E6%B5%81%E7%A8%8B/</url>
+    <content><![CDATA[从 0 到 1：用 Git、CloudFlare、PicGo、Typora、Hexo 搭建个人博客全流程
+一、前言
+22年，我用 Hexo + Next 主题搭起第一个个人博客。三年后，随着图床需求升级、对博客风格有了新想法，我决定重构 —— 替换图床工具、更换主题，用 Git、CloudFlare、PicGo、Typora 配合 Hexo 重新搭建。这篇文章复盘从旧版迭代到全新上线的全过程，既是对自己折腾经历的记录，也希望给想优化博客的朋友一份实操参考。
+二、环境准备与工具选型
+（一）核心工具简介
+
+Git：分布式版本控制系统，负责博客代码的版本管理与远程仓库同步，让博客部署、内容更新更高效。
+CloudFlare：提供 CDN 加速、DNS 解析、安全防护等功能，让博客访问更快、更稳定，还能隐藏真实服务器 IP 。
+PicGo：图床上传工具，写博客时本地图片能一键上传到图床，解决文章中图片存储与引用问题。
+Typora：简洁高效的 Markdown 编辑器，实时预览、语法简洁，专注内容创作。
+Hexo：静态博客生成框架，基于 Node.js，支持 Markdown 写作，能快速生成美观博客站点，部署灵活。
+
+（二）环境安装
+
+Git 安装：
+官网（https://git-scm.com/ ）下载对应系统版本，安装后通过 git --version 验证，看到版本号即成功。
+配置用户信息：git config --global user.name &quot;你的用户名&quot;git config --global user.email &quot;你的邮箱&quot;
+
+Node.js 与 Hexo 安装（Hexo 依赖 Node.js ）：
+Node.js 官网（https://nodejs.org/ ）下载 LTS 版本，安装后用 node -v、npm -v 验证。
+全局安装 Hexo：npm install -g hexo-cli
+验证 Hexo 安装：hexo -v 显示版本信息则成功。
+Typora 安装：官网（https://typora.io/ ）下载对应系统版本，按提示安装即可，简洁直观。
+PicGo 安装：官网（https://picgo.github.io/PicGo-Doc/ ）或应用商店下载，支持多平台，安装后配置图床（如 GitHub 图床、七牛云等，我用 GitHub 图床时需配置仓库、Token 等 ）。
+
+三、Hexo 初始化与博客基础搭建
+（一）初始化 Hexo 项目
+
+创建博客目录（如 my-blog ），进入目录：mkdir my-blog &amp;&amp; cd my-blog
+
+初始化 Hexo：hexo initnpm install
+执行后，目录会生成 Hexo 基础文件结构，包含 _config.yml（配置文件 ）、source（存放文章、资源 ）、themes（主题目录 ）等。
+
+（二）主题选择与配置
+
+主题下载：Hexo 官网（https://hexo.io/themes/ ）选心仪主题，比如我用的 anzhiyu 主题，克隆到 themes 目录：git clone https://github.com/Anzhiyu/hexo-theme-anzhiyu.git themes/anzhiyu
+
+主题配置：复制主题目录下的 _config.yml 到博客根目录，重命名为 _config.anzhiyu.yml ，修改基础配置（如站点标题、描述、头像、导航菜单等 ），让博客符合需求。
+
+（三）本地预览博客
+执行以下命令，启动本地服务器：
+hexo clean &amp;&amp; hexo g &amp;&amp; hexo s
+
+hexo clean：清理之前生成的静态文件。
+hexo g（hexo generate ）：生成静态博客文件到 public 目录。
+hexo s（hexo server ）：启动本地服务器，浏览器访问 http://localhost:4000 ，就能看到初始博客页面。
+
+四、内容创作与管理（Typora + PicGo [S3插件] + CloudFlareR2存储桶 ）
+一、Cloudflare R2 存储桶创建与基础配置
+（一）登录 Cloudflare 控制台
+
+访问 Cloudflare Dashboard 并登录账户（若无账户需先注册）。
+点击左侧菜单中的 R2 选项（若未显示，点击“更多产品”查找）。
+
+（二）创建存储桶
+
+
+点击 创建存储桶 按钮，进入创建流程：
+
+存储桶名称：自定义（如 blog-images），需全局唯一（建议包含个人标识）。
+区域：选择 自动（Auto）以获得最佳分布，或手动指定区域（如 亚洲 - 新加坡）。
+访问控制：勾选 公开访问（Public access），允许匿名读取图片（若仅个人使用可跳过）。
+加密：默认启用服务器端加密（SSE），无需修改。
+
+
+
+点击 创建存储桶，等待约 10 秒完成创建。
+
+
+（三）获取 API 访问凭证
+
+
+进入 存储桶详情页 → 权限 标签页：
+
+点击 创建访问密钥 按钮（若提示需要创建密钥对，点击“创建”）。
+记录生成的 Access Key ID 和 Secret Access Key（仅显示一次，需立即保存到安全位置）。
+
+
+
+复制存储桶端点（Endpoint）：
+
+存储桶详情页 → 概述 标签页，找到 外部访问 中的端点地址（格式为 https://&lt;账户ID&gt;.r2.cloudflarestorage.com）。
+
+
+
+二、PicGo 配置 S3 插件对接 R2
+（一）安装 S3 插件
+
+打开 PicGo 软件 → 插件管理 → 搜索 s3 并安装 PicGo-S3-Plugin（若已安装可跳过）。
+
+（二）配置插件参数
+
+
+进入 PicGo 图床设置 → 选择 S3 插件：
+
+Bucket：填写创建的存储桶名称（如 blog-images）。
+Region：填 auto（R2 不区分传统区域）。
+Access Key ID：粘贴 Cloudflare 生成的 Access Key。
+Secret Access Key：粘贴对应的 Secret Key。
+Endpoint：粘贴存储桶端点（如 https://abc123.r2.cloudflarestorage.com）。
+Path：自定义图片存储路径前缀（如 blog/，可留空）。
+Custom Domain：填写自定义域名（如 img.soniachen.com，后续配置）。
+SSL：勾选（启用 HTTPS 访问）。
+
+
+
+点击 设为默认图床，并点击 确定 保存配置。
+
+
+（三）测试上传
+
+在 PicGo 主界面点击 上传图片，选择本地图片：
+
+若上传成功，下方会显示图片 URL（如 https://img.soniachen.com/blog/test.jpg）。
+
+
+
+三、绑定自定义域名（CDN 加速）
+（一）添加域名到 Cloudflare
+
+登录 Cloudflare 控制台 → 域名 → 添加域名：
+
+输入自定义域名（如 img.soniachen.com），点击 继续。
+等待 Cloudflare 扫描 DNS 记录（约 1 - 5 分钟）。
+
+
+
+（二）配置 DNS 解析
+
+在域名管理界面 → DNS 标签页：
+
+添加一条 CNAME 记录：
+
+名称：填 @ 或 img（根据域名结构）。
+目标：填存储桶端点（如 abc123.r2.cloudflarestorage.com）。
+代理状态：选择 DNS Only（仅解析，不启用 CDN）或 Proxied（启用 CDN 加速）。
+
+
+
+
+
+（三）配置 R2 自定义域名
+
+回到 R2 存储桶 → 域名 标签页：
+
+点击 添加自定义域名，输入已添加到 Cloudflare 的域名（如 img.soniachen.com）。
+Cloudflare 会自动生成 SSL 证书（等待约 10 分钟生效）。
+
+
+
+四、Hexo 集成 R2 图床（可选）
+（一）安装 Hexo 插件
+
+在 Hexo 项目根目录执行：npm install hexo-s3-image --save
+
+
+（二）配置插件
+
+修改 _config.yml 添加以下配置：s3_image:  bucket: blog-images          # 存储桶名称  region: auto                 # 区域  accessKeyId: your-access-key # 替换为实际 Access Key  secretAccessKey: your-secret-key # 替换为实际 Secret Key  endpoint: https://abc123.r2.cloudflarestorage.com # 端点  path: blog/                  # 存储路径  customUrl: https://img.soniachen.com # 自定义域名  public: true                 # 公开访问
+
+
+（三）使用方式
+
+在 Markdown 中插入图片时，直接使用本地路径：![示例图片](/img/test.jpg)
+
+Hexo 生成时会自动上传图片到 R2，并替换为在线链接。
+
+五、常见问题与解决方案
+（一）403 Forbidden 错误
+
+原因：存储桶未启用公开访问或访问密钥错误。
+解决：
+
+存储桶 → 权限 → 确保 公开访问 已启用。
+重新核对 Access Key 和 Secret Key 是否正确。
+
+
+
+（二）图片链接返回 404
+
+原因：域名解析错误或路径配置错误。
+解决：
+
+检查 DNS 解析是否生效（可通过 ping img.soniachen.com 验证）。
+确认 PicGo 中 Custom Domain 与 Cloudflare 域名一致。
+
+
+
+（三）上传失败（网络错误）
+
+原因：Endpoint 填写错误或网络阻断。
+解决：
+
+存储桶详情页复制端点，确保无多余字符（如末尾空格）。
+尝试更换网络环境（如关闭 VPN）。
+
+
+
+六、进阶优化：缓存与安全
+（一）设置缓存策略
+
+Cloudflare 域名 → 规则 → 页面规则：
+
+添加规则 https://img.soniachen.com/*，设置 缓存级别 为 缓存所有，TTL 为 1 天（根据需求调整）。
+
+
+
+（二）启用防盗链
+
+存储桶 → 权限 → 添加 Origin Access：
+
+配置允许访问的域名（如 soniachen.com），拒绝其他域名盗用图片。
+
+
+
+/opt/homebrew/bin/node /opt/homebrew/bin/picgo upload
+
+五、博客部署（Git + GitHub Pages + CloudFlare ）
+（一）GitHub 仓库准备
+
+GitHub 新建仓库，命名规则：若为用户/组织页，仓库名填 你的GitHub用户名.github.io（如 soniachan33.github.io ）；若为项目页，仓库名自定义（后续需配置路径 ）。
+仓库创建后，复制仓库的 Git 地址（SSH 或 HTTPS 形式 ）。
+
+（二）Hexo 部署配置
+修改博客根目录 _config.yml 的 deploy 配置：
+deploy:  type: git  repo: git@github.com:你的GitHub用户名/你的仓库名.git  # 替换为实际仓库地址  branch: main  # 部署分支，GitHub Pages 常用 main 或 gh-pages
+安装 hexo-deployer-git 插件：
+npm install hexo-deployer-git --save
+（三）部署到 GitHub Pages
+执行部署命令：
+hexo clean &amp;&amp; hexo g &amp;&amp; hexo d
+Hexo 会把生成的静态文件（public 目录内容 ）推送到 GitHub 仓库对应分支，稍等片刻，访问 https://你的GitHub用户名.github.io（或项目页地址 ），能看到线上博客。
+（四）CloudFlare 加速与配置
+
+添加站点：CloudFlare 官网（https://www.cloudflare.com/ ）注册登录，添加站点（输入博客域名，若用 GitHub Pages 默认域名可跳过，若自定义域名需提前备案、解析 ）。
+DNS 解析设置：添加 DNS 记录，将域名解析到 GitHub Pages 对应的 IP（或直接解析到 你的GitHub用户名.github.io  ），让 CloudFlare 接管 DNS 解析。
+CDN 与安全配置：开启 CDN 加速，优化缓存、压缩等设置；启用安全防护（如 DDoS 防护、防火墙规则 ），提升博客访问速度与安全性。
+自定义域名（可选）：若用自定义域名（如 soniachen.com  ），在 GitHub Pages 仓库设置中填自定义域名，同时在 CloudFlare 配置域名解析、SSL 证书（推荐开启 Full 或 Strict 模式 ），确保 HTTPS 访问正常。
+
+六、博客优化与维护
+（一）SEO 优化
+
+站点地图（Sitemap ）：安装 hexo-generator-sitemap 插件，生成站点地图：npm install hexo-generator-sitemap --save
+修改 _config.yml 配置：sitemap:  path: sitemap.xml
+部署后，通过 https://你的域名/sitemap.xml 访问，提交给百度、必应、谷歌等搜索引擎，助力收录。
+Meta 标签与关键词：在主题配置或文章 Front-matter 中，设置标题、描述、关键词，让搜索引擎更好理解内容，提升搜索排名。
+
+（二）持续更新与备份
+
+内容更新：用 Typora 写新文章，存到 source/_posts 目录，执行 hexo clean &amp;&amp; hexo g &amp;&amp; hexo d 部署，持续输出优质内容。
+版本备份：借助 Git，定期提交代码到 GitHub 仓库，记录博客配置、文章修改历史，方便回退与协同。
+
+七、遇到的问题与解决（结合之前的疑问）
+（一）GitHub Pages 部署后 404
+
+原因：部署分支与 GitHub Pages 设置不一致、root 配置错误、CNAME 文件丢失等。
+解决：确保 _config.yml 中 deploy 分支正确，用户页 root 设为 / ；在 Hexo 项目 source 目录添加 CNAME 文件（填自定义域名 ），重新部署。
+
+（二）CloudFlare 部署后域名配置清空
+
+原因：Hexo 部署覆盖 GitHub Pages 分支内容，CNAME 文件未同步。
+解决：在 Hexo 项目 source 目录添加 CNAME 文件，内容填自定义域名，部署时同步到 GitHub 仓库，CloudFlare 配置就会保留。
+
+（三）必应收录验证问题
+
+方法：通过 XML 文件（下载 BingSiteAuth.xml 放 Hexo source 目录，部署后验证 ）、HTML Meta 标记（添加到博客首页 &lt;head&gt;  ）、DNS CNAME 记录（域名解析后台添加 ）完成验证，提交站点地图，让博客在必应搜索可见。
+
+八、总结
+从工具安装、Hexo 初始化，到内容创作、部署上线，再到用 CloudFlare 加速、优化 SEO ，整个流程虽有波折，但一步步搭建出专属博客，成就感满满。这五个工具相互配合，让博客从本地走向公网，成为展示自我的窗口。未来，继续用它们更新内容、优化体验，让博客持续生长～
+附录：关键命令与配置汇总，方便速查：
+
+Hexo 常用命令：hexo clean、hexo g、hexo s、hexo d 。
+Git 配置与部署：git config、hexo-deployer-git 插件配置。
+CloudFlare 核心操作：DNS 解析、CDN 加速、SSL 配置。
+PicGo + Typora 图床写作：Typora 上传图片设置、PicGo 图床配置。
+
+希望这篇复盘能帮到想搭建博客的你，一起用技术记录生活、分享世界～
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>hexo</tag>
+        <tag>CloudFlare</tag>
+        <tag>Git</tag>
+        <tag>Typora</tag>
+        <tag>PicGo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>分布式笔记【RabbitMQ+Zookeeper+FastDFS】</title>
+    <url>/2022/05/16/%E5%88%86%E5%B8%83%E5%BC%8F%E7%AC%94%E8%AE%B0/</url>
+    <content><![CDATA[分布式(更新ing)
+分布式项目的整合：
+https://www.processon.com/view/link/6281b28c0e3e746f2b12d0ee
+
+分布式架构会把一个项目按照特定要求（多按照模块或功能）拆分成多个项目，每个项目分别部署到不同的服务器上。
+
+RMI
+运程方法调用
+
+API
+Remote
+​			远程调用接口
+RemoteException
+​			承了Remote接口的接口中，如果方法是允许被远程调用的，需要抛出此异常。
+UnicastRemoteObject
+​				java.rmi.server.UnicastRemoteObject
+​				此类实现了Remote接口和Serializable接口。
+​				自定义接口实现类除了实现自定义接口还需要继承此类。
+LocateRegistry
+​				java.rmi.registry.LocateRegistry
+​				可以通过LocateRegistry在本机上创建Registry，通过特定的端口就可以访问这个Registry。
+Naming
+​				java.rmi.Naming
+​				Naming定义了发布内容可访问RMI名称。也是通过Naming获取到指定的远程方法。
+zookeeper注册中心
+
+客户端常用命令
+ls [-s][-R] /path			查看列表get [-s] /path			查看内容create /path [data]			创建指定路径信息set /path data			设置节点内容delete /path			删除节点
+注册内容
+创建/demo
+2     添加依赖
+3     编写代码
+创建zk对象获取连接
+new watcher()内部重写process()
+发布任务create()
+ZooDefs.Ids.OPEN_ACL_UNSAFE
+表示权限
+CreateMode.PERSISTENT_SEQUENTIAL
+永久存储，文件内容编号递增
+4     查看上传数据
+查看内容
+​		创建zk对象获取连接
+​			new watcher()内部重写process()
+​		获取列表
+​			zookeeper.getChildren(“/demo”, false)
+​			zookeeper.getData(“/demo/” + child, false, null);
+RPC实现(RMI+Zookeeper)
+Dubbo
+
+​	分布式服务框架
+​	负载均衡
+​		负载均衡是在集群前提下，当访问整个集群时，集群中每个节点被访问次数或频率的规则。
+​		设置
+​			@Reference 客户端
+​				注入的是分布式中的远程服务对象
+​				@Reference(loadbalance = “roundrobin”)
+​					调用的服务采用的负载均衡算法
+​			@Service服务端
+​				@Service(loadbalance = “random”)
+​					当前服务采用的负载均衡算法
+​				@Service(weight = 4)
+​					设置权重
+​		内置策略
+​			Random
+​					随机。随机访问集群中节点。访问概率和权重有关。
+​			RoundRobin
+​					轮询。访问频率和权重有关。
+​				性能好的服务器权重应该高一些。
+​			LeastActive
+​					活跃数相同的随机,活跃数高的放前面。
+​			ConsistentHash
+​				hash 相同参数发送到同一个提供者
+​	完整项目
+​		provider
+​			dubbo.protocal.port
+​				需要设置端口
+RabbitMQ
+
+​	由Erlang语言编写的基于AMQP的消息中间件。
+​	消息中间件作为分布式系统重要组件之一，可以解决应用耦合，异步消息，流量削峰等问题。
+​	账号管理
+​		1 创建账户
+​			./rabbitmqctl add_user username password
+​		2 给用户授予管理员角色
+./rabbitmqctl set_user_tags mashibing administrator
+​		3 给用户授权
+​			./rabbitmqctl set_permissions -p “/” mashibing “.&quot; &quot;.” “.*”
+​		4 登录
+​	交换机
+​		direct 默认
+​		fanout 广播
+​			FanoutExchage
+​			Binding
+​				绑定交换器和队列
+​			BindingBuilder
+​				Bind构造器
+​			amq.fanout
+​				内置fanout交换器名称
+​		topic主题
+​			运行RoutingKey包含匹配规则
+​				binding方法里面第二个参数
+​			BindingBuilder.bind(topicQueue).to(topicExchange).with(“com.a”);
+​		Header首部
+FastDFS
+​	分布式文件系统
+​	架构
+​		角色
+​			client
+​			Tracker Server
+​				跟踪服务器
+​					调度 负载均衡、记录集群状态信息、连接client和storage的枢纽
+​			Storage Server
+​				存储服务器
+​					文件和文件属性存储的地方
+​		文件上传流程
+​			1.  客户端访问Tracker
+​			2.  Tracker 返回Storage的ip和端口
+​			3.  客户端直接访问Storage，把文件内容和元数据发送过去。
+​			4.  Storage返回文件存储id。包含了组名和文件名
+Nginx
+​	反向代理服务
+​		代理方式
+​			正向
+​				架设在客户机和目标主机之间
+​				代理客户端，服务端不知道实际发起请求的客户端；
+​			反向
+​				架设在服务器端；
+​				代理服务端，客户端不知道实际提供服务的服务端；
+​	作用
+​		HTTP协议代理
+​		  搭建虚拟主机
+​		负载均衡
+]]></content>
+      <categories>
+        <category>分布式</category>
+      </categories>
+      <tags>
+        <tag>分布式</tag>
+        <tag>RabbitMQ</tag>
+        <tag>Zookeeper</tag>
+        <tag>FastDFS</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>四月面经</title>
+    <url>/2022/05/09/%E5%9B%9B%E6%9C%88%E9%9D%A2%E7%BB%8F/</url>
+    <content><![CDATA[这次春招拖到四月才面…先已收到兴业数金、华为、平安的offer，签了平安。
+总结几篇我认为有必要记录的面经：字节、华为（有时间就更新）
+
+字节面经
+第一次面字节 真的很紧张 其他面试也就经历过一两轮 面试小白真的害怕 没想到字节一面没有很刁钻也不会很难 都是简单的八股 算法也是简单dp
+
+
+自我介绍
+
+
+hashmap put() 工作流程 （讲了一下源码）
+
+
+concurrenthashmap怎么做到并发安全（简单讲了1.7/8 的锁实现）
+
+
+面试官从上面引出CAS 叫我描述一下（乐观、预值、新值、底层原理）
+
+
+java的其他锁（巴拉巴拉讲了sych、AQS框架下的几个锁）
+
+
+ThreadLocal什么时候使用（说了下底层、声明式事务保证同一个connection）
+
+
+垃圾回收（算法、回收器都简单讲了讲）
+
+
+网络http头有哪些字段、长连接短连接、状态码、https原理、hash不可逆（http请求头这里我真的弱，具体就私钥公钥，CA证书这里讲的还可以😭 然后还把hash说成可逆😭
+
+
+TCP三次、四次；timewait状态只有客户端吗？（还好猜对了，timewait只是针对一个发起者）、可靠性怎么理解
+
+
+I/O多路复用，哪些地方用到了（select poll epoll ，redis）
+
+
+掩码、网络地址转换（网络真的我软肋 后面要恶补呜呜
+
+
+堆 和建堆过程、 排序有哪些、快排过程
+
+
+算法：最小路径和，要求返回路径（返回路径这里我死脑阔 可以for循环dp就返回的 我在那duo键盘duo半天去搞了一个dfs去原矩阵找😓 最后面试官看出来我想干啥 就提示了一下 我就是一整个恍然大悟）
+
+
+反问
+因为面试经验很少，就问了面试官可不可以说一下我需要注意的点，面试官说很多时候知识比技巧更重要吧，很实诚就给我讲面试要把知识掌握全面，就比如我网络http这方面就需要加强。
+总结
+整体还是网络方面出问题，感觉面试官很耐心听我扯，没有像之前面的某公司老打断我，真的挺温柔的；然后我觉得后期应该多深入一下知识，把问题说得更加全面，一方面留好印象，一方面就可以让面试官少问点，少暴露自己的缺点，网络方面补一补
+---------
+二面 4.25
+自我介绍之后挑了一个项目讲，通过项目问了一些扩展的点 在mybatis一些语句的细节上没有答出来 大概是35min左右就面完了 面试官很温柔 但是因为细节 我觉得多半寄了
+
+后续打电话捞我去面试说是重庆和北京的岗位，我因为已经签了，不想去卷，放弃了
+华为面经(已offer)
+大概流程
+
+机考
+总共三道算法，第一题就是简单的字符串转换器，第二题忘了，第三题是一个路径题，应该会用到图
+第一题过了百分之80% 第三题 过了15%
+总分一百分以上就过了，这个比较好过
+性格测评
+听说华为的性格测评还刷了很多人，反正秘诀我认为就是实话实说，然后在30分钟左右做完。
+专业面试1 4.16
+本来学的后端开发，然后报的是软件测试的岗位，以为面试会问很多测试方面知识，准备了很多，结果华为注重的大多是学校里的经历和获奖以及成绩。
+
+自我介绍完毕后简单问了一下比赛和成绩。
+问学了哪些课程，然后根据我说的课程问了些基础
+数据结构问了：排序、有哪些结构分别讲讲（说了说链表、图、栈、队列）
+计算机网路问了：http、RIP协议（不擅长的千万不要说出来！！我可能是因为这科拉胯了我的综测我一直记恨在心，没多想结果就说出口了）
+软件工程问了： 直接讲学了什么（我大概把程序从需求设计到实现然后再小心机的把测试部分讲了讲）
+
+还有细碎问题忘了
+主管面4.18
+主要就是聊天，然后问问对华为公司的了解，是否定居成都，然后想不想转岗，我都按着求稳来答的，也问了问在校成绩。
+4.18面结束以后就审批等了很久，然后hr人非常好，一直持续跟进，
+5.9 拒绝offer
+在5.6说我的offer稳了，综合考虑薪资待遇和工作环境，我认为我可能不适合测试岗，并且华为的环境我有所耳闻，如果9116，我受不了，前两年都需要时间去学习，而不是全部都栽进工作。
+]]></content>
+      <categories>
+        <category>面经</category>
+      </categories>
+      <tags>
+        <tag>后端</tag>
+        <tag>测试</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>多线程</title>
+    <url>/2022/02/09/%E5%A4%9A%E7%BA%BF%E7%A8%8B/</url>
+    <content><![CDATA[并发编程三大特性
+可见性
+MESI 多线程的底层并不是通过mesi
+多线程提高效率，本地缓存数据，造成数据修改不可见，
+要想保证可见，要么触发同步指令，要么加上volatile，被修饰的内存，只要有修改，马上同步涉及到的每个线程。
+
+==volatile==
+==介绍一下volatile的功能？==
+volatile关键字保证了可见性和禁止指令重排
+提供了happen-before的保证，确保一个线程的修改可以对其他线程是可见的。当一个共享变量被修饰的时候，就会保证修改的值立即被更新到内存，当其他线程需要读取的时候，就会去内存中读取新值。从实际角度来说，其中的一个重要作用就是与CAS结合，保证了原子性。volatile经常用在多线程环境下的单次操作。
+通俗来讲就是 ab线程要用一个变量，然后java默认是a线程中保留一份copy，这样如果b线程来修改，则a线程未必知道，如果使用这个关键字，线程之间数据修改都能可见。
+==volatile的可见性和禁止指令重排序怎么实现的？==
+volatile本质上是通过内存屏障来实现可见性的，被修饰的变量在被修改之后可以立即同步到主内存，该变量每次使用之前都从主内存刷新，而禁止指令重排序也是通过内存屏障来禁止的，本来现在的cpu为了提高效率会见指令并发执行，一个指令从JMM内存屏障的策略来看，就是在volatile的写操作的前面插入一个StoreStore屏障，后面插入一个StoreLoad，在读操作前面加入一个LoadLoad，后面加一个LoadStore屏障。
+==volatile 的底层实现？==
+volatile 底层jmm
+==实现一下DCL(单例模式下的双重检查)/ volatile的实践==
+是否lazy化？ 是
+是否线程安全？ 是
+实现难度： 针对需要双重检查的操作
+public class Singleton &#123;    // volatile防止指令重排    private static volatile Singleton singleton;    private Singleton() &#123;            &#125;        public static Singleton getInstance() &#123;        // 第一层判断singleton是不是null        if(Singleton == null)&#123;            //现在再加锁            synchronized(Singleton.class)&#123;                // 第二层判断                // 如果A,B 两个线程都在synchronized等待                // A 创建完对象之后，B还会再进入，如果不再检查一遍，B又会创建一个对象                if(singleton == null)&#123;                    singleton = new Singleton();                &#125;            &#125;        &#125;        return singleton;    &#125;&#125;                                                                                
+==单例里面要不要加volatile？==
+要加，如果不加volatile问题就会出现在指令重排序上，
+比如有一行初始化对象的代码，被编译器执行之后就会分成三步，1 给指令申请内存，2 给成员变量初始化，3 把这块内存的内容赋值，重排序以后 既然已经有这个值，在另外一个线程上来先去检查就会发现已经存在该值，就不会进入锁部分的代码，但是加了volatile就不会允许指令重排序，一定会保证你初始化完了才会给你赋值这个变量。
+有序性
+程序真的是按照顺序执行的吗？
+并不是 cpu为了提高效率，通常都是乱序
+在执行程序时，为了提供性能，处理器和编译器常常会对指令进行重排序，但是不能随意重排序，不是你想怎么排序就怎么排序，它需要满足以下两个条件：在单线程环境下不能改变程序运行的结果；存在数据依赖关系的不允许重排序需要注意的是：重排序不会影响单线程环境的执行结果，但是会破坏多线程的执行语义。
+单线程也不是顺序执行
+单线程有一个 a i s 语义保证了其单线程执行结果不被改变，其实也不是顺序执行的。
+as-if-serial语义保证单线程内程序的执行结果不被改变，happensbefore关系保证正确同步的多线程程序的执行结果不被改变。 as-if-serial语义给编写单线程程序的程序员创造了一个幻境：单线程程序是按程序的顺序来执行的。happens-before关系给编写正确同步的多线程程序的程序员创造了一个幻境：正确同步的多线程程序是按 happens-before指定的顺序来执行的。
+as-if-serial语义和happens-before这么做的目的，都是为了在不改变程序执行结果的前提下，尽可能地提高程序执行的并行度。
+原子性
+保证操作的原子性可以通过synchronized(悲观锁) 和 cas(乐观锁)
+CAS
+CAS 是 compare and swap 的缩写，即我们所说的比较交换。
+cas 是一种基于锁的操作，而且是乐观锁。在 java 中锁分为乐观锁和悲观锁。
+悲观锁是将资源锁住，等一个之前获得锁的线程释放锁之后，下一个线程才可以访问。而乐观锁采取了一种宽泛的态度，通过某种方式不加锁来处理资源，比如通过给记录加 version 来获取数据，性能较悲观锁有很大的提高。
+CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。如果内存地址里面的值和 A 的值是一样的，那么就将内存里面的值更新成 B。
+CAS是通过无限循环来获取数据的，若果在第一轮循环中，a 线程获取地址里面的值被b 线程修改了，那么 a 线程需要自旋，到下次循环才有可能机会执行。
+java.util.concurrent.atomic 包下的类大多是使用 CAS 操作来实现的(AtomicInteger,AtomicBoolean,AtomicLong)。
+==CAS底层==
+以AtomicInterger 这个类为例，里面的incrementAndGet() 就调用了compareAndSet()方法 里面有一个unsafe对象 查看jdk里面的c语言代码就会有一个底层的指令  cmpxchg指令 意思是cas修改变量值 这个指令不是原子的所以需要 lock ，而在硬件层面lock指令在执行的时候看情况来采用总线锁或者缓存锁，所以底层层面cas是用的lock指令。
+==如何解决ABA问题==
+如果是基础类型就无所谓，就是两个线程去同时修改一个变量值，一个线程被某些原因发生阻塞等待过程中另一个线比较更新 变量值从A到B，这个时候再来第三个线程想把变量改为B到A，进行比较更新更改完毕以后，原来被阻塞的线程这个时候获得CPU时间片发现是A 于是更新为B 可是其实该值已经更新过了，这个问题可以通过加版本号或者时间戳解决，但是一般是每次版本号加一，时间戳不容易指定精度一般不用。
+线程调度与同步
+线程调度器
+负责将runnable的线程分配CPU
+怎么进行多线程抢占cpu的调度呢？（线程调度算法
+
+分时调度 大家平均分配时间片
+抢占式 优先级高的线程占用 ，如果优先级都相等就随机选一个，都是等线程结束才放弃CPU
+
+线程同步以及线程调度方
+
+
+wait(): 释放锁； 需要被唤醒 ；是object的方法；用于进程通信；
+
+
+sleep()：不释放锁 ；自动苏醒；是thread的静态方法
+
+
+notify()：随机唤醒一个进入锁池
+
+
+notifyAll()： 唤醒所有进入锁池
+sleep() 和 wait() 不同
+sleep()和yeild() 不同
+sleep()是成为阻塞状态，其他线程不考虑优先级，抛出interrupted异常，移植性更好
+yeild()是成为就绪状态，其他线程和当前一起按优先级，没有声明异常，不怎么建议使用
+sleep()和yeild()为啥是静态
+两个方法是在正在执行的线程运行，在处于等待状态里面调用无意义
+
+
+==wait() 和 notify()实际使用==
+这里是一个面试题，就是两个线程实现线程a打印1～10，然后另外一个线程b在a打到5的时候执行，然后a在b执行完之后打印剩下的
+这里具体就是线程b先启动然后wait ，然后等到a打印1～5以后唤醒线程b，同时也要wait()释放锁，b执行完毕又要notify a。
+public class T03_NotifyHoldingLock &#123; //wait notify	//添加volatile，使t2能够得到通知	volatile List lists = new ArrayList();	public void add(Object o) &#123;		lists.add(o);	&#125;	public int size() &#123;		return lists.size();	&#125;	public static void main(String[] args) &#123;		T03_NotifyHoldingLock c = new T03_NotifyHoldingLock();		final Object lock = new Object();           //需要注意先启动t2再启动t1    new Thread(() -&gt; &#123;			synchronized(lock) &#123;				System.out.println(&quot;t2 启动&quot;);				if(c.size() != 5) &#123;					try &#123;						lock.wait();					&#125; catch (InterruptedException e) &#123;						e.printStackTrace();					&#125;				&#125;				System.out.println(&quot;t2 结束&quot;);			&#125;            //通知t1继续执行            lock.notify()。		&#125;, &quot;t2&quot;).start();		try &#123;			TimeUnit.SECONDS.sleep(1);		&#125; catch (InterruptedException e1) &#123;			e1.printStackTrace();		&#125;				new Thread(() -&gt; &#123;			System.out.println(&quot;t1 启动&quot;);			synchronized(lock) &#123;				for(int i=0; i&lt;10; i++) &#123;					c.add(new Object());					System.out.println(&quot;add &quot; + i);					if(c.size() == 5) &#123;						lock.notify();                        //释放锁，让t2得以执行                        try&#123;                           lock.wait();                        &#125;catch(InterruptedException e)&#123;					  	 e.printStackTrace();                        &#125;					&#125;					try &#123;						TimeUnit.SECONDS.sleep(1);					&#125; catch (InterruptedException e) &#123;						e.printStackTrace();					&#125;				&#125;			&#125;		&#125;, &quot;t1&quot;).start();        	&#125;&#125;
+描述notify和notifyAll区别
+嗯一般呢这个object里面当我调wait的时候它就会放到等待队列里面，当我去拿的时候，就会在wait列表里面，这个时候如果我调notify等待列表就是那个等待池里面就会随机唤醒一个线程来进入锁池竞争锁，如果我调notifyAll就会将该对象所有wait的线程唤醒。其中那个锁池就是等待获得该对象锁拥有权的线程们。
+如何唤醒线程？
+首先阻塞的然后可以被唤醒的线程，是调用任意对象的wait()，导致了线程阻塞进入等待队列等待被唤醒，阻塞的同时要释放该对象的锁，要唤醒就需要调用notify()或者notifyAll()，首先释放当前对象的锁，然后唤醒任意一个或者是全部线程到锁池直到线程获得当前对象的锁才能继续执行。还需要注意的是方法一定要放在同步方法或者同步方法块中，并且调用方法的对象一定和同步块或方法的对象是同一个，这样才能保证调用方法之前线程就已经获得了锁，这样才能执行线程的锁释放
+为什么三个方法要定义在object里？
+等待和唤醒必须是同一个锁。而锁可以是任意对象，所以可以被任意对象调用的方法是定义在object类中。
+为什么三个方法要在同步方法或者代码块里面调用？
+因为三个方法都需要线程持有对象的锁，比如调wait()的时候这个线程必须拥有该对象的锁，接着他就释放这个锁进入等待状态直到其他线程调用这个对象的notify方法，同样notify呢，也是需要先释放对象的锁，这样其他线程才能来竞争锁；所以方法都是需要通过同步实现，进而必须。。。
+什么是线程同步？
+当一个线程对共享的数据进行操作时，应使之成为一个&quot;原子操作&quot;， 即在没完成相关操作之前，不允许其他线程打断它，否则就会破坏数据的完整性，必然会得到错误的处理结果，这就是线程的同步
+同步方法和非同步方法可以同时调用吗？
+当然是可以的啊 当我有一个synchronized的m1方法，我调用m1的时候是可以调用m2的，因为线程访问m1的时候需要加锁，但是访问m2的时候又不需要加锁，所以允许执行m2。
+模拟银行账户： 如果业务里面写方法加锁但是读方法没有加锁，这样就会容易产生脏读，但是如果业务允许，就可以，脏读过程就是没加锁的线程在没等你整个过程执行完就读到了你中间的结果产生的内存，解决办法就是将没有加锁的线程加上锁，会效率变低。
+什么是线程互斥？
+资源的固有特性 互斥 一个资源在同一时间只能由一个线程去调用
+对于共享的进程系统资源，在单个线程访问时的排他性。就是当有若干个线程都要使用某一个资源的时候，任何时刻，都只允许一个线程来去使用，其他要使用该资源的线程必须等待，知道占用志愿者释放该资源。
+Synchronized
+synchronized、volatile、CAS 比较
+（1）synchronized 是悲观锁，属于抢占式，会引起其他线程阻塞。
+（2）volatile 提供多线程共享变量可见性和禁止指令重排序优化。
+（3）CAS 是基于冲突检测的乐观锁（非阻塞）
+==synchronized 和 ReentrantLock 区别是什么？==
+synchronized 是和 if、else、for、while 一样的关键字，ReentrantLock 是类，这是二者的本质区别。既然 ReentrantLock 是类，那么它就提供了比synchronized 更多更灵活的特性，可以被继承、可以有方法、可以有各种各样的类变量
+synchronized 早期的实现比较低效，对比 ReentrantLock，大多数场景性能都相差较大，但是在 Java 6 中对 synchronized 进行了非常多的改进。
+==相同点：==
+两者都是可重入锁两者都是可重入锁。“可重入锁”概念是：自己可以再次获取自己的内部锁。比如一个线程获得了某个对象的锁，此时这个对象锁还没有释放，当其再次想要获取这个对象的锁的时候还是可以获取的，如果不可锁重入的话，就会造成死锁。同一个线程每次获取锁，锁的计数器都自增1，所以要等到锁的计数器下降为0 时才能释放锁。
+==不同点==
+
+ReentrantLock 使用起来比较灵活：1. 可以使用trylock来控制，如果抢不到线程也不会一定阻塞，2. 通过lockInterruptibly()可以响应interrupt()，可以被打断。但是必须有释放锁的配合动作；
+ReentrantLock 必须手动获取与释放锁，而 synchronized 不需要手动释放和开启锁；
+ReentrantLock 只适用于代码块锁，而 synchronized 可以修饰类、方法、变量等。
+二者的锁机制其实也是不一样的。ReentrantLock 底层调用的是 Unsafe 的 park 方法加锁，synchronized 操作的应该是对象头中 markword
+
+锁的是什么?
+Java中每一个对象都可以作为锁，这是synchronized实现同步的基础: 普通同步方法，锁是当前实例对象；静态同步方法，锁是当前类的class对象；同步方法块，锁是括号里面的对象
+锁重入？
+
+可重入的原理其实就是一个线程获得锁之后，可以重复得到该锁，底层就轻量级锁来说，其实就是在线程栈里面压入lockRecord然后有一个指向一个备份当前对象markword的指针，这个备份叫做displace markword（重入以后的hashword字段也在这里面），这里就是使用这个锁记录进行一个重入计数器的作用。
+重量级锁：进入重量级锁，会分配一个objectmonitor对象，然后将锁标志置为‘10’，然后markword存储指向这个对象的指针。om对象有两个队列和一个指针，每个需要获取锁的线程都会进入队列被包装为这个对象，如果是多线程指向同一段代码时，objectwaiter就会进入队列，当某个线程抢到锁了也就是获得对象的监视器monitor了就进入owner区域，并把monitor中的owner变量设为当前线程同时monitor中的计数器count+1。（锁重入）
+==Sych的锁升级的原理或者是过程？==
+首先主要有四种锁状态分别是：无状态锁、偏向锁、轻量级锁和重量级锁（要去操作系统申请资源）
+锁的升级的目的/背景：锁升级是为了减低了锁带来的性能消耗。在 Java 6 之后优化 synchronized 的实现方式，使用了偏向锁升级为轻量级锁再升级到重量级锁的方式，从而减低了锁带来的性能消耗。
+
+
+详细锁升级过程：
+总：在锁对象的对象头里面有一个 threadID 字段，在第一次访问的时候 threadid 为空，jvm 让其持有偏向锁，并将 threadid 设置为其线程 id，再次进入的时候会先判断 threadid 是否与其线程 id 一致，如果一致则可以直接使用此对象，如果不一致，则升级偏向锁为轻量级锁，通过自旋循环一定次数来获取锁，执行一定次数之后，如果还没有正常获取到要使用的对象，此时就会把锁从轻量级升级为重量级锁，此过程就构成了 synchronized 锁的升级。
+分：new对象之后先判断是否为可偏向状态，markword有两个字节作为锁标志：首先看是否是‘01’，然后mw前面还有一个字段来判断是否是已经拿到偏向锁‘1’表示偏向锁已启动，启动但是要判断锁线程是否是当前的线程id，如果是就开始执行代码块；但是不是的话，说明就有竞争了，这个时候cas操作去获取锁失败了的话，达到safepoint时获得偏向锁的线程就会被挂起，偏向锁会被撤销，然后升级为轻量级锁，这个时候被阻塞的线程再继续执行同步代码块。
+这部分有个细节就是轻度竞争就会升级为轻量级锁，如果是重度竞争（比如耗时过长、调用了wait方法等）就会直接升级为重量级锁，先讲轻量级锁：
+升级为轻量级锁以后还是在用户空间里面进行，当前线程栈会划分一部分作为锁记录lock record，并且会将锁对象的markwor复制到锁记录中，接下来jvm会进行CAS操作将markword一部分更新为指向锁记录的指针（如下图），
+
+如果成功就会将锁标志位设为‘00’，说明已经获得轻量级锁，这个时候就会进入锁重入阶段：（底下的锁重入有解释）
+但是失败了就会检查当前锁对象的markword是否指向当前锁记录，如果没有就表示已经被其他线程抢了，这个时候就会进行自旋等待（默认是10次），等到此处如果超出阈值还是没有获得锁这个时候就会升级为重量级锁
+进入重量级锁，会分配一个objectmonitor对象，然后将锁标志置为‘10’，然后markword存储指向这个对象的指针。om对象有两个队列和一个指针，每个需要获取锁的线程都会进入队列被包装为这个对象，如果是多线程指向同一段代码时，objectwaiter就会进入队列，当某个线程抢到锁了也就是获得对象的监视器monitor了就进入owner区域，并把monitor中的owner变量设为当前线程同时monitor中的计数器count+1。（锁重入）
+什么时候用自旋锁和系统锁？/ 为什么有了自旋锁还要重量级锁？
+因为自旋锁是要占用CPU的，而系统锁是到等待队列里面，所以你，代码如果执行时间短，线程数少就用自旋，长线程数多，就用系统锁；
+自旋也是要消耗cpu资源的如果锁的时间过长或者自旋线程过多，cpu就会被消耗； 而重量级锁又自己的等待队列，所有拿不到所有的进入等待队列，不需要消耗cpu资源。
+什么时候升级为重量级锁？
+竞争加剧，有线程超过10次自旋：-xx:PreBlockSpin ；或者是自旋线程数超过cpu核数的一半，1.6之后jvm有了自适应自旋Adapative-Self Spinning，是可以自己控制的自旋；
+偏向锁是否启动？
+偏向锁有一个启动时间，我记得是四秒钟，当你new一个普通对象的时候，偏向锁没有启动，它默认就是无锁态；但是一开始new的时候如果已经启动了偏向锁，那么就是一个匿名偏向，锁对象的markword里的threadkid其实就是空的，等到你加了sychronized（这个对象），才会指向当前的这个线程了，treadid字段就会更新为当前线程了。
+Lock体系
+Java Concurrency API 中的 Lock 接口(Lock interface)是什么？对比同步它有什么优势？
+ReentrantLock是lock的唯一子类。
+Lock 接口比同步方法和同步块提供了更具扩展性的锁操作。他们允许更灵活的结构，可以具有完全不同的性质，并且可以支持多个相关类的条件对象。
+它的优势有：
+（1）  可以使锁更公平
+（2）  可以使线程在等待锁的时候响应中断
+（3）  可以让线程尝试获取锁，并在无法获取锁的时候立即返回或者等待一段时间
+（4）  可以在不同的范围，以不同的顺序获取和释放锁
+整体上来说 Lock 是 synchronized 的扩展版，Lock 提供了无条件的、可轮询的(tryLock 方法)、定时的(tryLock 带参方法)、可中断的(lockInterruptibly)、可多条件队列的(newCondition 方法)锁操作。另外 Lock 的实现类基本都支持非公平锁(默认)和公平锁，synchronized 只支持非公平锁，当然，在大部分情况下，非公平锁是高效的选择。
+==实现一个阻塞队列？/ 使用Condition写生产者和消费者？==
+public class ProviderConsumer&lt;T&gt;&#123;  private int length;  private Queue&lt;T&gt; queue; // 产品队列  private ReentrantLock lock = new ReentrantLock(); // 可重入锁  private Condition providerCondition = lock.newConditon();// 生产者  private Condition consumerCondition = lock.newCondition();// 消费者    public ProviderConsumer(int length)&#123;// 构造器一开始传入产品队列的长度    this.length = length;    this.queue = new LinkedList&lt;T&gt;();  &#125;    /*  * 生产  */  public void provide(T product)&#123;    lock.lock();    try&#123;      while(queue.size() &gt;= length)&#123;// 生产者队列等待        providerCondition.await();      &#125;      queue.add(product);      consumerCondition.signal();// 提醒消费者队列；    &#125; catch()&#123;          &#125; finally&#123;      lock.unlock();    &#125;  &#125;  /*  * 消费  */  public T consume()&#123;    lock.lock;    try&#123;      while(queue.isEmpty())&#123;        consumerCondition.await();      &#125;      T product = queue.remove();      provideCondition.signal();      return product;    &#125; catch()&#123;          &#125; finally&#123;      lock.unlock;    &#125;    return null;  &#125;  &#125;
+AQS
+AQS 原理分析
+下面大部分内容其实在AQS类注释上已经给出了，不过是英语看着比较吃力一点，感兴趣的话可以看看源码。
+AQS 原理概览
+AQS核心思想是，如果被请求的共享资源空闲，则将当前请求资源的线程设置为有效的工作线程，并且将共享资源设置为锁定状态。如果被请求的共享资源被占用，那么就需要一套线程阻塞等待以及被唤醒时锁分配的机制，这个机制AQS是用CLH队列锁实现的，即将暂时获取不到锁的线程加入到队列中。CLH(Craig,Landin,and Hagersten)队列是一个虚拟的双向队列（虚拟的双向队列即不存在队列实例，仅存在结点之间的关联关系）。AQS是将每条请求共享资源的线程封装成一个CLH锁队列的一个结点（Node）来实现锁的分配。
+看个AQS(AbstractQueuedSynchronizer)原理图：
+
+源码
+AQS是一个构建锁和同步器的框架，最核心的是它的一个共享的int类型值叫做state，这个state用来干什么，其实主要是看他的子类是怎么实现的，比如ReentrantLock这个state，拿这个state来记录这个线程到底重入了多少次，比如说有一个线程拿到state这个把锁了，state的值就从0变成了1，这个线程又重入了一次，state就变成2了，又重入一次就变成3等等，释放的时候一次释放减一变成0就释放了。这个数代表了什么要看子类怎么去实现它，那么在这个state核心上还会有一堆的线程节点，当然这个节点是node，每个node里面包含一个线程，我们称为线程节点，这么多的线程节点去争用这个state，谁拿到了state，就表示谁得到了这把锁，AQS得核心就是一个共享的数据和一堆互相抢夺竞争的线程，这个就是AQS。
+看reentrantlock源码里面:
+在lock()方法里里面，我们可以读到它调用了sync.acquire(1)，
+//JDK源码public class ReentrantLock implements Lock, java.io.Serializable &#123;	public void lock()&#123;        sync.acquire(1);    &#125;&#125;
+再跟进到acquire(1)里，可以看到acquire(1)里又调用了我们自己定义自己写的那个tryAcquire(arg)
+//JDK源码public abstract class AbstractQueuedSynchronizer    extends AbstractOwnableSynchronizer    implements java.io.Serializable &#123;	public final void acquire(int arg)&#123;		if(!tryAcquire(arg)            &amp;&amp; acquireQueued(addWaiter(Node.EXCLUSIVE),arg))       	 selfInterrupt();	&#125;&#125;
+tryAquire(int)是使用者需要自定义同步器时要重写的模版方法：reentrantlock()里面的这个方法又调用了nofairTryAquire(int aquire)
+//JDK源码public class ReentrantLock implements Lock, java.io.Serializable &#123;    	public void lock()&#123;        sync.acquire(1);    &#125;        static final NonfairSync extends Sync&#123;        protected final boolean tryAcquire(int acquire)&#123;            return nonfairTrytAcquire(acquires);	   &#125;    &#125;        final boolean nonfairTrytAcquire(int acquire)&#123;         //获取当前线程		final Thread current = Thread.currentThread();        //拿到AQS核心数值state         int c getState();        //如果数值为0说明没人上锁         if(c == 0)&#123;             //给当线程上锁			if(compareAndSetState(0,acquires))&#123;                //设置当前线程为独一无二拥有这把锁的线程			    setExclusiveOwnerThread(current);                 return true            &#125;         &#125;        //判断当前线程是否拥有这个把锁        else if(current == getExclusiveOwnerThread)&#123;            //设置重入			int nextc = c + acquires;             if(nextc &lt; 0)                 throw new Error(&quot;Maximum lock count wxceeded&quot;);             setState(nextc);             return true;         &#125;        return false;    &#125;&#125;
+nonfairTrytAcquire(acquires)我们读进去会发现它的里面就调用到了state这个值，首先拿到当前线程，拿到state的值，然后进行if判断，如果state的值为0，说明没人上锁，没人上锁怎么办呢？就给自己上锁，当前线程就拿到这把锁，拿到这个把锁的操作用到了CAS(compareAndSetState)的操作，从0让他变成1，state的值设置为1以后，设置当前线程是独一无二的拥有这把锁的线程，否则如果当前线程已经占有这把锁了，怎么办？很简单我们在原来的基础上加1就可以了，这样就能拿到这把锁了，就重入，前者是加锁后者是重入
+state状态变量
+AQS使用一个int成员变量来表示同步状态，通过内置的FIFO队列来完成获取资源线程的排队工作。AQS使用CAS对该同步状态进行原子操作实现对其值的修改。
+private volatile int state;//共享变量，使用volatile修饰保证线程可见性
+状态信息通过protected类型的getState，setState，compareAndSetState进行操作
+1	//返回同步状态的当前值2	protected final int getState() &#123;3	return state;4	&#125;5	// 设置同步状态的值6	protected final void setState(int newState) &#123;7	state = newState;8	&#125;9	//原子地（CAS操作）将同步状态值设置为给定值update如果当前同步状态的值等于expect （期望值）10	protected final boolean compareAndSetState(int expect, int update) &#123; 11 return unsafe.compareAndSwapInt(this, stateOffset, expect, update);12 &#125;
+AQS队列
+如果没有tryAquire() 到state呢，那么就进行aquireQueue()方法，里面会调用addwaiter()这个方法，线程添加进入队列里面，具体操作也是通过cas进行添加的，方法是compareAndAetTail(oldTail,node)，oldTail是它的预期值，假如说我们想把当前线程设置为整个链表尾巴的过程中，另外一个线程来了，它插入了一个节点，那么仔细想一下Node oldTail = tail;的整个oldTail还等于整个新的Tail吗？不等于了吧，那么既然不等于了，说明中间有线程被其它线程打断了，那如果说却是还是等于原来的oldTail，这个时候就说明没有线程被打断，那我们就接着设置尾巴，只要设置成功了OK，compareAndAetTail(oldTail,node)方法中的参数node就做为新的Tail了，所以用了CAS操作就不需要把原来的整个链表上锁，这也是AQS在效率上比较高的核心。
+
+资源的共享方式
+AQS定义两种资源共享方式
+
+
+Exclusive（独占）：只有一个线程能执行，如ReentrantLock。又可分为公平锁和非公平锁：
+公平锁：按照线程在队列中的排队顺序，先到者先拿到锁
+非公平锁：当线程要获取锁时，无视队列顺序直接去抢锁，谁抢到就是谁的
+
+
+Share（共享）：多个线程可同时执行。Semaphore、CountDownLatch、 CyclicBarrier、ReadWriteLock 我们都会在后面讲到。ReentrantReadWriteLock 可以看成是组合式，因为ReentrantReadWriteLock也就是读写锁允许多个线程同时对某一资源进行读。不同的自定义同步器争用共享资源的方式也不同。自定义同步器在实现时只需要实现共享资源 state 的获取与释放方式即可，至于具体线程等待队列的维护（如获取资源失败入队/唤醒出队等），AQS已经在顶层实现好了。
+
+
+模版方法
+AQS使用了模板方法模式，自定义同步器时需要重写下面几个AQS提供的模板方法：
+1	isHeldExclusively()//该线程是否正在独占资源。只有用到condition才需要去实现它。2	tryAcquire(int)//独占方式。尝试获取资源，成功则返回true，失败则返回false。3	tryRelease(int)//独占方式。尝试释放资源，成功则返回true，失败则返回false。4	tryAcquireShared(int)//共享方式。尝试获取资源。负数表示失败；0表示成功，但没有剩余可用资源；正数表示成功，且有剩余资源。5	tryReleaseShared(int)//共享方式。尝试释放资源，成功则返回true，失败则返回false。
+默认情况下，每个方法都抛出 UnsupportedOperationException。 这些方法的实现必须是内部线程安全的，并且通常应该简短而不是阻塞。AQS类中的其他方法都是final ，所以无法被其他类使用，只有这几个方法可以被其他类使用。以ReentrantLock为例，state初始化为0，表示未锁定状态。A线程lock()时，会调用tryAcquire()独占该锁并将state+1。此后，其他线程再tryAcquire()时就会失败，直到A线程unlock()到state=0（即释放锁）为止，其它线程才有机会获取该锁。当然，释放锁之前，A线程自己是可以重复获取此锁的（state会累加），这就是可重入的概念。但要注意，获取多少次就要释放多么次，这样才能保证state是能回到零态的。
+再以CountDownLatch以例，任务分为N个子线程去执行，state也初始化为N（注意N要与线程个数一致）。这N个子线程是并行执行的，每个子线程执行完后countDown()一次，state会CAS(Compare and Swap)减1。等到所有子线程都执行完后(即state=0)，会unpark()主调用线程，然后主调用线程就会从 await()函数返回，继续后余动作。
+一般来说，自定义同步器要么是独占方法，要么是共享方式，他们也只需实现 tryAcquire-tryRelease、tryAcquireShared-tryReleaseShared中的一种即可。但AQS 也支持自定义同步器同时实现独占和共享两种方式，如ReentrantReadWriteLock。主要是高16位存储互斥锁的状态，高16位存储共享锁的状态。
+并发工具类
+CountDownLatch(倒计时器)：
+CountDownLatch是一个同步工具类，用来协调多个线程之间的同步。这个工具通常用来控制线程等待，它可以让某一个线程等待直到倒计时结束，再开始执行。
+用法？
+
+让主线程await()， 主线程在开始运行前等待n个业务线程执行完毕。将CountDownLatch的计数器初始化为new CountDownLatch(n)，每当一个任务线程执行完毕，就将计数器减1 countdownLatch.countDown()，当计数器的值变为0时，在CountDownLatch上await()的线程就会被唤醒。一个典型应用场景就是启动一个服务时，主线程需要等待多个组件加载完毕，之后再继续执行。
+让业务线程await()，主线程处理完数据之后进行countDownLatch.countDown(),此时业务线程被唤醒，然后去主线程拿数据，或者执行自己的业务逻辑，这样实现多个线程开始执行任务的最大并行性，
+
+CyclicBarrier(循环栅栏)：
+CyclicBarrier 和 CountDownLatch 非常类似，它也可以实现线程间的技术等待，但是它的功能比 CountDownLatch 更加复杂和强大。主要应用场景和 CountDownLatch 类似。CyclicBarrier 的字面意思是可循环使用（Cyclic）的屏障（Barrier）。它要做的事情是，让一组线程到达一个屏障（也可以叫同步点）时被阻塞，直到最后一个线程到达屏障时，屏障才会开门，所有被屏障拦截的线程才会继续干活。
+CyclicBarrier默认的构造方法是 CyclicBarrier(int parties)，其参数表示屏障拦截的线程数量，每个线程调用await()方法告诉CyclicBarrier 我已经到达了屏障，然后当前线程被阻塞。
+Semaphore(信号量)-允许多个线程同时访问：
+synchronized 和ReentrantLock 都是一次只允许一个线程访问某个资源，Semaphore(信号量)可以指定多个线程同时访问某个资源。
+Semaphore 就是一个信号量，它的作用是限制某段代码块的并发数。
+Semaphore有一个构造函数，可以传入一个 int 型整数 n，表示某段代码 多只有 n 个线程可以访问，如果超出了 n，那么请等待，等到某个线程执行完毕这段代码块，下一个线程再进入。由此可以看出如果 Semaphore 构造函数中传入的 int 型整数 n=1，相当于变成了一个 synchronized 了。
+Exchange(线程见交换数据的工具)
+Exchanger是一个用于线程间协作的工具类，**用于两个线程间交换数据。**它提供了一个交换的同步点，在这个同步点两个线程能够交换数据。交换数据是通过 exchange方法来实现的，如果一个线程先执行exchange方法，那么它会同步等待另一个线程也执行exchange方法，这个时候两个线程就都达到了同步点，两个线程就可以交换数据。
+ReadWriteLock
+实现这个接口是ReentrantReadWriteLock， 这个接口是一个读写锁接口，主要就是实现了读写分离，写锁是独占锁，读锁是共享锁，实现了读读之间不会互斥，但是读写和写写之间的互斥，提高了读写效率。还实现了锁降级，写锁可以降级为读锁。
+首先明确一下，不是说 ReentrantLock 不好，只是 ReentrantLock 某些时候有局限。如果使用 ReentrantLock，可能本身是为了防止线程 A 在写数据、线程 B 在读数据造成的数据不一致，但这样，如果线程 C 在读数据、线程 D 也在读数据，读数据是不会改变数据的，没有必要加锁，但是还是加锁了，降低了程序的性能。因为这个，才诞生了读写锁 ReadWriteLock。
+ReadWriteLock 是一个读写锁接口，读写锁是用来提升并发程序性能的锁分离技术，ReentrantReadWriteLock 是 ReadWriteLock 接口的一个具体实现，实现了读写的分离，读锁是共享的，写锁是独占的，读和读之间不会互斥，读和写、写和读、写和写之间才会互斥，提升了读写的性能。
+而读写锁有以下三个重要的特性：
+（1）  公平选择性：支持非公平（默认）和公平的锁获取方式，吞吐量还是非公平优于公平。
+（2）  重进入：读锁和写锁都支持线程重进入。
+（3）  锁降级：遵循获取写锁、获取读锁再释放写锁的次序，写锁能够降级成为读锁。
+ThreadLocal
+原理
+ThreadLocal源码的set方法，ThreadLocal往里边设置值的时候是怎么设置的呢？首先拿到当前线程，这是你会发现，这个set方法里多了一个容器ThreadLocalMap，这个容器是一个map，是一个key/value对，其实这个值是设置到了map里面，key设置的是this，value设置的是我们想要的那个值，这个this就是当前对象ThreadLocal，value就是Person类，如果map不等于空的情况下就设置进去就行了，如果等于空呢？就创建一个map
+//ThraedLocal源码public class ThreadLocal&lt;T&gt; &#123;    public void set(T value) &#123;        Thread t = Thread.currentThread();        ThreadLocalMap map = getMap(t);        if (map != null)            map.set(this, value);        else            createMap(t, value);    &#125;&#125;
+我们回过头来看这个map，ThreadLocalMap map=getMap(t)，我们来看看这个map到底在哪里，我们点击到了getMap这个方法看到，它的返回值是t.threadLocals
+//ThreadLocal源码public class ThreadLocal&lt;T&gt; &#123;    public void set(T value) &#123;        Thread t = Thread.currentThread();        ThreadLocalMap map = getMap(t);        if (map != null)            map.set(this, value);        else            createMap(t, value);    &#125;    ThreadLocalMap getMap(Thread t)&#123;        return t.threadLocals;    &#125;&#125;
+我们进入这个t.threadLocals，你会发现ThreadLocalMap这个东西在哪里呢？居然是在Thread这个类里，所以说这个map是在Thred类里的
+public class Thread implements Runnable&#123;	ThreadLocal.ThreadLocalMap threadLocals = null;&#125;
+这个时候我们应该明白，map的set方法其实就是设置当前线程里面的map：
+·set	- Thread.currentThread.map(ThreadLocal,person)
+所以这个时候你会发现，原来Person类被set到了，当前线程里的某一个map里面去了，这个时候，我们是不是就能想明白了，我set了一个值以后，为什么其他线程访问不到？我们注重“当前线程”这个段话，所以个t1线程set了一个Person对象到自己的map里，t2线程去访问的也是自己的属于t2线程的map，所以是读不到值的，因此你使用ThreadLocal的时候，你用set和get就完全的把他隔离开了，就是我自己线程里面所特有的，其它的线程是没有的，以前我们的理解是都在一个map，然而并不是，所以你得读源码，读源码你就明白了
+用途
+声明式的事务保证同一个connetion
+我们根据Spirng的声明式事务来解析，为什么要用ThreadLocal，声明式事务一般来讲我们是要通过数据库的，但是我们知道Spring结合Mybatis，我们是可以把整个事务写在配置文件中的，而这个配置文件里的事务，它实际上是管理了一系列的方法，方法1、方法2、方法3…，而这些方法里面可能写了，比方说第1个方法写了去配置文件里拿到数据库连接Connection，第2个、第3个都是一样去拿数据库连接，然后声明式事务可以把这几个方法合在一起，视为一个完整的事务，如果说在这些方法里，每一个方法拿的连接，它拿的不是同一个对象，你觉的这个东西能形成一个完整的事务吗？Connection会放到一个连接池里边，如果第1个方法拿的是第1个Connection，第2个拿的是第2个，第3个拿的是第3个，这东西能形成一个完整的事务吗？百分之一万的不可能，没听说过不同的Connection还能形成一个完整的事务的，那么怎么保证这么多Connection之间保证是同一个Connection呢？把这个Connection放到这个线程的本地对象里ThreadLocal里面，以后再拿的时候，实际上我是从ThreadLocal里拿的，第1个方法拿的时候就把Connection放到ThreadLocal里面，后面的方法要拿的时候，从ThreadLocal里直接拿，不从线程池拿。
+四种引用
+引用是什么？
+就是一个变量值指向一个对象
+强引用normalReference
+普通的引用比如Object o = new Object()，这个就叫强引用; 特点就是说，只要有一个应用指向这个对象，那么垃圾回收器一定不会回收它，这就是普通的引用，也就是强引用。因为有引用指向，所以不会回收，只有没有引用指向的时候才会回收，指向谁？指向你创建的那个对象。
+弱引用softReference
+当有一个对象(字节数组)被一个软引用所指向的时候，只有系统内存不够用的时候，才会回收它(字节数组)
+虚引用
+==在threadlocal的应用 / 内存泄露==
+
+我们来看图中从左开始看，这时候我们应该明白了，这里tl是一个强引用指向这个ThreadLocal对象，而Map里的key是通过一个弱引用指向了一个ThreadLocal对象，我们假设这是个强引用，当tl指向这个ThreadLocal对象消失的时候，tl这个东西是个局部变量，方法已结束它就消失了，当tl消失了，如果这个ThreadLocal对象还被一个强引用的key指向的时候，这个ThreadLocal对象不能被回收，而且由于这个线程有很多线程是长期存在的，比如这个是一个服务器线程，7*24小时一年365天不间断运行，那么不间断运行的时候，这个tl会长期存在，这个Map会长期存在，这个Map的key也会长期存在，这个key长期存在的话，这个ThreadLocal对象永远不会被消失，所以这里是不是就会有内存泄漏，但是如果这个key是弱引用的话还会存在这个问题吗？当这个强引用消失的时候这个弱引用是不是自动就会回收了，这也是为什么用WeakReference的原因
+关于ThreadLocal还有一个问题，当我们tl这个强引用消失了，key的指向也被回收了，可是很不幸的是这个key指向了一个null值，但是这个threadLocals的Map是永远存在的，相当于说key/value对，你这个key是null的，你这个value指向的东西，你的这个10MB的字节码，你还能访问到吗？访问不到了，如果这个Map越积攒越多，越来越多，它还是会内存泄漏，怎么办呢？所以必须记住这一点，使用ThreadLocal里面的对象不用了，务必要remove掉，不然还会有内存泄漏
+ThradLocalM&gt; tl = new ThreadLocal&lt;&gt;();tl.set(new M());tl.remove();
+JUC同步容器
+ConcurrentHashMap
+集合部分
+我们来看这个经常在多线程的情况下使用的这些个容器 ，从Map开始讲，Map经常用的有这么几个
+
+
+ConcurrentHashMap用hash表实现的这样一个高并发容器；
+既然有了ConcurrentHashMap正常情况下就应该有ConcurrentTreeMap，你可以去查查，它没有，就等于缺了一块，为什么没有呢，原因就是ConcurrentHashMap里面用的是cas操作，这个cas操作它用在tree的时候，用在树这个节点上的时候实现起来太复杂了，所以就没有这个ConcurrentTreeMap，但是有时间也需要这样一个排好序的Map，那就有了ConcurrentSkipListMap跳表结构就出现了。
+
+
+ConcurrentSkipListMap通过跳表来实现的高并发容器并且这个Map是有排序的；
+
+跳表是什么样的结构呢？底层本身存储的元素一个链表，它是排好顺序的，大家知道当一个链表排好顺序的时候往里插入是特别困难的，查找的时候也特别麻烦，因为你得从头去遍历查找这个元素到底在哪里，所以就出现了这个跳表的结构，底层是一个链表，链表查找的时候比较困难怎么办，那么我们在这些链表的基础上在拿出一些关键元素来，在上面做一层，那这个关键元素的这一层也是一个链表，那这个数量特别大的话在这个基础之上在拿一层出来再做一个链表，每层链表的数据越来越少，而且它是分层，在我们查找的时候从顶层往下开始查找，所以呢，查找容易了很多，同时它无锁的实现难度比TreeMap又容易很多，因此在JUC里面提供了ConcurrentSkipListMap这个类。
+
+
+他们两个的区别一个是有序的一个是无序的，同时都支持并发的操作。下面这个小程序是一个效率的测试其实也没多大意义，大家可以去写一下跑跑。
+CopyOnWriteArrayList
+CopyOnWriteArrayList 是什么，可以用于什么应用场景？有哪些优缺点？
+CopyOnWriteArrayList 是一个并发容器。有很多人称它是线程安全的，我认为这句话不严谨，缺少一个前提条件，那就是非复合场景下操作它是线程安全的。
+CopyOnWriteArrayList(免锁容器)的好处之一是当多个迭代器同时遍历和修改这个列表时，不会抛出 ConcurrentModificationException。在CopyOnWriteArrayList 中，写入将导致创建整个底层数组的副本，而源数组将保留在原地，使得复制的数组在被修改时，读取操作可以安全地执行。
+CopyOnWriteArrayList 的使用场景通过源码分析，我们看出它的优缺点比较明显，所以使用场景也就比较明显。就是合适读多写少的场景。
+CopyOnWriteArrayList 的缺点
+
+
+由于写操作的时候，需要拷贝数组，会消耗内存，如果原数组的内容比较多的情况下，可能导致 young gc 或者 full gc。
+
+
+不能用于实时读的场景，像拷贝数组、新增元素都需要时间，所以调用一个 set 操作后，读取到数据可能还是旧的，虽然CopyOnWriteArrayList 能做到始终一致性,但是还是没法满足实时性要求。
+
+
+由于实际使用中可能没法保证 CopyOnWriteArrayList 到底要放置多少数据，万一数据稍微有点多，每次 add/set 都要重新复制数组，这个代价实在太高昂了。在高性能的互联网应用中，这种操作分分钟引起故障。
+
+
+CopyOnWriteArrayList 的设计思想
+
+读写分离，读和写分开
+终一致性
+使用另外开辟空间的思路，来解决并发冲突
+
+BlockingQueue
+ArrayBlockingQueue
+ArrayBlockingQueue是有界的，你可以指定它一个固定的值10，它容器就是10，那么当你往里面扔容器的时候，一旦他满了这个put方法就会阻塞住。然后你可以看看用add方法满了之后他会报异常。offer用返回值来判断到底加没加成功，offer还有另外一个写法你可以指定一个时间尝试着往里面加1秒钟，1秒钟之后如果加不进去它就返回了。
+回到那个面试经常被问到的问题，Queue和List的区别到底在哪里，主要就在这里，添加了offer、peek、poll、put、take这些个对线程友好的或者阻塞，或者等待方法。
+package com.mashibing.juc.c_025;import java.util.Random;import java.util.concurrent.ArrayBlockingQueue;import java.util.concurrent.BlockingQueue;import java.util.concurrent.TimeUnit;public class T06_ArrayBlockingQueue &#123;   static BlockingQueue&lt;String&gt; strs = new ArrayBlockingQueue&lt;&gt;(10);   static Random r = new Random();   public static void main(String[] args) throws InterruptedException &#123;      for (int i = 0; i &lt; 10; i++) &#123;         strs.put(&quot;a&quot; + i);      &#125;            //strs.put(&quot;aaa&quot;); //满了就会等待，程序阻塞      //strs.add(&quot;aaa&quot;);      //strs.offer(&quot;aaa&quot;);      strs.offer(&quot;aaa&quot;, 1, TimeUnit.SECONDS);            System.out.println(strs);   &#125;&#125;
+Queue和List的区别
+区别主要就是Queue添加了许多对线程友好的API offer、peek、poll，他的一个子类型叫BlockingQueue对线程友好的API又添加了put和take，这两个实现了阻塞操作。
+线程池
+
+Executor(线程的工厂
+newSingleThreadPool
+这个线程池里面只有一个线程，这个一个线程的线程池可以保证我们扔进去的任务是顺序执行的。为什么会有单线程的线程池？第一个线程池是有任务队列的；生命周期管理线程池是能帮你提供的。
+newCachedThreadPool没上限
+来一个新的任务就必须马上执行，没有线程空着我就new一个线程。那么阿里是不会推荐使用这中线程池的，原因是线程会启动的特别多，基本接近于没有上限的。
+newFixedThreadPool 固定的
+指定一个参数，到底有多少个线程，他的核心线程和最大线程都是固定的，因为他的最大线程和核心线程都是固定的就没有回收之说所以把他指定成0，这里用的是LinkedBlockingQueue
+newScheduledThreadPool定时任务
+这是专门给定时任务用的这样的一个线程池，了解就可以了。
+ThreadPoolExecutor
+1. 状态
+// 4. 线程池有5种状态，按大小排序如下：RUNNING &lt; SHUTDOWN &lt; STOP &lt; TIDYING &lt; TERMINATEDprivate static final int RUNNING    = -1 &lt;&lt; COUNT_BITS;private static final int SHUTDOWN   =  0 &lt;&lt; COUNT_BITS;private static final int STOP       =  1 &lt;&lt; COUNT_BITS;private static final int TIDYING    =  2 &lt;&lt; COUNT_BITS;private static final int TERMINATED =  3 &lt;&lt; COUNT_BITS;
+RUNNING：正常运行的；
+SHUTDOWN：调用了shutdown方法了进入了shutdown状态；
+STOP：调用了shutdownnow马上让他停止；
+TIDYING：调用了shutdown然后这个线程也执行完了，现在正在整理的这个过程叫TIDYING；
+TERMINATED：整个线程全部结束；
+
+⚠️多线程的生命周期和线程的生命周期
+2. 构造方法参数
+public ThreadPoolExecutor(int corePoolSize,                          int maximumPoolSize,                          long keepAliveTime,                          TimeUnit unit,                          BlockingQueue&lt;Runnable&gt; workQueue,                          ThreadFactory threadFactory,                          RejectedExecutionHandler handler) &#123;    // 基本类型参数校验    if (corePoolSize &lt; 0 ||        maximumPoolSize &lt;= 0 ||        maximumPoolSize &lt; corePoolSize ||        keepAliveTime &lt; 0)        throw new IllegalArgumentException();    // 空指针校验    if (workQueue == null || threadFactory == null || handler == null)        throw new NullPointerException();    this.corePoolSize = corePoolSize;    this.maximumPoolSize = maximumPoolSize;    this.workQueue = workQueue;    // 根据传入参数`unit`和`keepAliveTime`，将存活时间转换为纳秒存到变量`keepAliveTime `中    this.keepAliveTime = unit.toNanos(keepAliveTime);    this.threadFactory = threadFactory;    this.handler = handler;&#125;
+corePoolSize核心线程数
+maximumPS最大线程数
+keepAliveTime销毁之前等待的时间
+TimeUnit时间单位
+BlockingQueue任务队列
+LinkedBQ
+ArrayBQ
+SynchronousBQ
+ThreadFactory线程工厂
+RejectStrategy拒绝策略
+Abort抛异常
+Discard扔掉
+DiscardOldest
+CallerRuns
+3. execute()调度任务
+execute执行任务的时候判断任务等于空抛异常，这个很简单，接下来就是拿状态值，拿到值之后计算这个值里面的线程数，活着的那些线程数是不是小于核心线程数，如果小于addWorker添加一个线程，addWorker是比较难的一个方法，他的第二个参数指的是，是不是核心线程，所有上来之后如果核心数不够先添加核心线程，再次检查这个值。我们原来讲过这个线程里面上来之后刚开始为0，来一个任务启动一个核心线程，第二个就是核心线程数满了之后，放到队列里。最后核心线程满了，队列也满了，启动非核心线程。小于线程数就直接加，后面执行的逻辑就是不小于了，不小于就是超过核心线程数了直接往里扔，workQueue.offer就是把他扔进去队列里，再检查状态。在这中间可能会被改变状态值，因此需要双重检查，这个跟我们之前聊过的单例模式里面的DC是一样的逻辑。isRunning，重新又拿这个状态，拿到这个状态之后这里是要进行一个状态切换的，如果不是Running状态说明执行过shutdown命令，才会把这个Running转换成别的状态，其他情况下workerCountOf如果等于0说明里面没有线程了，没有线程我线程池正常运行就添加非核心线程。这些步骤都是通过源码可以看出来的。如果添加work本身都不行就reject把他给拒绝掉。
+
+
+
+核心线程不够，启动核心的
+
+
+core够了就加队列
+
+
+核心和队列都够了，就非核心
+
+
+4. addWorker()—&gt;runWorker()
+
+
+addWorker() 就做了两步，使用lock()和自旋做的
+
+count++
+加进任务并且start
+
+
+
+runWorker()是真正执行线程的部分
+
+
+work类
+这个work他本身是Runnable同时又是AQS。这个work类里面会记录着一个成员变量，这个成员变量是thread，很多个线程worker，这个就是为什么要用AQS的原因。另外呢，在你整个执行的过程之中你也需要加锁，不然的话你别的线程进来，因此AQS是需要的。这是这个work类，简单的你就可以把它当成线程类，然后这个线程类执行的是你自己的任务就行了。
+submit()和execute()区别
+Callable实现了Future接口，比runnable多了返回值并且可以抛出异常，然后这个Future是用来存储执行的线程将来才产生的结果，callable为线程池设计，配合future使用，有返回值，实现了任务交给线程池，未来要结果时再get返回。
+FutureTask是继承了RunnableFuture接口和Future接口，既是一个任务又是一个Future。在ForkJoinPool 这类线程池里面用，这类线程池是每个线程都有一个阻塞队列。
+杂问题
+1. 怎么预防死锁？
+答：首先我们要知道产生死锁的四个必要条件：第一个，资源在同一时间只能有一个线程来占用，这个也就是互斥条件；第二个，不可剥夺条件，当一个线程已经占有一个资源在释放之前是不会让其他线程抢占；在有就是线程等待的过程中不会释放自己持有的资源，也就是请求和保持条件；第四个条件就是循环等待条件 ，多个线程在互相等待对方释放资源；有了这四个条件当多个线程都持有对方想要的资源却等待对方释放资源的状态就造成了死锁；
+​      所以预防死锁就需要从这四个方面入手，第一个资源互斥因为是资源固有属性不能破坏这个条件；我们去破坏第二个不可剥夺条件，可以让进程在等待过程中将其占有的资源隐性释放到系统的资源列表中，而等待的进程只有重新获得自己原有的资源和新申请的资源才能启动执行；破坏第三个请求和保持条件可以使用静态分配和动态分配两种方法；静态分配就是在每一个进程开始执行时就申请他需要的资源；动态分配就是在申请资源的时候他本身不能占用系统资源；最后就是破坏循环等待条件，将系统中的所有资源顺序编号，紧缺资源用大编号，进程在申请资源的时候必须按照编号的顺序执行。嗯，我认为就从这四个方面去着手，谢谢。
+2. 线程创建方式和生命周期
+有五种方式，第一种方法就是继承thread类，重写run()，调用start开启线程；第二种实现runnable接口，重写run()，实现接口比继承类要灵活；第三种是使用lamda表达式，本质是一样；第四种是实现callable接口执行call()，这种方法相对runnable不同就是执行完毕有返回值，返回值通过future接收可以通过泛型指定类型，也可以抛出异常；第五种就是通过线程池threadpool创建。
+start 和 run
+new 一个 thread 调用start就是启动一个线程然后进入就绪状态，但分配到时间片就可以运行，而run只是用于执行线程运行时执行代码可以重复调用，也就是说start用来真正启动多线程工作，进行准备就绪，而线程只是通过run来完成它的运行状态，是一个普通方法的调用，其实还是再主线程里执行的。
+线程生命周期和五种状态
+
+new -&gt; runnable(start()) -&gt; running (run()) --&gt;blocked (wait()、synch进入锁池、join()/sleep()/IO请求) -&gt; dead （run()结束或者异常退出）
+3. 进程与线程的区别
+进程是系统进行资源分配和调度的基本单位是操作系统结构的基础；线程是操作进行运算调度的最小单位。通俗来讲就是，一个程序它本来是一种静态的指令和数据，当系统开始运行这个程序就会load到内存里，然后系统为其分配资源，这个时候就是一个进程，可以理解为进程就是动态的程序；而线程就是进程实际运行的单位，一种单一顺序的控制流，一个进程可以并发多个线程，每条线程有不同任务。
+4. 并发与并行
+并发是指多个任务在同一个CPU核上，按照细分的时间片交替进行，如果交替时间片够短，逻辑上可以看作同时执行
+并行是多个CPU核在同一时间处理多个任务，是真正意义上的同时进行
+串行就是一个CPU多个任务串联在一起，按照顺序执行
+5. 程序开多少线程合适/是不是线程数越高效率越高/
+多线程的缺点？线程数过多会怎么样
+
+占用内存，给垃圾处理器带来压力、
+需要协调和管理CPU时间跟踪线程、
+还会互相竞争共享资源这样会带来很多其他性能的开销
+
+与线程的体制完全耦合完全相关所以这个时候就看程序要干什么；
+根据I/O操作和CPU操作区分程序；如果CPU计算比例占大部分也就是cpu密集型程序，这个时候线程等待时间接近于0，也就是耗费大量时间的就是上下文切换，为了减少上下文切换，一般开CPU核数个线程再加一条保证线程意外暂停；如果是IO操作占比大部分，等待时间长，理论上是可以开无限多个线程但是考虑到节约资源又要保证性能及稳定性，一般用两倍的CPU核数，再加一条为backup，如果需要精密计算的任务就可以使用公式CPU核数/（1-阻塞系数）(阻塞系数0.8~0.9）
+单个cpu设定多线程有没有意义？结合上面
+根据实际需要来处理
+如果你的每个线程的工作与时序无关的，并且含有外部的读写操作
+那么是很有意义的，当一个线程进行读写的时候，其他线程可以占用CPU进行运行。
+也即线程属于I/O密集型的时候，在CPU才会体现的多线程的好处
+如果是CPU密集型的，你开了很多个线程，只是增加了CPU在各个线程中进行切换的负担
+没有带来好处，和性能的提高
+6.如何结束一个线程？
+
+
+就是run方法结束就正常退出线程了，自然退出
+
+
+使用stop ，但是不建议使用，因为stop结束线程不会在意你进行到哪突然结束，会容易产生数据不一致。
+
+
+volatile标志 也可以 如果是不依赖中间状态 停止就很方便，是特定场景下比较优雅的解决方案。
+
+
+不适合没有同步的时候，线程阻塞，没办法循环回去
+
+
+打断时间不精确，（比如在一个阻塞容器容量为5的时候结束生产者，由于其对同步线程标志位的时间控制不是很精确，有时候生产者还会生产一部分时间。
+
+
+
+
+interrupt/isinterrupt比较优雅
+
+
+当然要精确停止，控制线程有时候更加需要和外面的线程进行合作吗这个时候就需要用到锁了。
+interrupt和isInterrupt()
+
+
+interrupt() ：实例⽅法，设置线程中断标志（打扰⼀下，你该处理⼀下中断）比如sleep()在睡眠的时候没办法中断，这个时候就需要
+
+
+isInterrupted()：实例⽅法，有没有⼈打扰我？
+
+
+interrupted()：静态⽅法，有没有⼈打扰我（当前线程）？复位
+
+
+interrupt()是静态方法，一个线程被中断，第一次调用时返回true然后清除中断信号，后面再次调用就是false了 ;isI就是查看当前信息
+7. 线程类的构造方法、静态块是被哪个线程调用的？
+这是一个非常刁钻和狡猾的问题。请记住：线程类的构造方法、静态块是被
+new这个线程类所在的线程所调用的，而 run 方法里面的代码才是被线程自身所调用的。
+如果说上面的说法让你感到困惑，那么我举个例子，假设 Thread2 中 new 了
+Thread1，main 函数中 new 了 Thread2，那么：
+（1）  Thread2 的构造方法、静态块是 main 线程调用的，Thread2 的 run()方法是Thread2 自己调用的
+（2）  Thread1 的构造方法、静态块是 Thread2 调用的，Thread1 的 run()方法是Thread1 自己调用的
+8. 线程安全活跃态？
+死锁：是指两个或两个以上的进程（或线程）在执行过程中，因争夺资源而造成的一种互相等待的现象，若无外力作用，它们都将无法推进下去。
+活锁：任务或者执行者没有被阻塞，由于某些条件没有满足，导致一直重复尝试，失败，尝试，失败。例如：循环递归没有写输出条件抛stackoverflow
+​			活锁和死锁的区别在于，处于活锁的实体是在不断的改变状态，这就是所谓的“活”， 而处于死锁的实体表现为等待；活锁有可能自行解开，死锁则不能。
+饥饿：一个或者多个线程因为种种原因无法获得所需要的资源，导致一直无法执行的状态。例子：读写锁，一直读导致写操作一直等待
+​		Java 中导致饥饿的原因：
+
+其他线程在临界区做了无限循环或无限制等待资源的操作，让其他的线程一直不能拿到锁进入临界区，对其他线程来说就进入了饥饿状态。
+因为线程优先级分配的不合理，导致部分线程始终无法获得CPU资源。
+
+9. 1～26和a~b顺序交替打印
+这道面试题呢实际上是华为的一道面试题，其实它里面是一道填空题，后来就很多的开始考这道题，这个面试题是两个线程，第一个线程是从1到26，第二个线程是从A到一直到Z，然后要让这两个线程做到同时运行，交替输出，顺序打印。那么这道题目的解法有非常多。
+1.LockSupport
+public class T02_00_LockSupport &#123;    static Thread t1 = null, t2 = null;    public static void main(String[] args) throws Exception &#123;        char[] aI = &quot;1234567&quot;.toCharArray();        char[] aC = &quot;ABCDEFG&quot;.toCharArray();        t1 = new Thread(() -&gt; &#123;                for(char c : aI) &#123;                    System.out.print(c);                    LockSupport.unpark(t2); //叫醒T2                    LockSupport.park(); //T1阻塞                &#125;        &#125;, &quot;t1&quot;);        t2 = new Thread(() -&gt; &#123;            for(char c : aC) &#123;                LockSupport.park(); //t2阻塞                System.out.print(c);                LockSupport.unpark(t1); //叫醒t1            &#125;        &#125;, &quot;t2&quot;);        t1.start();        t2.start();    &#125;&#125;
+​
+2. wait() 和 notify()
+public class waitNotify&#123;  final Object o = new Object();  char[] c1 = &quot;ABCDEFG&quot;.toCharArray();  char[] c2 = &quot;123456&quot;.toCharArray();    new Thread(()-&gt;&#123;    Sychronized(o)&#123;     	for(char c:c1)&#123;        System.out.println(c);        try&#123;          o.notify();        	o.wait();        &#125; catch(Exception e)&#123;          e.printStackTrace();        &#125;      &#125;      o.notify();    &#125;  &#125;,&quot;t1&quot;).start;    new Thread(()-&gt;&#123;    Sychronized(o)&#123;     	for(char c:c2)&#123;        System.out.println(c );        o.notify();        o.wait();      &#125;      o.notify();    &#125;  &#125;,&quot;t2&quot;).start;&#125;
+一定要注意最后都要notify（）
+10. 多线程之间是怎么通信的？
+
+
+通过共享变量，变量需要volatile修饰；
+
+
+使用wait和notify方法，但是由于需要使用同一把锁，所以必须通知线程释放锁，被通知的线程才能获得到多，这样导致通知不及时；
+
+
+使用countDownLatch实现，通知线程到指定条件，调用countDownLatc.countDown()被通知的线程进行await()方法
+
+
+使用Condition的await()和signalAll()方法。
+
+
+11. 生产者消费者模型?
+Condition 阻塞队列
+public class ProviderConsumer&lt;T&gt; &#123;	private int length;	private Queue&lt;T&gt; queue;	private ReentrantLock lock = new ReentrantLock();	private Condition provideCondition = lock.newCondition();	private Condition consumeCondition = lock.newCondition();	public ProviderConsumer(int length) &#123;		this.length = length;		this.queue = new LinkedList&lt;T&gt;();	&#125;	public void provide(T product) &#123;		lock.lock();		try &#123;			while (queue.size() &gt;= length) &#123;				provideCondition.await();			&#125;			queue.add(product);			consumeCondition.signal();		&#125; catch (InterruptedException e) &#123;			e.printStackTrace();		&#125; finally &#123;			lock.unlock();		&#125;	&#125;	public T consume() &#123;		lock.lock();		try &#123;			while (queue.isEmpty()) &#123;				consumeCondition.await();			&#125;			T product = queue.remove();			provideCondition.signal();			return product;		&#125; catch (InterruptedException e) &#123;			e.printStackTrace();		&#125; finally &#123;			lock.unlock();		&#125;		return null;	&#125;&#125;
+wait() 和 notify()
+public class ProducerConsumerModel &#123;    public static void main(String[] args) &#123;        EventStorage eventStorage = new EventStorage();        Producer producer = new Producer(eventStorage);        Consumer consumer = new Consumer(eventStorage);        new Thread(producer).start();        new Thread(consumer).start();    &#125;    static class Producer implements Runnable &#123;        private EventStorage storage;        public Producer(EventStorage storage) &#123;            this.storage = storage;        &#125;        @Override        public void run() &#123;            for (int i = 0; i &lt; 100; i++) &#123;                storage.put(i);            &#125;        &#125;    &#125;    static class Consumer implements Runnable &#123;        private EventStorage storage;        public Consumer(EventStorage storage) &#123;            this.storage = storage;        &#125;        @Override        public void run() &#123;            for (int i = 0; i &lt; 100; i++) &#123;                storage.take(i);            &#125;        &#125;    &#125;    static class EventStorage &#123;        private int size;        private LinkedList&lt;String&gt; storage;        public EventStorage() &#123;            size = 10;            storage = new LinkedList&lt;&gt;();        &#125;        public synchronized void put(int i) &#123;            while (storage.size() == this.size) &#123;                try &#123;                    wait();                &#125; catch (InterruptedException e) &#123;                    e.printStackTrace();                &#125;            &#125;            storage.push(&quot;数据&quot; + i);            System.out.println(&quot;生产 -&gt; 数据&quot; + i + &quot; 当前仓库中已经有了 &quot; + storage.size() + &quot; 条数据&quot;);            notify();        &#125;        public synchronized void take(int i) &#123;            while (storage.size() == 0) &#123;                try &#123;                    wait();                &#125; catch (InterruptedException e) &#123;                    e.printStackTrace();                &#125;            &#125;            System.out.println(&quot;消费 -&gt; &quot; + storage.poll() + &quot; 当前仓库中剩下 &quot; + storage.size() + &quot; 条数据&quot;);            notify();        &#125;    &#125;&#125;
+]]></content>
+      <categories>
+        <category>多线程</category>
+      </categories>
+      <tags>
+        <tag>多线程</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>微服务技术栈</title>
     <url>/2024/09/10/%E5%BE%AE%E6%9C%8D%E5%8A%A1%E6%8A%80%E6%9C%AF%E6%A0%88-SpringCloud/</url>
     <content><![CDATA[一、微服务架构介绍
@@ -6321,935 +7036,6 @@ package com.mashibing.client.fallback;import com.mashibing.client.StockClient;im
       </tags>
   </entry>
   <entry>
-    <title>多线程</title>
-    <url>/2022/02/09/%E5%A4%9A%E7%BA%BF%E7%A8%8B/</url>
-    <content><![CDATA[并发编程三大特性
-可见性
-MESI 多线程的底层并不是通过mesi
-多线程提高效率，本地缓存数据，造成数据修改不可见，
-要想保证可见，要么触发同步指令，要么加上volatile，被修饰的内存，只要有修改，马上同步涉及到的每个线程。
-
-==volatile==
-==介绍一下volatile的功能？==
-volatile关键字保证了可见性和禁止指令重排
-提供了happen-before的保证，确保一个线程的修改可以对其他线程是可见的。当一个共享变量被修饰的时候，就会保证修改的值立即被更新到内存，当其他线程需要读取的时候，就会去内存中读取新值。从实际角度来说，其中的一个重要作用就是与CAS结合，保证了原子性。volatile经常用在多线程环境下的单次操作。
-通俗来讲就是 ab线程要用一个变量，然后java默认是a线程中保留一份copy，这样如果b线程来修改，则a线程未必知道，如果使用这个关键字，线程之间数据修改都能可见。
-==volatile的可见性和禁止指令重排序怎么实现的？==
-volatile本质上是通过内存屏障来实现可见性的，被修饰的变量在被修改之后可以立即同步到主内存，该变量每次使用之前都从主内存刷新，而禁止指令重排序也是通过内存屏障来禁止的，本来现在的cpu为了提高效率会见指令并发执行，一个指令从JMM内存屏障的策略来看，就是在volatile的写操作的前面插入一个StoreStore屏障，后面插入一个StoreLoad，在读操作前面加入一个LoadLoad，后面加一个LoadStore屏障。
-==volatile 的底层实现？==
-volatile 底层jmm
-==实现一下DCL(单例模式下的双重检查)/ volatile的实践==
-是否lazy化？ 是
-是否线程安全？ 是
-实现难度： 针对需要双重检查的操作
-public class Singleton &#123;    // volatile防止指令重排    private static volatile Singleton singleton;    private Singleton() &#123;            &#125;        public static Singleton getInstance() &#123;        // 第一层判断singleton是不是null        if(Singleton == null)&#123;            //现在再加锁            synchronized(Singleton.class)&#123;                // 第二层判断                // 如果A,B 两个线程都在synchronized等待                // A 创建完对象之后，B还会再进入，如果不再检查一遍，B又会创建一个对象                if(singleton == null)&#123;                    singleton = new Singleton();                &#125;            &#125;        &#125;        return singleton;    &#125;&#125;                                                                                
-==单例里面要不要加volatile？==
-要加，如果不加volatile问题就会出现在指令重排序上，
-比如有一行初始化对象的代码，被编译器执行之后就会分成三步，1 给指令申请内存，2 给成员变量初始化，3 把这块内存的内容赋值，重排序以后 既然已经有这个值，在另外一个线程上来先去检查就会发现已经存在该值，就不会进入锁部分的代码，但是加了volatile就不会允许指令重排序，一定会保证你初始化完了才会给你赋值这个变量。
-有序性
-程序真的是按照顺序执行的吗？
-并不是 cpu为了提高效率，通常都是乱序
-在执行程序时，为了提供性能，处理器和编译器常常会对指令进行重排序，但是不能随意重排序，不是你想怎么排序就怎么排序，它需要满足以下两个条件：在单线程环境下不能改变程序运行的结果；存在数据依赖关系的不允许重排序需要注意的是：重排序不会影响单线程环境的执行结果，但是会破坏多线程的执行语义。
-单线程也不是顺序执行
-单线程有一个 a i s 语义保证了其单线程执行结果不被改变，其实也不是顺序执行的。
-as-if-serial语义保证单线程内程序的执行结果不被改变，happensbefore关系保证正确同步的多线程程序的执行结果不被改变。 as-if-serial语义给编写单线程程序的程序员创造了一个幻境：单线程程序是按程序的顺序来执行的。happens-before关系给编写正确同步的多线程程序的程序员创造了一个幻境：正确同步的多线程程序是按 happens-before指定的顺序来执行的。
-as-if-serial语义和happens-before这么做的目的，都是为了在不改变程序执行结果的前提下，尽可能地提高程序执行的并行度。
-原子性
-保证操作的原子性可以通过synchronized(悲观锁) 和 cas(乐观锁)
-CAS
-CAS 是 compare and swap 的缩写，即我们所说的比较交换。
-cas 是一种基于锁的操作，而且是乐观锁。在 java 中锁分为乐观锁和悲观锁。
-悲观锁是将资源锁住，等一个之前获得锁的线程释放锁之后，下一个线程才可以访问。而乐观锁采取了一种宽泛的态度，通过某种方式不加锁来处理资源，比如通过给记录加 version 来获取数据，性能较悲观锁有很大的提高。
-CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。如果内存地址里面的值和 A 的值是一样的，那么就将内存里面的值更新成 B。
-CAS是通过无限循环来获取数据的，若果在第一轮循环中，a 线程获取地址里面的值被b 线程修改了，那么 a 线程需要自旋，到下次循环才有可能机会执行。
-java.util.concurrent.atomic 包下的类大多是使用 CAS 操作来实现的(AtomicInteger,AtomicBoolean,AtomicLong)。
-==CAS底层==
-以AtomicInterger 这个类为例，里面的incrementAndGet() 就调用了compareAndSet()方法 里面有一个unsafe对象 查看jdk里面的c语言代码就会有一个底层的指令  cmpxchg指令 意思是cas修改变量值 这个指令不是原子的所以需要 lock ，而在硬件层面lock指令在执行的时候看情况来采用总线锁或者缓存锁，所以底层层面cas是用的lock指令。
-==如何解决ABA问题==
-如果是基础类型就无所谓，就是两个线程去同时修改一个变量值，一个线程被某些原因发生阻塞等待过程中另一个线比较更新 变量值从A到B，这个时候再来第三个线程想把变量改为B到A，进行比较更新更改完毕以后，原来被阻塞的线程这个时候获得CPU时间片发现是A 于是更新为B 可是其实该值已经更新过了，这个问题可以通过加版本号或者时间戳解决，但是一般是每次版本号加一，时间戳不容易指定精度一般不用。
-线程调度与同步
-线程调度器
-负责将runnable的线程分配CPU
-怎么进行多线程抢占cpu的调度呢？（线程调度算法
-
-分时调度 大家平均分配时间片
-抢占式 优先级高的线程占用 ，如果优先级都相等就随机选一个，都是等线程结束才放弃CPU
-
-线程同步以及线程调度方
-
-
-wait(): 释放锁； 需要被唤醒 ；是object的方法；用于进程通信；
-
-
-sleep()：不释放锁 ；自动苏醒；是thread的静态方法
-
-
-notify()：随机唤醒一个进入锁池
-
-
-notifyAll()： 唤醒所有进入锁池
-sleep() 和 wait() 不同
-sleep()和yeild() 不同
-sleep()是成为阻塞状态，其他线程不考虑优先级，抛出interrupted异常，移植性更好
-yeild()是成为就绪状态，其他线程和当前一起按优先级，没有声明异常，不怎么建议使用
-sleep()和yeild()为啥是静态
-两个方法是在正在执行的线程运行，在处于等待状态里面调用无意义
-
-
-==wait() 和 notify()实际使用==
-这里是一个面试题，就是两个线程实现线程a打印1～10，然后另外一个线程b在a打到5的时候执行，然后a在b执行完之后打印剩下的
-这里具体就是线程b先启动然后wait ，然后等到a打印1～5以后唤醒线程b，同时也要wait()释放锁，b执行完毕又要notify a。
-public class T03_NotifyHoldingLock &#123; //wait notify	//添加volatile，使t2能够得到通知	volatile List lists = new ArrayList();	public void add(Object o) &#123;		lists.add(o);	&#125;	public int size() &#123;		return lists.size();	&#125;	public static void main(String[] args) &#123;		T03_NotifyHoldingLock c = new T03_NotifyHoldingLock();		final Object lock = new Object();           //需要注意先启动t2再启动t1    new Thread(() -&gt; &#123;			synchronized(lock) &#123;				System.out.println(&quot;t2 启动&quot;);				if(c.size() != 5) &#123;					try &#123;						lock.wait();					&#125; catch (InterruptedException e) &#123;						e.printStackTrace();					&#125;				&#125;				System.out.println(&quot;t2 结束&quot;);			&#125;            //通知t1继续执行            lock.notify()。		&#125;, &quot;t2&quot;).start();		try &#123;			TimeUnit.SECONDS.sleep(1);		&#125; catch (InterruptedException e1) &#123;			e1.printStackTrace();		&#125;				new Thread(() -&gt; &#123;			System.out.println(&quot;t1 启动&quot;);			synchronized(lock) &#123;				for(int i=0; i&lt;10; i++) &#123;					c.add(new Object());					System.out.println(&quot;add &quot; + i);					if(c.size() == 5) &#123;						lock.notify();                        //释放锁，让t2得以执行                        try&#123;                           lock.wait();                        &#125;catch(InterruptedException e)&#123;					  	 e.printStackTrace();                        &#125;					&#125;					try &#123;						TimeUnit.SECONDS.sleep(1);					&#125; catch (InterruptedException e) &#123;						e.printStackTrace();					&#125;				&#125;			&#125;		&#125;, &quot;t1&quot;).start();        	&#125;&#125;
-描述notify和notifyAll区别
-嗯一般呢这个object里面当我调wait的时候它就会放到等待队列里面，当我去拿的时候，就会在wait列表里面，这个时候如果我调notify等待列表就是那个等待池里面就会随机唤醒一个线程来进入锁池竞争锁，如果我调notifyAll就会将该对象所有wait的线程唤醒。其中那个锁池就是等待获得该对象锁拥有权的线程们。
-如何唤醒线程？
-首先阻塞的然后可以被唤醒的线程，是调用任意对象的wait()，导致了线程阻塞进入等待队列等待被唤醒，阻塞的同时要释放该对象的锁，要唤醒就需要调用notify()或者notifyAll()，首先释放当前对象的锁，然后唤醒任意一个或者是全部线程到锁池直到线程获得当前对象的锁才能继续执行。还需要注意的是方法一定要放在同步方法或者同步方法块中，并且调用方法的对象一定和同步块或方法的对象是同一个，这样才能保证调用方法之前线程就已经获得了锁，这样才能执行线程的锁释放
-为什么三个方法要定义在object里？
-等待和唤醒必须是同一个锁。而锁可以是任意对象，所以可以被任意对象调用的方法是定义在object类中。
-为什么三个方法要在同步方法或者代码块里面调用？
-因为三个方法都需要线程持有对象的锁，比如调wait()的时候这个线程必须拥有该对象的锁，接着他就释放这个锁进入等待状态直到其他线程调用这个对象的notify方法，同样notify呢，也是需要先释放对象的锁，这样其他线程才能来竞争锁；所以方法都是需要通过同步实现，进而必须。。。
-什么是线程同步？
-当一个线程对共享的数据进行操作时，应使之成为一个&quot;原子操作&quot;， 即在没完成相关操作之前，不允许其他线程打断它，否则就会破坏数据的完整性，必然会得到错误的处理结果，这就是线程的同步
-同步方法和非同步方法可以同时调用吗？
-当然是可以的啊 当我有一个synchronized的m1方法，我调用m1的时候是可以调用m2的，因为线程访问m1的时候需要加锁，但是访问m2的时候又不需要加锁，所以允许执行m2。
-模拟银行账户： 如果业务里面写方法加锁但是读方法没有加锁，这样就会容易产生脏读，但是如果业务允许，就可以，脏读过程就是没加锁的线程在没等你整个过程执行完就读到了你中间的结果产生的内存，解决办法就是将没有加锁的线程加上锁，会效率变低。
-什么是线程互斥？
-资源的固有特性 互斥 一个资源在同一时间只能由一个线程去调用
-对于共享的进程系统资源，在单个线程访问时的排他性。就是当有若干个线程都要使用某一个资源的时候，任何时刻，都只允许一个线程来去使用，其他要使用该资源的线程必须等待，知道占用志愿者释放该资源。
-Synchronized
-synchronized、volatile、CAS 比较
-（1）synchronized 是悲观锁，属于抢占式，会引起其他线程阻塞。
-（2）volatile 提供多线程共享变量可见性和禁止指令重排序优化。
-（3）CAS 是基于冲突检测的乐观锁（非阻塞）
-==synchronized 和 ReentrantLock 区别是什么？==
-synchronized 是和 if、else、for、while 一样的关键字，ReentrantLock 是类，这是二者的本质区别。既然 ReentrantLock 是类，那么它就提供了比synchronized 更多更灵活的特性，可以被继承、可以有方法、可以有各种各样的类变量
-synchronized 早期的实现比较低效，对比 ReentrantLock，大多数场景性能都相差较大，但是在 Java 6 中对 synchronized 进行了非常多的改进。
-==相同点：==
-两者都是可重入锁两者都是可重入锁。“可重入锁”概念是：自己可以再次获取自己的内部锁。比如一个线程获得了某个对象的锁，此时这个对象锁还没有释放，当其再次想要获取这个对象的锁的时候还是可以获取的，如果不可锁重入的话，就会造成死锁。同一个线程每次获取锁，锁的计数器都自增1，所以要等到锁的计数器下降为0 时才能释放锁。
-==不同点==
-
-ReentrantLock 使用起来比较灵活：1. 可以使用trylock来控制，如果抢不到线程也不会一定阻塞，2. 通过lockInterruptibly()可以响应interrupt()，可以被打断。但是必须有释放锁的配合动作；
-ReentrantLock 必须手动获取与释放锁，而 synchronized 不需要手动释放和开启锁；
-ReentrantLock 只适用于代码块锁，而 synchronized 可以修饰类、方法、变量等。
-二者的锁机制其实也是不一样的。ReentrantLock 底层调用的是 Unsafe 的 park 方法加锁，synchronized 操作的应该是对象头中 markword
-
-锁的是什么?
-Java中每一个对象都可以作为锁，这是synchronized实现同步的基础: 普通同步方法，锁是当前实例对象；静态同步方法，锁是当前类的class对象；同步方法块，锁是括号里面的对象
-锁重入？
-
-可重入的原理其实就是一个线程获得锁之后，可以重复得到该锁，底层就轻量级锁来说，其实就是在线程栈里面压入lockRecord然后有一个指向一个备份当前对象markword的指针，这个备份叫做displace markword（重入以后的hashword字段也在这里面），这里就是使用这个锁记录进行一个重入计数器的作用。
-重量级锁：进入重量级锁，会分配一个objectmonitor对象，然后将锁标志置为‘10’，然后markword存储指向这个对象的指针。om对象有两个队列和一个指针，每个需要获取锁的线程都会进入队列被包装为这个对象，如果是多线程指向同一段代码时，objectwaiter就会进入队列，当某个线程抢到锁了也就是获得对象的监视器monitor了就进入owner区域，并把monitor中的owner变量设为当前线程同时monitor中的计数器count+1。（锁重入）
-==Sych的锁升级的原理或者是过程？==
-首先主要有四种锁状态分别是：无状态锁、偏向锁、轻量级锁和重量级锁（要去操作系统申请资源）
-锁的升级的目的/背景：锁升级是为了减低了锁带来的性能消耗。在 Java 6 之后优化 synchronized 的实现方式，使用了偏向锁升级为轻量级锁再升级到重量级锁的方式，从而减低了锁带来的性能消耗。
-
-
-详细锁升级过程：
-总：在锁对象的对象头里面有一个 threadID 字段，在第一次访问的时候 threadid 为空，jvm 让其持有偏向锁，并将 threadid 设置为其线程 id，再次进入的时候会先判断 threadid 是否与其线程 id 一致，如果一致则可以直接使用此对象，如果不一致，则升级偏向锁为轻量级锁，通过自旋循环一定次数来获取锁，执行一定次数之后，如果还没有正常获取到要使用的对象，此时就会把锁从轻量级升级为重量级锁，此过程就构成了 synchronized 锁的升级。
-分：new对象之后先判断是否为可偏向状态，markword有两个字节作为锁标志：首先看是否是‘01’，然后mw前面还有一个字段来判断是否是已经拿到偏向锁‘1’表示偏向锁已启动，启动但是要判断锁线程是否是当前的线程id，如果是就开始执行代码块；但是不是的话，说明就有竞争了，这个时候cas操作去获取锁失败了的话，达到safepoint时获得偏向锁的线程就会被挂起，偏向锁会被撤销，然后升级为轻量级锁，这个时候被阻塞的线程再继续执行同步代码块。
-这部分有个细节就是轻度竞争就会升级为轻量级锁，如果是重度竞争（比如耗时过长、调用了wait方法等）就会直接升级为重量级锁，先讲轻量级锁：
-升级为轻量级锁以后还是在用户空间里面进行，当前线程栈会划分一部分作为锁记录lock record，并且会将锁对象的markwor复制到锁记录中，接下来jvm会进行CAS操作将markword一部分更新为指向锁记录的指针（如下图），
-
-如果成功就会将锁标志位设为‘00’，说明已经获得轻量级锁，这个时候就会进入锁重入阶段：（底下的锁重入有解释）
-但是失败了就会检查当前锁对象的markword是否指向当前锁记录，如果没有就表示已经被其他线程抢了，这个时候就会进行自旋等待（默认是10次），等到此处如果超出阈值还是没有获得锁这个时候就会升级为重量级锁
-进入重量级锁，会分配一个objectmonitor对象，然后将锁标志置为‘10’，然后markword存储指向这个对象的指针。om对象有两个队列和一个指针，每个需要获取锁的线程都会进入队列被包装为这个对象，如果是多线程指向同一段代码时，objectwaiter就会进入队列，当某个线程抢到锁了也就是获得对象的监视器monitor了就进入owner区域，并把monitor中的owner变量设为当前线程同时monitor中的计数器count+1。（锁重入）
-什么时候用自旋锁和系统锁？/ 为什么有了自旋锁还要重量级锁？
-因为自旋锁是要占用CPU的，而系统锁是到等待队列里面，所以你，代码如果执行时间短，线程数少就用自旋，长线程数多，就用系统锁；
-自旋也是要消耗cpu资源的如果锁的时间过长或者自旋线程过多，cpu就会被消耗； 而重量级锁又自己的等待队列，所有拿不到所有的进入等待队列，不需要消耗cpu资源。
-什么时候升级为重量级锁？
-竞争加剧，有线程超过10次自旋：-xx:PreBlockSpin ；或者是自旋线程数超过cpu核数的一半，1.6之后jvm有了自适应自旋Adapative-Self Spinning，是可以自己控制的自旋；
-偏向锁是否启动？
-偏向锁有一个启动时间，我记得是四秒钟，当你new一个普通对象的时候，偏向锁没有启动，它默认就是无锁态；但是一开始new的时候如果已经启动了偏向锁，那么就是一个匿名偏向，锁对象的markword里的threadkid其实就是空的，等到你加了sychronized（这个对象），才会指向当前的这个线程了，treadid字段就会更新为当前线程了。
-Lock体系
-Java Concurrency API 中的 Lock 接口(Lock interface)是什么？对比同步它有什么优势？
-ReentrantLock是lock的唯一子类。
-Lock 接口比同步方法和同步块提供了更具扩展性的锁操作。他们允许更灵活的结构，可以具有完全不同的性质，并且可以支持多个相关类的条件对象。
-它的优势有：
-（1）  可以使锁更公平
-（2）  可以使线程在等待锁的时候响应中断
-（3）  可以让线程尝试获取锁，并在无法获取锁的时候立即返回或者等待一段时间
-（4）  可以在不同的范围，以不同的顺序获取和释放锁
-整体上来说 Lock 是 synchronized 的扩展版，Lock 提供了无条件的、可轮询的(tryLock 方法)、定时的(tryLock 带参方法)、可中断的(lockInterruptibly)、可多条件队列的(newCondition 方法)锁操作。另外 Lock 的实现类基本都支持非公平锁(默认)和公平锁，synchronized 只支持非公平锁，当然，在大部分情况下，非公平锁是高效的选择。
-==实现一个阻塞队列？/ 使用Condition写生产者和消费者？==
-public class ProviderConsumer&lt;T&gt;&#123;  private int length;  private Queue&lt;T&gt; queue; // 产品队列  private ReentrantLock lock = new ReentrantLock(); // 可重入锁  private Condition providerCondition = lock.newConditon();// 生产者  private Condition consumerCondition = lock.newCondition();// 消费者    public ProviderConsumer(int length)&#123;// 构造器一开始传入产品队列的长度    this.length = length;    this.queue = new LinkedList&lt;T&gt;();  &#125;    /*  * 生产  */  public void provide(T product)&#123;    lock.lock();    try&#123;      while(queue.size() &gt;= length)&#123;// 生产者队列等待        providerCondition.await();      &#125;      queue.add(product);      consumerCondition.signal();// 提醒消费者队列；    &#125; catch()&#123;          &#125; finally&#123;      lock.unlock();    &#125;  &#125;  /*  * 消费  */  public T consume()&#123;    lock.lock;    try&#123;      while(queue.isEmpty())&#123;        consumerCondition.await();      &#125;      T product = queue.remove();      provideCondition.signal();      return product;    &#125; catch()&#123;          &#125; finally&#123;      lock.unlock;    &#125;    return null;  &#125;  &#125;
-AQS
-AQS 原理分析
-下面大部分内容其实在AQS类注释上已经给出了，不过是英语看着比较吃力一点，感兴趣的话可以看看源码。
-AQS 原理概览
-AQS核心思想是，如果被请求的共享资源空闲，则将当前请求资源的线程设置为有效的工作线程，并且将共享资源设置为锁定状态。如果被请求的共享资源被占用，那么就需要一套线程阻塞等待以及被唤醒时锁分配的机制，这个机制AQS是用CLH队列锁实现的，即将暂时获取不到锁的线程加入到队列中。CLH(Craig,Landin,and Hagersten)队列是一个虚拟的双向队列（虚拟的双向队列即不存在队列实例，仅存在结点之间的关联关系）。AQS是将每条请求共享资源的线程封装成一个CLH锁队列的一个结点（Node）来实现锁的分配。
-看个AQS(AbstractQueuedSynchronizer)原理图：
-
-源码
-AQS是一个构建锁和同步器的框架，最核心的是它的一个共享的int类型值叫做state，这个state用来干什么，其实主要是看他的子类是怎么实现的，比如ReentrantLock这个state，拿这个state来记录这个线程到底重入了多少次，比如说有一个线程拿到state这个把锁了，state的值就从0变成了1，这个线程又重入了一次，state就变成2了，又重入一次就变成3等等，释放的时候一次释放减一变成0就释放了。这个数代表了什么要看子类怎么去实现它，那么在这个state核心上还会有一堆的线程节点，当然这个节点是node，每个node里面包含一个线程，我们称为线程节点，这么多的线程节点去争用这个state，谁拿到了state，就表示谁得到了这把锁，AQS得核心就是一个共享的数据和一堆互相抢夺竞争的线程，这个就是AQS。
-看reentrantlock源码里面:
-在lock()方法里里面，我们可以读到它调用了sync.acquire(1)，
-//JDK源码public class ReentrantLock implements Lock, java.io.Serializable &#123;	public void lock()&#123;        sync.acquire(1);    &#125;&#125;
-再跟进到acquire(1)里，可以看到acquire(1)里又调用了我们自己定义自己写的那个tryAcquire(arg)
-//JDK源码public abstract class AbstractQueuedSynchronizer    extends AbstractOwnableSynchronizer    implements java.io.Serializable &#123;	public final void acquire(int arg)&#123;		if(!tryAcquire(arg)            &amp;&amp; acquireQueued(addWaiter(Node.EXCLUSIVE),arg))       	 selfInterrupt();	&#125;&#125;
-tryAquire(int)是使用者需要自定义同步器时要重写的模版方法：reentrantlock()里面的这个方法又调用了nofairTryAquire(int aquire)
-//JDK源码public class ReentrantLock implements Lock, java.io.Serializable &#123;    	public void lock()&#123;        sync.acquire(1);    &#125;        static final NonfairSync extends Sync&#123;        protected final boolean tryAcquire(int acquire)&#123;            return nonfairTrytAcquire(acquires);	   &#125;    &#125;        final boolean nonfairTrytAcquire(int acquire)&#123;         //获取当前线程		final Thread current = Thread.currentThread();        //拿到AQS核心数值state         int c getState();        //如果数值为0说明没人上锁         if(c == 0)&#123;             //给当线程上锁			if(compareAndSetState(0,acquires))&#123;                //设置当前线程为独一无二拥有这把锁的线程			    setExclusiveOwnerThread(current);                 return true            &#125;         &#125;        //判断当前线程是否拥有这个把锁        else if(current == getExclusiveOwnerThread)&#123;            //设置重入			int nextc = c + acquires;             if(nextc &lt; 0)                 throw new Error(&quot;Maximum lock count wxceeded&quot;);             setState(nextc);             return true;         &#125;        return false;    &#125;&#125;
-nonfairTrytAcquire(acquires)我们读进去会发现它的里面就调用到了state这个值，首先拿到当前线程，拿到state的值，然后进行if判断，如果state的值为0，说明没人上锁，没人上锁怎么办呢？就给自己上锁，当前线程就拿到这把锁，拿到这个把锁的操作用到了CAS(compareAndSetState)的操作，从0让他变成1，state的值设置为1以后，设置当前线程是独一无二的拥有这把锁的线程，否则如果当前线程已经占有这把锁了，怎么办？很简单我们在原来的基础上加1就可以了，这样就能拿到这把锁了，就重入，前者是加锁后者是重入
-state状态变量
-AQS使用一个int成员变量来表示同步状态，通过内置的FIFO队列来完成获取资源线程的排队工作。AQS使用CAS对该同步状态进行原子操作实现对其值的修改。
-private volatile int state;//共享变量，使用volatile修饰保证线程可见性
-状态信息通过protected类型的getState，setState，compareAndSetState进行操作
-1	//返回同步状态的当前值2	protected final int getState() &#123;3	return state;4	&#125;5	// 设置同步状态的值6	protected final void setState(int newState) &#123;7	state = newState;8	&#125;9	//原子地（CAS操作）将同步状态值设置为给定值update如果当前同步状态的值等于expect （期望值）10	protected final boolean compareAndSetState(int expect, int update) &#123; 11 return unsafe.compareAndSwapInt(this, stateOffset, expect, update);12 &#125;
-AQS队列
-如果没有tryAquire() 到state呢，那么就进行aquireQueue()方法，里面会调用addwaiter()这个方法，线程添加进入队列里面，具体操作也是通过cas进行添加的，方法是compareAndAetTail(oldTail,node)，oldTail是它的预期值，假如说我们想把当前线程设置为整个链表尾巴的过程中，另外一个线程来了，它插入了一个节点，那么仔细想一下Node oldTail = tail;的整个oldTail还等于整个新的Tail吗？不等于了吧，那么既然不等于了，说明中间有线程被其它线程打断了，那如果说却是还是等于原来的oldTail，这个时候就说明没有线程被打断，那我们就接着设置尾巴，只要设置成功了OK，compareAndAetTail(oldTail,node)方法中的参数node就做为新的Tail了，所以用了CAS操作就不需要把原来的整个链表上锁，这也是AQS在效率上比较高的核心。
-
-资源的共享方式
-AQS定义两种资源共享方式
-
-
-Exclusive（独占）：只有一个线程能执行，如ReentrantLock。又可分为公平锁和非公平锁：
-公平锁：按照线程在队列中的排队顺序，先到者先拿到锁
-非公平锁：当线程要获取锁时，无视队列顺序直接去抢锁，谁抢到就是谁的
-
-
-Share（共享）：多个线程可同时执行。Semaphore、CountDownLatch、 CyclicBarrier、ReadWriteLock 我们都会在后面讲到。ReentrantReadWriteLock 可以看成是组合式，因为ReentrantReadWriteLock也就是读写锁允许多个线程同时对某一资源进行读。不同的自定义同步器争用共享资源的方式也不同。自定义同步器在实现时只需要实现共享资源 state 的获取与释放方式即可，至于具体线程等待队列的维护（如获取资源失败入队/唤醒出队等），AQS已经在顶层实现好了。
-
-
-模版方法
-AQS使用了模板方法模式，自定义同步器时需要重写下面几个AQS提供的模板方法：
-1	isHeldExclusively()//该线程是否正在独占资源。只有用到condition才需要去实现它。2	tryAcquire(int)//独占方式。尝试获取资源，成功则返回true，失败则返回false。3	tryRelease(int)//独占方式。尝试释放资源，成功则返回true，失败则返回false。4	tryAcquireShared(int)//共享方式。尝试获取资源。负数表示失败；0表示成功，但没有剩余可用资源；正数表示成功，且有剩余资源。5	tryReleaseShared(int)//共享方式。尝试释放资源，成功则返回true，失败则返回false。
-默认情况下，每个方法都抛出 UnsupportedOperationException。 这些方法的实现必须是内部线程安全的，并且通常应该简短而不是阻塞。AQS类中的其他方法都是final ，所以无法被其他类使用，只有这几个方法可以被其他类使用。以ReentrantLock为例，state初始化为0，表示未锁定状态。A线程lock()时，会调用tryAcquire()独占该锁并将state+1。此后，其他线程再tryAcquire()时就会失败，直到A线程unlock()到state=0（即释放锁）为止，其它线程才有机会获取该锁。当然，释放锁之前，A线程自己是可以重复获取此锁的（state会累加），这就是可重入的概念。但要注意，获取多少次就要释放多么次，这样才能保证state是能回到零态的。
-再以CountDownLatch以例，任务分为N个子线程去执行，state也初始化为N（注意N要与线程个数一致）。这N个子线程是并行执行的，每个子线程执行完后countDown()一次，state会CAS(Compare and Swap)减1。等到所有子线程都执行完后(即state=0)，会unpark()主调用线程，然后主调用线程就会从 await()函数返回，继续后余动作。
-一般来说，自定义同步器要么是独占方法，要么是共享方式，他们也只需实现 tryAcquire-tryRelease、tryAcquireShared-tryReleaseShared中的一种即可。但AQS 也支持自定义同步器同时实现独占和共享两种方式，如ReentrantReadWriteLock。主要是高16位存储互斥锁的状态，高16位存储共享锁的状态。
-并发工具类
-CountDownLatch(倒计时器)：
-CountDownLatch是一个同步工具类，用来协调多个线程之间的同步。这个工具通常用来控制线程等待，它可以让某一个线程等待直到倒计时结束，再开始执行。
-用法？
-
-让主线程await()， 主线程在开始运行前等待n个业务线程执行完毕。将CountDownLatch的计数器初始化为new CountDownLatch(n)，每当一个任务线程执行完毕，就将计数器减1 countdownLatch.countDown()，当计数器的值变为0时，在CountDownLatch上await()的线程就会被唤醒。一个典型应用场景就是启动一个服务时，主线程需要等待多个组件加载完毕，之后再继续执行。
-让业务线程await()，主线程处理完数据之后进行countDownLatch.countDown(),此时业务线程被唤醒，然后去主线程拿数据，或者执行自己的业务逻辑，这样实现多个线程开始执行任务的最大并行性，
-
-CyclicBarrier(循环栅栏)：
-CyclicBarrier 和 CountDownLatch 非常类似，它也可以实现线程间的技术等待，但是它的功能比 CountDownLatch 更加复杂和强大。主要应用场景和 CountDownLatch 类似。CyclicBarrier 的字面意思是可循环使用（Cyclic）的屏障（Barrier）。它要做的事情是，让一组线程到达一个屏障（也可以叫同步点）时被阻塞，直到最后一个线程到达屏障时，屏障才会开门，所有被屏障拦截的线程才会继续干活。
-CyclicBarrier默认的构造方法是 CyclicBarrier(int parties)，其参数表示屏障拦截的线程数量，每个线程调用await()方法告诉CyclicBarrier 我已经到达了屏障，然后当前线程被阻塞。
-Semaphore(信号量)-允许多个线程同时访问：
-synchronized 和ReentrantLock 都是一次只允许一个线程访问某个资源，Semaphore(信号量)可以指定多个线程同时访问某个资源。
-Semaphore 就是一个信号量，它的作用是限制某段代码块的并发数。
-Semaphore有一个构造函数，可以传入一个 int 型整数 n，表示某段代码 多只有 n 个线程可以访问，如果超出了 n，那么请等待，等到某个线程执行完毕这段代码块，下一个线程再进入。由此可以看出如果 Semaphore 构造函数中传入的 int 型整数 n=1，相当于变成了一个 synchronized 了。
-Exchange(线程见交换数据的工具)
-Exchanger是一个用于线程间协作的工具类，**用于两个线程间交换数据。**它提供了一个交换的同步点，在这个同步点两个线程能够交换数据。交换数据是通过 exchange方法来实现的，如果一个线程先执行exchange方法，那么它会同步等待另一个线程也执行exchange方法，这个时候两个线程就都达到了同步点，两个线程就可以交换数据。
-ReadWriteLock
-实现这个接口是ReentrantReadWriteLock， 这个接口是一个读写锁接口，主要就是实现了读写分离，写锁是独占锁，读锁是共享锁，实现了读读之间不会互斥，但是读写和写写之间的互斥，提高了读写效率。还实现了锁降级，写锁可以降级为读锁。
-首先明确一下，不是说 ReentrantLock 不好，只是 ReentrantLock 某些时候有局限。如果使用 ReentrantLock，可能本身是为了防止线程 A 在写数据、线程 B 在读数据造成的数据不一致，但这样，如果线程 C 在读数据、线程 D 也在读数据，读数据是不会改变数据的，没有必要加锁，但是还是加锁了，降低了程序的性能。因为这个，才诞生了读写锁 ReadWriteLock。
-ReadWriteLock 是一个读写锁接口，读写锁是用来提升并发程序性能的锁分离技术，ReentrantReadWriteLock 是 ReadWriteLock 接口的一个具体实现，实现了读写的分离，读锁是共享的，写锁是独占的，读和读之间不会互斥，读和写、写和读、写和写之间才会互斥，提升了读写的性能。
-而读写锁有以下三个重要的特性：
-（1）  公平选择性：支持非公平（默认）和公平的锁获取方式，吞吐量还是非公平优于公平。
-（2）  重进入：读锁和写锁都支持线程重进入。
-（3）  锁降级：遵循获取写锁、获取读锁再释放写锁的次序，写锁能够降级成为读锁。
-ThreadLocal
-原理
-ThreadLocal源码的set方法，ThreadLocal往里边设置值的时候是怎么设置的呢？首先拿到当前线程，这是你会发现，这个set方法里多了一个容器ThreadLocalMap，这个容器是一个map，是一个key/value对，其实这个值是设置到了map里面，key设置的是this，value设置的是我们想要的那个值，这个this就是当前对象ThreadLocal，value就是Person类，如果map不等于空的情况下就设置进去就行了，如果等于空呢？就创建一个map
-//ThraedLocal源码public class ThreadLocal&lt;T&gt; &#123;    public void set(T value) &#123;        Thread t = Thread.currentThread();        ThreadLocalMap map = getMap(t);        if (map != null)            map.set(this, value);        else            createMap(t, value);    &#125;&#125;
-我们回过头来看这个map，ThreadLocalMap map=getMap(t)，我们来看看这个map到底在哪里，我们点击到了getMap这个方法看到，它的返回值是t.threadLocals
-//ThreadLocal源码public class ThreadLocal&lt;T&gt; &#123;    public void set(T value) &#123;        Thread t = Thread.currentThread();        ThreadLocalMap map = getMap(t);        if (map != null)            map.set(this, value);        else            createMap(t, value);    &#125;    ThreadLocalMap getMap(Thread t)&#123;        return t.threadLocals;    &#125;&#125;
-我们进入这个t.threadLocals，你会发现ThreadLocalMap这个东西在哪里呢？居然是在Thread这个类里，所以说这个map是在Thred类里的
-public class Thread implements Runnable&#123;	ThreadLocal.ThreadLocalMap threadLocals = null;&#125;
-这个时候我们应该明白，map的set方法其实就是设置当前线程里面的map：
-·set	- Thread.currentThread.map(ThreadLocal,person)
-所以这个时候你会发现，原来Person类被set到了，当前线程里的某一个map里面去了，这个时候，我们是不是就能想明白了，我set了一个值以后，为什么其他线程访问不到？我们注重“当前线程”这个段话，所以个t1线程set了一个Person对象到自己的map里，t2线程去访问的也是自己的属于t2线程的map，所以是读不到值的，因此你使用ThreadLocal的时候，你用set和get就完全的把他隔离开了，就是我自己线程里面所特有的，其它的线程是没有的，以前我们的理解是都在一个map，然而并不是，所以你得读源码，读源码你就明白了
-用途
-声明式的事务保证同一个connetion
-我们根据Spirng的声明式事务来解析，为什么要用ThreadLocal，声明式事务一般来讲我们是要通过数据库的，但是我们知道Spring结合Mybatis，我们是可以把整个事务写在配置文件中的，而这个配置文件里的事务，它实际上是管理了一系列的方法，方法1、方法2、方法3…，而这些方法里面可能写了，比方说第1个方法写了去配置文件里拿到数据库连接Connection，第2个、第3个都是一样去拿数据库连接，然后声明式事务可以把这几个方法合在一起，视为一个完整的事务，如果说在这些方法里，每一个方法拿的连接，它拿的不是同一个对象，你觉的这个东西能形成一个完整的事务吗？Connection会放到一个连接池里边，如果第1个方法拿的是第1个Connection，第2个拿的是第2个，第3个拿的是第3个，这东西能形成一个完整的事务吗？百分之一万的不可能，没听说过不同的Connection还能形成一个完整的事务的，那么怎么保证这么多Connection之间保证是同一个Connection呢？把这个Connection放到这个线程的本地对象里ThreadLocal里面，以后再拿的时候，实际上我是从ThreadLocal里拿的，第1个方法拿的时候就把Connection放到ThreadLocal里面，后面的方法要拿的时候，从ThreadLocal里直接拿，不从线程池拿。
-四种引用
-引用是什么？
-就是一个变量值指向一个对象
-强引用normalReference
-普通的引用比如Object o = new Object()，这个就叫强引用; 特点就是说，只要有一个应用指向这个对象，那么垃圾回收器一定不会回收它，这就是普通的引用，也就是强引用。因为有引用指向，所以不会回收，只有没有引用指向的时候才会回收，指向谁？指向你创建的那个对象。
-弱引用softReference
-当有一个对象(字节数组)被一个软引用所指向的时候，只有系统内存不够用的时候，才会回收它(字节数组)
-虚引用
-==在threadlocal的应用 / 内存泄露==
-
-我们来看图中从左开始看，这时候我们应该明白了，这里tl是一个强引用指向这个ThreadLocal对象，而Map里的key是通过一个弱引用指向了一个ThreadLocal对象，我们假设这是个强引用，当tl指向这个ThreadLocal对象消失的时候，tl这个东西是个局部变量，方法已结束它就消失了，当tl消失了，如果这个ThreadLocal对象还被一个强引用的key指向的时候，这个ThreadLocal对象不能被回收，而且由于这个线程有很多线程是长期存在的，比如这个是一个服务器线程，7*24小时一年365天不间断运行，那么不间断运行的时候，这个tl会长期存在，这个Map会长期存在，这个Map的key也会长期存在，这个key长期存在的话，这个ThreadLocal对象永远不会被消失，所以这里是不是就会有内存泄漏，但是如果这个key是弱引用的话还会存在这个问题吗？当这个强引用消失的时候这个弱引用是不是自动就会回收了，这也是为什么用WeakReference的原因
-关于ThreadLocal还有一个问题，当我们tl这个强引用消失了，key的指向也被回收了，可是很不幸的是这个key指向了一个null值，但是这个threadLocals的Map是永远存在的，相当于说key/value对，你这个key是null的，你这个value指向的东西，你的这个10MB的字节码，你还能访问到吗？访问不到了，如果这个Map越积攒越多，越来越多，它还是会内存泄漏，怎么办呢？所以必须记住这一点，使用ThreadLocal里面的对象不用了，务必要remove掉，不然还会有内存泄漏
-ThradLocalM&gt; tl = new ThreadLocal&lt;&gt;();tl.set(new M());tl.remove();
-JUC同步容器
-ConcurrentHashMap
-集合部分
-我们来看这个经常在多线程的情况下使用的这些个容器 ，从Map开始讲，Map经常用的有这么几个
-
-
-ConcurrentHashMap用hash表实现的这样一个高并发容器；
-既然有了ConcurrentHashMap正常情况下就应该有ConcurrentTreeMap，你可以去查查，它没有，就等于缺了一块，为什么没有呢，原因就是ConcurrentHashMap里面用的是cas操作，这个cas操作它用在tree的时候，用在树这个节点上的时候实现起来太复杂了，所以就没有这个ConcurrentTreeMap，但是有时间也需要这样一个排好序的Map，那就有了ConcurrentSkipListMap跳表结构就出现了。
-
-
-ConcurrentSkipListMap通过跳表来实现的高并发容器并且这个Map是有排序的；
-
-跳表是什么样的结构呢？底层本身存储的元素一个链表，它是排好顺序的，大家知道当一个链表排好顺序的时候往里插入是特别困难的，查找的时候也特别麻烦，因为你得从头去遍历查找这个元素到底在哪里，所以就出现了这个跳表的结构，底层是一个链表，链表查找的时候比较困难怎么办，那么我们在这些链表的基础上在拿出一些关键元素来，在上面做一层，那这个关键元素的这一层也是一个链表，那这个数量特别大的话在这个基础之上在拿一层出来再做一个链表，每层链表的数据越来越少，而且它是分层，在我们查找的时候从顶层往下开始查找，所以呢，查找容易了很多，同时它无锁的实现难度比TreeMap又容易很多，因此在JUC里面提供了ConcurrentSkipListMap这个类。
-
-
-他们两个的区别一个是有序的一个是无序的，同时都支持并发的操作。下面这个小程序是一个效率的测试其实也没多大意义，大家可以去写一下跑跑。
-CopyOnWriteArrayList
-CopyOnWriteArrayList 是什么，可以用于什么应用场景？有哪些优缺点？
-CopyOnWriteArrayList 是一个并发容器。有很多人称它是线程安全的，我认为这句话不严谨，缺少一个前提条件，那就是非复合场景下操作它是线程安全的。
-CopyOnWriteArrayList(免锁容器)的好处之一是当多个迭代器同时遍历和修改这个列表时，不会抛出 ConcurrentModificationException。在CopyOnWriteArrayList 中，写入将导致创建整个底层数组的副本，而源数组将保留在原地，使得复制的数组在被修改时，读取操作可以安全地执行。
-CopyOnWriteArrayList 的使用场景通过源码分析，我们看出它的优缺点比较明显，所以使用场景也就比较明显。就是合适读多写少的场景。
-CopyOnWriteArrayList 的缺点
-
-
-由于写操作的时候，需要拷贝数组，会消耗内存，如果原数组的内容比较多的情况下，可能导致 young gc 或者 full gc。
-
-
-不能用于实时读的场景，像拷贝数组、新增元素都需要时间，所以调用一个 set 操作后，读取到数据可能还是旧的，虽然CopyOnWriteArrayList 能做到始终一致性,但是还是没法满足实时性要求。
-
-
-由于实际使用中可能没法保证 CopyOnWriteArrayList 到底要放置多少数据，万一数据稍微有点多，每次 add/set 都要重新复制数组，这个代价实在太高昂了。在高性能的互联网应用中，这种操作分分钟引起故障。
-
-
-CopyOnWriteArrayList 的设计思想
-
-读写分离，读和写分开
-终一致性
-使用另外开辟空间的思路，来解决并发冲突
-
-BlockingQueue
-ArrayBlockingQueue
-ArrayBlockingQueue是有界的，你可以指定它一个固定的值10，它容器就是10，那么当你往里面扔容器的时候，一旦他满了这个put方法就会阻塞住。然后你可以看看用add方法满了之后他会报异常。offer用返回值来判断到底加没加成功，offer还有另外一个写法你可以指定一个时间尝试着往里面加1秒钟，1秒钟之后如果加不进去它就返回了。
-回到那个面试经常被问到的问题，Queue和List的区别到底在哪里，主要就在这里，添加了offer、peek、poll、put、take这些个对线程友好的或者阻塞，或者等待方法。
-package com.mashibing.juc.c_025;import java.util.Random;import java.util.concurrent.ArrayBlockingQueue;import java.util.concurrent.BlockingQueue;import java.util.concurrent.TimeUnit;public class T06_ArrayBlockingQueue &#123;   static BlockingQueue&lt;String&gt; strs = new ArrayBlockingQueue&lt;&gt;(10);   static Random r = new Random();   public static void main(String[] args) throws InterruptedException &#123;      for (int i = 0; i &lt; 10; i++) &#123;         strs.put(&quot;a&quot; + i);      &#125;            //strs.put(&quot;aaa&quot;); //满了就会等待，程序阻塞      //strs.add(&quot;aaa&quot;);      //strs.offer(&quot;aaa&quot;);      strs.offer(&quot;aaa&quot;, 1, TimeUnit.SECONDS);            System.out.println(strs);   &#125;&#125;
-Queue和List的区别
-区别主要就是Queue添加了许多对线程友好的API offer、peek、poll，他的一个子类型叫BlockingQueue对线程友好的API又添加了put和take，这两个实现了阻塞操作。
-线程池
-
-Executor(线程的工厂
-newSingleThreadPool
-这个线程池里面只有一个线程，这个一个线程的线程池可以保证我们扔进去的任务是顺序执行的。为什么会有单线程的线程池？第一个线程池是有任务队列的；生命周期管理线程池是能帮你提供的。
-newCachedThreadPool没上限
-来一个新的任务就必须马上执行，没有线程空着我就new一个线程。那么阿里是不会推荐使用这中线程池的，原因是线程会启动的特别多，基本接近于没有上限的。
-newFixedThreadPool 固定的
-指定一个参数，到底有多少个线程，他的核心线程和最大线程都是固定的，因为他的最大线程和核心线程都是固定的就没有回收之说所以把他指定成0，这里用的是LinkedBlockingQueue
-newScheduledThreadPool定时任务
-这是专门给定时任务用的这样的一个线程池，了解就可以了。
-ThreadPoolExecutor
-1. 状态
-// 4. 线程池有5种状态，按大小排序如下：RUNNING &lt; SHUTDOWN &lt; STOP &lt; TIDYING &lt; TERMINATEDprivate static final int RUNNING    = -1 &lt;&lt; COUNT_BITS;private static final int SHUTDOWN   =  0 &lt;&lt; COUNT_BITS;private static final int STOP       =  1 &lt;&lt; COUNT_BITS;private static final int TIDYING    =  2 &lt;&lt; COUNT_BITS;private static final int TERMINATED =  3 &lt;&lt; COUNT_BITS;
-RUNNING：正常运行的；
-SHUTDOWN：调用了shutdown方法了进入了shutdown状态；
-STOP：调用了shutdownnow马上让他停止；
-TIDYING：调用了shutdown然后这个线程也执行完了，现在正在整理的这个过程叫TIDYING；
-TERMINATED：整个线程全部结束；
-
-⚠️多线程的生命周期和线程的生命周期
-2. 构造方法参数
-public ThreadPoolExecutor(int corePoolSize,                          int maximumPoolSize,                          long keepAliveTime,                          TimeUnit unit,                          BlockingQueue&lt;Runnable&gt; workQueue,                          ThreadFactory threadFactory,                          RejectedExecutionHandler handler) &#123;    // 基本类型参数校验    if (corePoolSize &lt; 0 ||        maximumPoolSize &lt;= 0 ||        maximumPoolSize &lt; corePoolSize ||        keepAliveTime &lt; 0)        throw new IllegalArgumentException();    // 空指针校验    if (workQueue == null || threadFactory == null || handler == null)        throw new NullPointerException();    this.corePoolSize = corePoolSize;    this.maximumPoolSize = maximumPoolSize;    this.workQueue = workQueue;    // 根据传入参数`unit`和`keepAliveTime`，将存活时间转换为纳秒存到变量`keepAliveTime `中    this.keepAliveTime = unit.toNanos(keepAliveTime);    this.threadFactory = threadFactory;    this.handler = handler;&#125;
-corePoolSize核心线程数
-maximumPS最大线程数
-keepAliveTime销毁之前等待的时间
-TimeUnit时间单位
-BlockingQueue任务队列
-LinkedBQ
-ArrayBQ
-SynchronousBQ
-ThreadFactory线程工厂
-RejectStrategy拒绝策略
-Abort抛异常
-Discard扔掉
-DiscardOldest
-CallerRuns
-3. execute()调度任务
-execute执行任务的时候判断任务等于空抛异常，这个很简单，接下来就是拿状态值，拿到值之后计算这个值里面的线程数，活着的那些线程数是不是小于核心线程数，如果小于addWorker添加一个线程，addWorker是比较难的一个方法，他的第二个参数指的是，是不是核心线程，所有上来之后如果核心数不够先添加核心线程，再次检查这个值。我们原来讲过这个线程里面上来之后刚开始为0，来一个任务启动一个核心线程，第二个就是核心线程数满了之后，放到队列里。最后核心线程满了，队列也满了，启动非核心线程。小于线程数就直接加，后面执行的逻辑就是不小于了，不小于就是超过核心线程数了直接往里扔，workQueue.offer就是把他扔进去队列里，再检查状态。在这中间可能会被改变状态值，因此需要双重检查，这个跟我们之前聊过的单例模式里面的DC是一样的逻辑。isRunning，重新又拿这个状态，拿到这个状态之后这里是要进行一个状态切换的，如果不是Running状态说明执行过shutdown命令，才会把这个Running转换成别的状态，其他情况下workerCountOf如果等于0说明里面没有线程了，没有线程我线程池正常运行就添加非核心线程。这些步骤都是通过源码可以看出来的。如果添加work本身都不行就reject把他给拒绝掉。
-
-
-
-核心线程不够，启动核心的
-
-
-core够了就加队列
-
-
-核心和队列都够了，就非核心
-
-
-4. addWorker()—&gt;runWorker()
-
-
-addWorker() 就做了两步，使用lock()和自旋做的
-
-count++
-加进任务并且start
-
-
-
-runWorker()是真正执行线程的部分
-
-
-work类
-这个work他本身是Runnable同时又是AQS。这个work类里面会记录着一个成员变量，这个成员变量是thread，很多个线程worker，这个就是为什么要用AQS的原因。另外呢，在你整个执行的过程之中你也需要加锁，不然的话你别的线程进来，因此AQS是需要的。这是这个work类，简单的你就可以把它当成线程类，然后这个线程类执行的是你自己的任务就行了。
-submit()和execute()区别
-Callable实现了Future接口，比runnable多了返回值并且可以抛出异常，然后这个Future是用来存储执行的线程将来才产生的结果，callable为线程池设计，配合future使用，有返回值，实现了任务交给线程池，未来要结果时再get返回。
-FutureTask是继承了RunnableFuture接口和Future接口，既是一个任务又是一个Future。在ForkJoinPool 这类线程池里面用，这类线程池是每个线程都有一个阻塞队列。
-杂问题
-1. 怎么预防死锁？
-答：首先我们要知道产生死锁的四个必要条件：第一个，资源在同一时间只能有一个线程来占用，这个也就是互斥条件；第二个，不可剥夺条件，当一个线程已经占有一个资源在释放之前是不会让其他线程抢占；在有就是线程等待的过程中不会释放自己持有的资源，也就是请求和保持条件；第四个条件就是循环等待条件 ，多个线程在互相等待对方释放资源；有了这四个条件当多个线程都持有对方想要的资源却等待对方释放资源的状态就造成了死锁；
-​      所以预防死锁就需要从这四个方面入手，第一个资源互斥因为是资源固有属性不能破坏这个条件；我们去破坏第二个不可剥夺条件，可以让进程在等待过程中将其占有的资源隐性释放到系统的资源列表中，而等待的进程只有重新获得自己原有的资源和新申请的资源才能启动执行；破坏第三个请求和保持条件可以使用静态分配和动态分配两种方法；静态分配就是在每一个进程开始执行时就申请他需要的资源；动态分配就是在申请资源的时候他本身不能占用系统资源；最后就是破坏循环等待条件，将系统中的所有资源顺序编号，紧缺资源用大编号，进程在申请资源的时候必须按照编号的顺序执行。嗯，我认为就从这四个方面去着手，谢谢。
-2. 线程创建方式和生命周期
-有五种方式，第一种方法就是继承thread类，重写run()，调用start开启线程；第二种实现runnable接口，重写run()，实现接口比继承类要灵活；第三种是使用lamda表达式，本质是一样；第四种是实现callable接口执行call()，这种方法相对runnable不同就是执行完毕有返回值，返回值通过future接收可以通过泛型指定类型，也可以抛出异常；第五种就是通过线程池threadpool创建。
-start 和 run
-new 一个 thread 调用start就是启动一个线程然后进入就绪状态，但分配到时间片就可以运行，而run只是用于执行线程运行时执行代码可以重复调用，也就是说start用来真正启动多线程工作，进行准备就绪，而线程只是通过run来完成它的运行状态，是一个普通方法的调用，其实还是再主线程里执行的。
-线程生命周期和五种状态
-
-new -&gt; runnable(start()) -&gt; running (run()) --&gt;blocked (wait()、synch进入锁池、join()/sleep()/IO请求) -&gt; dead （run()结束或者异常退出）
-3. 进程与线程的区别
-进程是系统进行资源分配和调度的基本单位是操作系统结构的基础；线程是操作进行运算调度的最小单位。通俗来讲就是，一个程序它本来是一种静态的指令和数据，当系统开始运行这个程序就会load到内存里，然后系统为其分配资源，这个时候就是一个进程，可以理解为进程就是动态的程序；而线程就是进程实际运行的单位，一种单一顺序的控制流，一个进程可以并发多个线程，每条线程有不同任务。
-4. 并发与并行
-并发是指多个任务在同一个CPU核上，按照细分的时间片交替进行，如果交替时间片够短，逻辑上可以看作同时执行
-并行是多个CPU核在同一时间处理多个任务，是真正意义上的同时进行
-串行就是一个CPU多个任务串联在一起，按照顺序执行
-5. 程序开多少线程合适/是不是线程数越高效率越高/
-多线程的缺点？线程数过多会怎么样
-
-占用内存，给垃圾处理器带来压力、
-需要协调和管理CPU时间跟踪线程、
-还会互相竞争共享资源这样会带来很多其他性能的开销
-
-与线程的体制完全耦合完全相关所以这个时候就看程序要干什么；
-根据I/O操作和CPU操作区分程序；如果CPU计算比例占大部分也就是cpu密集型程序，这个时候线程等待时间接近于0，也就是耗费大量时间的就是上下文切换，为了减少上下文切换，一般开CPU核数个线程再加一条保证线程意外暂停；如果是IO操作占比大部分，等待时间长，理论上是可以开无限多个线程但是考虑到节约资源又要保证性能及稳定性，一般用两倍的CPU核数，再加一条为backup，如果需要精密计算的任务就可以使用公式CPU核数/（1-阻塞系数）(阻塞系数0.8~0.9）
-单个cpu设定多线程有没有意义？结合上面
-根据实际需要来处理
-如果你的每个线程的工作与时序无关的，并且含有外部的读写操作
-那么是很有意义的，当一个线程进行读写的时候，其他线程可以占用CPU进行运行。
-也即线程属于I/O密集型的时候，在CPU才会体现的多线程的好处
-如果是CPU密集型的，你开了很多个线程，只是增加了CPU在各个线程中进行切换的负担
-没有带来好处，和性能的提高
-6.如何结束一个线程？
-
-
-就是run方法结束就正常退出线程了，自然退出
-
-
-使用stop ，但是不建议使用，因为stop结束线程不会在意你进行到哪突然结束，会容易产生数据不一致。
-
-
-volatile标志 也可以 如果是不依赖中间状态 停止就很方便，是特定场景下比较优雅的解决方案。
-
-
-不适合没有同步的时候，线程阻塞，没办法循环回去
-
-
-打断时间不精确，（比如在一个阻塞容器容量为5的时候结束生产者，由于其对同步线程标志位的时间控制不是很精确，有时候生产者还会生产一部分时间。
-
-
-
-
-interrupt/isinterrupt比较优雅
-
-
-当然要精确停止，控制线程有时候更加需要和外面的线程进行合作吗这个时候就需要用到锁了。
-interrupt和isInterrupt()
-
-
-interrupt() ：实例⽅法，设置线程中断标志（打扰⼀下，你该处理⼀下中断）比如sleep()在睡眠的时候没办法中断，这个时候就需要
-
-
-isInterrupted()：实例⽅法，有没有⼈打扰我？
-
-
-interrupted()：静态⽅法，有没有⼈打扰我（当前线程）？复位
-
-
-interrupt()是静态方法，一个线程被中断，第一次调用时返回true然后清除中断信号，后面再次调用就是false了 ;isI就是查看当前信息
-7. 线程类的构造方法、静态块是被哪个线程调用的？
-这是一个非常刁钻和狡猾的问题。请记住：线程类的构造方法、静态块是被
-new这个线程类所在的线程所调用的，而 run 方法里面的代码才是被线程自身所调用的。
-如果说上面的说法让你感到困惑，那么我举个例子，假设 Thread2 中 new 了
-Thread1，main 函数中 new 了 Thread2，那么：
-（1）  Thread2 的构造方法、静态块是 main 线程调用的，Thread2 的 run()方法是Thread2 自己调用的
-（2）  Thread1 的构造方法、静态块是 Thread2 调用的，Thread1 的 run()方法是Thread1 自己调用的
-8. 线程安全活跃态？
-死锁：是指两个或两个以上的进程（或线程）在执行过程中，因争夺资源而造成的一种互相等待的现象，若无外力作用，它们都将无法推进下去。
-活锁：任务或者执行者没有被阻塞，由于某些条件没有满足，导致一直重复尝试，失败，尝试，失败。例如：循环递归没有写输出条件抛stackoverflow
-​			活锁和死锁的区别在于，处于活锁的实体是在不断的改变状态，这就是所谓的“活”， 而处于死锁的实体表现为等待；活锁有可能自行解开，死锁则不能。
-饥饿：一个或者多个线程因为种种原因无法获得所需要的资源，导致一直无法执行的状态。例子：读写锁，一直读导致写操作一直等待
-​		Java 中导致饥饿的原因：
-
-其他线程在临界区做了无限循环或无限制等待资源的操作，让其他的线程一直不能拿到锁进入临界区，对其他线程来说就进入了饥饿状态。
-因为线程优先级分配的不合理，导致部分线程始终无法获得CPU资源。
-
-9. 1～26和a~b顺序交替打印
-这道面试题呢实际上是华为的一道面试题，其实它里面是一道填空题，后来就很多的开始考这道题，这个面试题是两个线程，第一个线程是从1到26，第二个线程是从A到一直到Z，然后要让这两个线程做到同时运行，交替输出，顺序打印。那么这道题目的解法有非常多。
-1.LockSupport
-public class T02_00_LockSupport &#123;    static Thread t1 = null, t2 = null;    public static void main(String[] args) throws Exception &#123;        char[] aI = &quot;1234567&quot;.toCharArray();        char[] aC = &quot;ABCDEFG&quot;.toCharArray();        t1 = new Thread(() -&gt; &#123;                for(char c : aI) &#123;                    System.out.print(c);                    LockSupport.unpark(t2); //叫醒T2                    LockSupport.park(); //T1阻塞                &#125;        &#125;, &quot;t1&quot;);        t2 = new Thread(() -&gt; &#123;            for(char c : aC) &#123;                LockSupport.park(); //t2阻塞                System.out.print(c);                LockSupport.unpark(t1); //叫醒t1            &#125;        &#125;, &quot;t2&quot;);        t1.start();        t2.start();    &#125;&#125;
-​
-2. wait() 和 notify()
-public class waitNotify&#123;  final Object o = new Object();  char[] c1 = &quot;ABCDEFG&quot;.toCharArray();  char[] c2 = &quot;123456&quot;.toCharArray();    new Thread(()-&gt;&#123;    Sychronized(o)&#123;     	for(char c:c1)&#123;        System.out.println(c);        try&#123;          o.notify();        	o.wait();        &#125; catch(Exception e)&#123;          e.printStackTrace();        &#125;      &#125;      o.notify();    &#125;  &#125;,&quot;t1&quot;).start;    new Thread(()-&gt;&#123;    Sychronized(o)&#123;     	for(char c:c2)&#123;        System.out.println(c );        o.notify();        o.wait();      &#125;      o.notify();    &#125;  &#125;,&quot;t2&quot;).start;&#125;
-一定要注意最后都要notify（）
-10. 多线程之间是怎么通信的？
-
-
-通过共享变量，变量需要volatile修饰；
-
-
-使用wait和notify方法，但是由于需要使用同一把锁，所以必须通知线程释放锁，被通知的线程才能获得到多，这样导致通知不及时；
-
-
-使用countDownLatch实现，通知线程到指定条件，调用countDownLatc.countDown()被通知的线程进行await()方法
-
-
-使用Condition的await()和signalAll()方法。
-
-
-11. 生产者消费者模型?
-Condition 阻塞队列
-public class ProviderConsumer&lt;T&gt; &#123;	private int length;	private Queue&lt;T&gt; queue;	private ReentrantLock lock = new ReentrantLock();	private Condition provideCondition = lock.newCondition();	private Condition consumeCondition = lock.newCondition();	public ProviderConsumer(int length) &#123;		this.length = length;		this.queue = new LinkedList&lt;T&gt;();	&#125;	public void provide(T product) &#123;		lock.lock();		try &#123;			while (queue.size() &gt;= length) &#123;				provideCondition.await();			&#125;			queue.add(product);			consumeCondition.signal();		&#125; catch (InterruptedException e) &#123;			e.printStackTrace();		&#125; finally &#123;			lock.unlock();		&#125;	&#125;	public T consume() &#123;		lock.lock();		try &#123;			while (queue.isEmpty()) &#123;				consumeCondition.await();			&#125;			T product = queue.remove();			provideCondition.signal();			return product;		&#125; catch (InterruptedException e) &#123;			e.printStackTrace();		&#125; finally &#123;			lock.unlock();		&#125;		return null;	&#125;&#125;
-wait() 和 notify()
-public class ProducerConsumerModel &#123;    public static void main(String[] args) &#123;        EventStorage eventStorage = new EventStorage();        Producer producer = new Producer(eventStorage);        Consumer consumer = new Consumer(eventStorage);        new Thread(producer).start();        new Thread(consumer).start();    &#125;    static class Producer implements Runnable &#123;        private EventStorage storage;        public Producer(EventStorage storage) &#123;            this.storage = storage;        &#125;        @Override        public void run() &#123;            for (int i = 0; i &lt; 100; i++) &#123;                storage.put(i);            &#125;        &#125;    &#125;    static class Consumer implements Runnable &#123;        private EventStorage storage;        public Consumer(EventStorage storage) &#123;            this.storage = storage;        &#125;        @Override        public void run() &#123;            for (int i = 0; i &lt; 100; i++) &#123;                storage.take(i);            &#125;        &#125;    &#125;    static class EventStorage &#123;        private int size;        private LinkedList&lt;String&gt; storage;        public EventStorage() &#123;            size = 10;            storage = new LinkedList&lt;&gt;();        &#125;        public synchronized void put(int i) &#123;            while (storage.size() == this.size) &#123;                try &#123;                    wait();                &#125; catch (InterruptedException e) &#123;                    e.printStackTrace();                &#125;            &#125;            storage.push(&quot;数据&quot; + i);            System.out.println(&quot;生产 -&gt; 数据&quot; + i + &quot; 当前仓库中已经有了 &quot; + storage.size() + &quot; 条数据&quot;);            notify();        &#125;        public synchronized void take(int i) &#123;            while (storage.size() == 0) &#123;                try &#123;                    wait();                &#125; catch (InterruptedException e) &#123;                    e.printStackTrace();                &#125;            &#125;            System.out.println(&quot;消费 -&gt; &quot; + storage.poll() + &quot; 当前仓库中剩下 &quot; + storage.size() + &quot; 条数据&quot;);            notify();        &#125;    &#125;&#125;
-]]></content>
-      <categories>
-        <category>多线程</category>
-      </categories>
-      <tags>
-        <tag>多线程</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>网络IO</title>
-    <url>/2022/03/10/%E7%BD%91%E7%BB%9CIO/</url>
-    <content><![CDATA[网络
-TCP
-
-
-是一个基于字节流的一个传输层的通信协议，在发送数据之前双方是需要建立一个连接的，这个所谓的连接就是双方都保存一个对方的ip地址还有端口等信息，然后TCP其实是一个字节流，头部就保存了这些信息，进行连接的时候有三个阶段：建立连接、传输数据、关闭连接，三次握手来建立，四次挥手来关闭，其中交换的报文都是tcp的头部。
-三次握手
-三次握手是一个在内核发生的一个行为，基于TCP协议，，首先呢，客户端应用启动以后，服务端进入listen状态，为了未来收到数据包做准备，然后在这个状态下内核进行了三次握手，
-
-首先第一次是客户端向服务端发送带有SYN，代表发送连接的标识，的一个报文，自己进入一个SYN-SENT状态，然后服务器接收进入SYN-RECV状态
-第二次是服务器发送带有SYN+ACK的报文，ACK是确认序号有效的标识，客户端接收进入established状态；
-然后就是最后一次握手 因为服务端还需要知道自己发送和对方接收是否成功，所以客户端发送带有ACK标识的报文，服务端接收到才进入establised状态，以上三次握手就进行完毕
-
-
-然后在这里以后应用要进行接收，就得将连接的socket放入accept队列，需要IO模型，调用server.accept() 如果队列里面有就取出来传到应用里，这里就有两种模型分别是阻塞等待返回的BIO和无阻塞轮询返回的NIO；还有一种模型是多路复用器，调用select,poll,epoll，但是它只是做一个和内核调用来知道队列里面是否有事件，然后再去有效性地进行一个accep()方法的调用
-四次分手
-
-客户端完成数据传输，要准备释放连接的时候：
-
-
-进行第一次挥手，发一个带FIN（代表释放连接的标识）的报文给服务端然后进入FIN_WAIT1状态，服务接收到以后进入一个CLOSE-WAIT状态；
-
-
-第二次挥手就是，服务器端向客户端发带ACK标识的报文，客户端接收后又进入FIN-WAIT状态，等待服务端将数据处理完毕收尾；
-
-
-第三次服务端再去发送一个带FIN和ACK的报文，之前不一起发是因为服务端接收以后需要将数据发送进行完毕,在一个CLOSE-WAIT状态，搞定以后再发，客户端接收后进入TIME_WAIT状态；
-
-
-然后就是第四次，客户端发送一个带ACK的报文给服务端，这里客户端的TIME-wait状态不能直接结束需要等待两倍报文寿命时间，再去closed，为什么是两倍报文寿命的时间是因为又肯呢个会出现服务器丢包的问题，但是服务端没接收到就会继续发送FIN，客户端要等待这么一个一去一回的时间来确认服务端没有再发送FIN，也就是确认服务端是否接收到，再去关闭，服务端接收到就会进入closed状态；
-以上就是我了解的四次挥手过程。
-
-
-与UDP的区别
-udp  是用户数据协议，tcp是传输控制协议， 我就从这几个方面进行比较吧，首先一个是udp是无连接的，tcp是基于连接的， 第二个方面是他们的传输方式，udp 是报文， tcp是一个字节流，第三个是他们连接方式，udp是一对一一对多，多对多多对一的通信，而tcp只能是一对一，从这就可以看出第四方面他们的可靠性和安全性tcp明显是要高一些，也导致tcp首部要传输的信息很多，开销大，适用的场景就是文件传输，udp就可以在实时应用比如视频会议电话等场景用。
-粘包
-TCP协议是面向连接的可靠性协议。说它可靠并不表示数据信息一定会被对端接受，而是在传输失败后会放弃重传机制并中断连接来通知用户。它提供的只是数据可靠性的传输和故障通知。
-TCP是数据流传输，数据流是只有起点和终点的字节数据序列，只有输入流和输出流。根本不存在“包”的概念。粘包的包是应用层的包，应用层协议规定了包的结构和大小，本质上就是一段数据报文。比如一段http请求，
-//http 请求GET /hello.txt HTTP/1.1User-Agent: curl/7.16.3 libcurl/7.16.3 OpenSSL/0.9.7l zlib/1.2.3Host: www.example.comAccept-Language: en, mi
-TCP粘包的原因
-首先粘包的情况可能是recv-buffer这个缓冲区里有a包的一部分，或者a包和b包的一部分都有，原因从发送端来讲可能是send发送数据的时候因为还没收到接收端的ACK，就暂时将数据填充到缓冲区中等待，接收端方面就可能是因为处理数据不及时，数据都堆在缓冲区，致使ab包相连。
-如何解决粘包呢？
-
-固定包长度。每个包的大小都是一样的。
-在包中给定包大小。例如：（固定前4个字节为包大小）
-设置特定的结束标志。
-
-struct Message &#123;undefined    int packSize;    int type;    char buf[100];&#125;;
-http协议就是使用了上述的2，3方法。http使用&quot;\r\n&quot;为结束标识。
-当为post请求时则有content-Length标识请求体长度。
-Connection refused
-可能是一个网络问题，还有可能就是内核建立连接发给程序的时候，那个accept队列阻塞了。
-因为是内核帮助建立连接，程序必须通过listen里面的accept接收队列来进行一个等待程序的接收，有一个大小限制的backlog，如果队列满了可能就会造成一个报错， 是内核和程序之间发生的一个卡。
-Session , Cookie, Token
-
-因为http协议本身是一个无状态也就是浏览器没办法判断用户身份，然后cookie提供了暂时保存用户信息的一个作用，它其实是一个服务器放在浏览器上面的一个key-value形式的一个小文件，如果服务器需要保存用户状态，就通过response给客户端颁发一个cookie，下次浏览器再请求的时候再将cookie提交，服务器检查来进行辨认。
-而session呢，是域对象之一，是会话过程中服务器分的一块储存空间，但也是依赖着cookie实现的，浏览器会在cookie里面设置sessionid， 服务器根据sessionid取出session中存储的信息。
-两者区别呢就是存储空间的限制，session是没有限制的，cookie是有限制的，然后就是存储的位置，cookie是在浏览器上，session是在服务器端，这样安全性也就可以看出来cookie的不高，另一方面占用资源 session也会更多更加降低性能。
-而token呢，是因为客户端如果频繁向服务端请求数据，服务端频繁的去数据库查询会有很多压力，使用token呢，就会降低服务器压力，减少频繁访问数据库，增强健壮性，token是服务端产生的字符串，作为一个客户端请求的令牌，第一次登陆就生成给客户端，以后客户端就拿这个token来请求数据，不用用户名和密码。 和session的区别就是session存储在服务器端，而token是在浏览器端，并且还提供认证功能，安全性比session好，不会让服务器压力很大，适用于项目级的前后端分离项目，session只能在服务器和客户端在同一台机器的场景使用。
-HTTP
-常用HTTP状态码：
-
-
-
-2XX
-成功（这系列表明请求被正常处理了）
-
-
-
-
-200
-OK，表示从客户端发来的请求在服务器端被正确处理
-
-
-204
-No   content，表示请求成功，但响应报文不含实体的主体部分
-
-
-206
-Partial   Content  ，进行范围请求成功
-
-
-3XX
-重定向  （表明浏览器要执行特殊处理）
-
-
-301
-moved permanently，永久  性重定向，表示资源已被分配了新的 URL
-
-
-302
-found，临时性重定向，表示资源临时被分配了新的   URL
-
-
-303
-see   other，表示资源存在着另一个 URL，  应使用   GET 方法获取资源  （对于  301/302/  303响应，几乎所有浏览器都会删除报文主体并  自动用  GET重新请求）
-
-
-304
-not   modified ，表示服务器允许访问资源，但请求未满足条件的情况（与重定向无关）
-
-
-307
-temporary   redirect，临时重定  向，和302 含义类似，但是期望客户端保持请求方法不变向新的地址发出请求
-
-
-4XX
-客户端错误
-
-
-400
-bad   request，请求报文存在语法错误
-
-
-401
-unauthorized，表示发送的请求需要有通过   HTTP 认证的认证信息
-
-
-403
-forbidden  ，表示对请求资源的访问被服务器拒绝，可在实体主体部分返回原因描述
-
-
-404
-not   found，表示在服务器上没有找到请求的资源
-
-
-5XX
-服务器错误
-
-
-500
-internal   sever   error，表  示服务器端在执行请求时发生了错误
-
-
-501
-Not   Implemented，表示服务器不支持当前请求所需要的某个功能
-
-
-503
-service unavailable，表明服务器暂时处于超负载或正在停机维护，无法处理请求
-
-
-
-HTTP1和HTTP2
-HTTP2 可以提高了网页的性能。
-在 HTTP1 中浏览器限制了同一个域名下的请求数量（Chrome 下一般是六
-个），当在请求很多资源的时候，由于队头阻塞当浏览器达到  大请求数量时，剩余的资源需等待当前的六个请求完成后才能发起请求。
-HTTP2 中引入了多路复用的技术，这个技术可以只通过一个 TCP 连接就可以传输所有的请求数据。多路复用可以绕过浏览器限制同一个域名下的请求数量的问题，进而提高了网页的性能。
-HTTPS
-HTTP 是一个在计算机世界里专门在两点之间传输文字、图片、音频、视频等超文本数据的约定和规范
-
-
-
-区别
-HTTP
-HTTPS
-
-
-
-
-协议
-运行在   TCP 之上，明文传输，客户端与服务器端都无法验证对方的身份
-身披 SSL(   Secure   Socket   Layer  )外壳的   HTTP，运行于 SSL 上，SSL 运行于   TCP 之  上，  是添加了加密和认证机制的   HTTP。
-
-
-端口
-80
-443
-
-
-资源消耗
-较少
-由于加解密处理，会消耗更  多的 CPU 和内存资源
-
-
-开销
-无需证书
-需要证书，而证书一般需要向认证机构购买
-
-
-加密机制
-无
-共享密钥加密和公开密钥加密并用的混合加密机制
-
-
-安全性
-弱
-由于加密机制，安全性强
-
-
-
-==get和post的区别==
-
-
-GET在浏览器回退时是无害的，而POST会再次提交请求。
-GET产生的URL地址可以被Bookmark，而POST不可以。
-GET请求会被浏览器主动cache，而POST不会，除非手动设置。
-GET请求只能进行url编码，而POST支持多种编码方式。
-GET请求参数会被完整保留在浏览器历史记录里，而POST中的参数不会被保留。
-GET请求在URL中传送的参数是有长度限制的，而POST则没有。对参数的数据类型GET只接受ASCII字符，而POST即可是字符也可是字节。
-GET比POST更不安全，因为参数直接暴露在URL上，所以不能用来传递敏感信息。
-GET参数通过URL传递，POST放在Request body中。
-
-]]></content>
-      <categories>
-        <category>网络</category>
-      </categories>
-      <tags>
-        <tag>网络</tag>
-        <tag>IO</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>分布式笔记【RabbitMQ+Zookeeper+FastDFS】</title>
-    <url>/2022/05/16/%E5%88%86%E5%B8%83%E5%BC%8F%E7%AC%94%E8%AE%B0/</url>
-    <content><![CDATA[分布式(更新ing)
-分布式项目的整合：
-https://www.processon.com/view/link/6281b28c0e3e746f2b12d0ee
-
-分布式架构会把一个项目按照特定要求（多按照模块或功能）拆分成多个项目，每个项目分别部署到不同的服务器上。
-
-RMI
-运程方法调用
-
-API
-Remote
-​			远程调用接口
-RemoteException
-​			承了Remote接口的接口中，如果方法是允许被远程调用的，需要抛出此异常。
-UnicastRemoteObject
-​				java.rmi.server.UnicastRemoteObject
-​				此类实现了Remote接口和Serializable接口。
-​				自定义接口实现类除了实现自定义接口还需要继承此类。
-LocateRegistry
-​				java.rmi.registry.LocateRegistry
-​				可以通过LocateRegistry在本机上创建Registry，通过特定的端口就可以访问这个Registry。
-Naming
-​				java.rmi.Naming
-​				Naming定义了发布内容可访问RMI名称。也是通过Naming获取到指定的远程方法。
-zookeeper注册中心
-
-客户端常用命令
-ls [-s][-R] /path			查看列表get [-s] /path			查看内容create /path [data]			创建指定路径信息set /path data			设置节点内容delete /path			删除节点
-注册内容
-创建/demo
-2     添加依赖
-3     编写代码
-创建zk对象获取连接
-new watcher()内部重写process()
-发布任务create()
-ZooDefs.Ids.OPEN_ACL_UNSAFE
-表示权限
-CreateMode.PERSISTENT_SEQUENTIAL
-永久存储，文件内容编号递增
-4     查看上传数据
-查看内容
-​		创建zk对象获取连接
-​			new watcher()内部重写process()
-​		获取列表
-​			zookeeper.getChildren(“/demo”, false)
-​			zookeeper.getData(“/demo/” + child, false, null);
-RPC实现(RMI+Zookeeper)
-Dubbo
-
-​	分布式服务框架
-​	负载均衡
-​		负载均衡是在集群前提下，当访问整个集群时，集群中每个节点被访问次数或频率的规则。
-​		设置
-​			@Reference 客户端
-​				注入的是分布式中的远程服务对象
-​				@Reference(loadbalance = “roundrobin”)
-​					调用的服务采用的负载均衡算法
-​			@Service服务端
-​				@Service(loadbalance = “random”)
-​					当前服务采用的负载均衡算法
-​				@Service(weight = 4)
-​					设置权重
-​		内置策略
-​			Random
-​					随机。随机访问集群中节点。访问概率和权重有关。
-​			RoundRobin
-​					轮询。访问频率和权重有关。
-​				性能好的服务器权重应该高一些。
-​			LeastActive
-​					活跃数相同的随机,活跃数高的放前面。
-​			ConsistentHash
-​				hash 相同参数发送到同一个提供者
-​	完整项目
-​		provider
-​			dubbo.protocal.port
-​				需要设置端口
-RabbitMQ
-
-​	由Erlang语言编写的基于AMQP的消息中间件。
-​	消息中间件作为分布式系统重要组件之一，可以解决应用耦合，异步消息，流量削峰等问题。
-​	账号管理
-​		1 创建账户
-​			./rabbitmqctl add_user username password
-​		2 给用户授予管理员角色
-./rabbitmqctl set_user_tags mashibing administrator
-​		3 给用户授权
-​			./rabbitmqctl set_permissions -p “/” mashibing “.&quot; &quot;.” “.*”
-​		4 登录
-​	交换机
-​		direct 默认
-​		fanout 广播
-​			FanoutExchage
-​			Binding
-​				绑定交换器和队列
-​			BindingBuilder
-​				Bind构造器
-​			amq.fanout
-​				内置fanout交换器名称
-​		topic主题
-​			运行RoutingKey包含匹配规则
-​				binding方法里面第二个参数
-​			BindingBuilder.bind(topicQueue).to(topicExchange).with(“com.a”);
-​		Header首部
-FastDFS
-​	分布式文件系统
-​	架构
-​		角色
-​			client
-​			Tracker Server
-​				跟踪服务器
-​					调度 负载均衡、记录集群状态信息、连接client和storage的枢纽
-​			Storage Server
-​				存储服务器
-​					文件和文件属性存储的地方
-​		文件上传流程
-​			1.  客户端访问Tracker
-​			2.  Tracker 返回Storage的ip和端口
-​			3.  客户端直接访问Storage，把文件内容和元数据发送过去。
-​			4.  Storage返回文件存储id。包含了组名和文件名
-Nginx
-​	反向代理服务
-​		代理方式
-​			正向
-​				架设在客户机和目标主机之间
-​				代理客户端，服务端不知道实际发起请求的客户端；
-​			反向
-​				架设在服务器端；
-​				代理服务端，客户端不知道实际提供服务的服务端；
-​	作用
-​		HTTP协议代理
-​		  搭建虚拟主机
-​		负载均衡
-]]></content>
-      <categories>
-        <category>分布式</category>
-      </categories>
-      <tags>
-        <tag>分布式</tag>
-        <tag>RabbitMQ</tag>
-        <tag>Zookeeper</tag>
-        <tag>FastDFS</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Twikoo评论系统的Cloudflare部署方案</title>
-    <url>/2025/06/17/Twikoo%E8%AF%84%E8%AE%BA%E7%B3%BB%E7%BB%9F%E7%9A%84Cloudflare%E9%83%A8%E7%BD%B2%E6%96%B9%E6%A1%88/</url>
-    <content><![CDATA[Twikoo评论系统的Cloudflare部署方案
-Twikoo是一款简洁、安全且免费的静态网站评论系统，在提升网站互动性方面表现出色。通常，Twikoo可部署在诸如腾讯云开发环境、Vercel等平台，但借助Cloudflare进行部署，能极大改善冷启动延迟问题，实现快速加载，为用户带来更流畅的评论体验，同时利用Cloudflare强大的全球网络提升访问速度。以下为详细的Cloudflare部署Twikoo评论系统的步骤与要点。
-一、前期准备
-在开始部署前，需提前准备好相关工具与资源：
-
-Cloudflare账户：若尚未注册，前往Cloudflare官网完成注册流程。
-Node.js环境：确保本地开发环境安装了Node.js，可通过Node.js官网下载并安装对应系统的最新版本，安装完成后，在命令行输入node -v验证是否安装成功及查看版本号。
-文本编辑器：推荐使用Visual Studio Code、Sublime Text等，方便进行代码编辑与配置文件修改。
-
-二、安装依赖包
-
-首先，创建一个新的项目目录，用于存放Twikoo相关代码与配置文件，在命令行中进入该目录，执行以下命令安装项目依赖：
-
-npm install
-
-由于Cloudflare Workers的免费套餐对捆绑包大小有严格的1MiB限制，部分与Cloudflare Workers的Node.js兼容性存在问题的包即便安装了也无法使用，为控制捆绑包大小，需手动删除这些包，在命令行中依次执行：
-
-echo &quot;&quot; &gt; node_modules/jsdom/lib/api.jsecho &quot;&quot; &gt; node_modules/tencentcloud-sdk-nodejs/tencentcloud/index.jsecho &quot;&quot; &gt; node_modules/nodemailer/lib/nodemailer.js
-上述命令会清空jsdom、tencentcloud-sdk-nodejs、nodemailer这三个包中特定文件的内容，使其不占用捆绑包空间，同时规避兼容性问题。
-三、登录Cloudflare账户
-通过Wrangler工具登录Cloudflare账户，Wrangler是Cloudflare提供的用于管理Workers、D1数据库等资源的命令行工具，执行以下命令进行登录：
-npx wrangler login
-运行该命令后，系统会自动打开浏览器，跳转到Cloudflare的授权页面，按照提示完成授权操作，授权成功后，Wrangler便与你的Cloudflare账户建立连接，后续可通过它对Cloudflare资源进行操作。
-四、创建Cloudflare D1数据库并设置架构
-
-使用Wrangler创建名为twikoo的D1数据库，在命令行执行：
-
-npx wrangler d1 create twikoo
-执行此命令后，终端会输出数据库的相关信息，其中database_name和database_id这两行信息至关重要，需将其复制下来，用于后续配置。
-&#123;  &quot;d1_databases&quot;: [    &#123;      &quot;binding&quot;: &quot;DB&quot;,      &quot;database_name&quot;: &quot;twikoo&quot;,      &quot;database_id&quot;: &quot;56def18d-b46a-42c8-bc99-0214e58f9a54&quot;    &#125;  ]&#125;
-
-打开项目目录下的wrangler.toml文件（若不存在，可手动创建），将刚刚复制的database_name和database_id粘贴进去，替换原有的对应值，使项目与创建的D1数据库建立关联。
-为D1数据库设置架构，Twikoo项目中包含定义数据库表结构和初始数据的schema.sql文件，执行以下命令，将该架构应用到Cloudflare D1数据库：
-
-npx wrangler d1 execute twikoo --remote --file=./schema.sql
-此命令会远程连接到之前创建的twikoo数据库，并依据schema.sql文件的内容创建相应的表结构及可能的初始数据，确保数据库满足Twikoo评论系统的存储需求。
-
-五、创建Cloudflare R2存储
-Cloudflare R2可用于存储Twikoo评论系统相关的文件，如上传的图片等（尽管当前部署方案中对R2的使用存在一定限制，但创建步骤仍需完成），通过以下命令创建名为twikoo的R2存储桶：
-npx wrangler r2 bucket create twikoo
-创建完成后，找到wrangler.toml文件中r2_public_url字段，将其值更新为新创建的R2存储桶的域名，确保项目能正确访问R2存储资源。
-[vars]
-R2_PUBLIC_URL = “https://twikoo.soniachen.com”
-
-六、部署Cloudflare Worker
-完成上述配置后，即可将Twikoo评论系统部署到Cloudflare Workers，执行以下命令进行部署：
-npx wrangler deploy --minify
---minify参数用于对代码进行压缩，以进一步减小捆绑包大小，提升部署效率与性能。部署过程可能需要一些时间，完成后，命令行中会输出类似https://twikoo-cloudflare.&lt;your username&gt;.workers.dev的访问地址。若部署成功，在浏览器中访问该地址，应能看到类似于&#123;&quot;code&quot;: 100, &quot;message&quot;: &quot;twikoo云函数运行正常，请参考https://twikoo.js.org/frontend.html完成前端的配置&quot;, &quot;version&quot;: &quot;1.6.33&quot;&#125;的提示信息，这表明Twikoo的后端服务已在Cloudflare上成功部署。
-七、前端配置
-
-在博客或网站的前端代码中，找到需要添加评论功能的页面。若使用Twikoo官方提供的前端初始化代码，需将其中的envId字段值设置为第六步中得到的Cloudflare Worker访问地址（包含https://前缀）。例如：
-
-twikoo.init(&#123;    envId: &quot;https://twikoo-cloudflare.&lt;your username&gt;.workers.dev&quot;,    el: &quot;#tcomment&quot;,    // region: &#x27;ap-guangzhou&#x27;, // 环境地域，默认为ap-shanghai，如果您的环境地域不是上海，需传此参数    // path: &#x27;window.location.pathname&#x27;, // 用于区分不同文章的自定义js路径，如果您的文章路径不是location.pathname，需传此参数    // lang: &#x27;zh-CN&#x27;, // 用于手动设定评论区语言，支持的语言列表https://github.com/imaegoo/twikoo/blob/dev/src/js/utils/i18n/index.js    // onCommentLoaded: function () &#123;    //     console.log(&quot;评论加载或评论成功&quot;);    // &#125;&#125;);
-
-确保前端页面包含用于显示评论区的HTML元素，其id需与上述代码中el字段指定的值一致（如&lt;div id=&quot;tcomment&quot;&gt;&lt;/div&gt;），这样Twikoo前端脚本才能正确渲染评论区。
-
-
-八、配置邮件通知（可选）
-Twikoo支持在有新评论时发送邮件通知管理员，由于nodemailer包的兼容性问题，在Cloudflare Workers环境中，无法直接通过SMTP集成发送邮件，而是通过SendGrid的HTTPS API实现邮件通知功能，具体步骤如下：
-
-注册一个可用的SendGrid账户（SendGrid提供免费套餐，每天可发送多达100封邮件）或Mailchannels账户（每月免费3000封邮件），并在账户设置中创建一个API Key，用于后续验证身份。
-在Twikoo的配置中设置相关邮件参数，找到配置文件中与邮件通知相关的部分，设置以下字段：
-
-sender_email: &quot;发件人邮箱地址&quot;, // 需在SendGrid中进行验证sender_name: &quot;显示的发件人名称&quot;,smtp_service: &quot;sendgrid&quot;,smtp_user: &quot;提供任意非空值&quot;,smtp_pass: &quot;之前创建的SendGrid API Key&quot;,
-此外，还可根据需求设置其他配置值，以自定义通知邮件的外观和内容。完成设置后，在配置页面点击“发送测试邮件”按钮，检查邮件通知功能是否正常工作，同时需确保邮件提供商不会将收到的通知邮件归类为垃圾邮件。
-九、常见问题及解决方法
-
-捆绑包大小超限：若在部署时遇到捆绑包大小超过Cloudflare Workers免费套餐1MiB限制的问题，除了前文提到的删除特定包文件内容外，还可检查项目中是否引入了不必要的大型依赖，精简代码，减少不必要的资源加载。
-数据库连接问题：若出现无法连接到Cloudflare D1数据库的情况，首先确认wrangler.toml文件中database_name和database_id是否填写正确，其次检查网络连接是否正常，确保能访问Cloudflare的服务。
-前端评论区无法显示：前端评论区无法正常显示时，检查浏览器控制台是否有报错信息，可能是envId配置错误、前端脚本加载失败或HTML元素id不匹配等原因导致，根据具体错误提示进行排查修复。
-
-通过以上详细的Cloudflare部署方案，可将Twikoo评论系统高效地集成到网站中，利用Cloudflare的优质服务提升评论系统的性能与稳定性，为网站访客打造良好的互动交流环境。
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>hexo</tag>
-        <tag>CloudFlare</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>缓存和分布式锁</title>
     <url>/2024/06/17/%E7%BC%93%E5%AD%98%E5%92%8C%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81_/</url>
     <content><![CDATA[缓存和分布式锁
@@ -7504,6 +7290,220 @@ SpringCache的不足：
       <tags>
         <tag>缓存</tag>
         <tag>分布式锁</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>网络IO</title>
+    <url>/2022/03/10/%E7%BD%91%E7%BB%9CIO/</url>
+    <content><![CDATA[网络
+TCP
+
+
+是一个基于字节流的一个传输层的通信协议，在发送数据之前双方是需要建立一个连接的，这个所谓的连接就是双方都保存一个对方的ip地址还有端口等信息，然后TCP其实是一个字节流，头部就保存了这些信息，进行连接的时候有三个阶段：建立连接、传输数据、关闭连接，三次握手来建立，四次挥手来关闭，其中交换的报文都是tcp的头部。
+三次握手
+三次握手是一个在内核发生的一个行为，基于TCP协议，，首先呢，客户端应用启动以后，服务端进入listen状态，为了未来收到数据包做准备，然后在这个状态下内核进行了三次握手，
+
+首先第一次是客户端向服务端发送带有SYN，代表发送连接的标识，的一个报文，自己进入一个SYN-SENT状态，然后服务器接收进入SYN-RECV状态
+第二次是服务器发送带有SYN+ACK的报文，ACK是确认序号有效的标识，客户端接收进入established状态；
+然后就是最后一次握手 因为服务端还需要知道自己发送和对方接收是否成功，所以客户端发送带有ACK标识的报文，服务端接收到才进入establised状态，以上三次握手就进行完毕
+
+
+然后在这里以后应用要进行接收，就得将连接的socket放入accept队列，需要IO模型，调用server.accept() 如果队列里面有就取出来传到应用里，这里就有两种模型分别是阻塞等待返回的BIO和无阻塞轮询返回的NIO；还有一种模型是多路复用器，调用select,poll,epoll，但是它只是做一个和内核调用来知道队列里面是否有事件，然后再去有效性地进行一个accep()方法的调用
+四次分手
+
+客户端完成数据传输，要准备释放连接的时候：
+
+
+进行第一次挥手，发一个带FIN（代表释放连接的标识）的报文给服务端然后进入FIN_WAIT1状态，服务接收到以后进入一个CLOSE-WAIT状态；
+
+
+第二次挥手就是，服务器端向客户端发带ACK标识的报文，客户端接收后又进入FIN-WAIT状态，等待服务端将数据处理完毕收尾；
+
+
+第三次服务端再去发送一个带FIN和ACK的报文，之前不一起发是因为服务端接收以后需要将数据发送进行完毕,在一个CLOSE-WAIT状态，搞定以后再发，客户端接收后进入TIME_WAIT状态；
+
+
+然后就是第四次，客户端发送一个带ACK的报文给服务端，这里客户端的TIME-wait状态不能直接结束需要等待两倍报文寿命时间，再去closed，为什么是两倍报文寿命的时间是因为又肯呢个会出现服务器丢包的问题，但是服务端没接收到就会继续发送FIN，客户端要等待这么一个一去一回的时间来确认服务端没有再发送FIN，也就是确认服务端是否接收到，再去关闭，服务端接收到就会进入closed状态；
+以上就是我了解的四次挥手过程。
+
+
+与UDP的区别
+udp  是用户数据协议，tcp是传输控制协议， 我就从这几个方面进行比较吧，首先一个是udp是无连接的，tcp是基于连接的， 第二个方面是他们的传输方式，udp 是报文， tcp是一个字节流，第三个是他们连接方式，udp是一对一一对多，多对多多对一的通信，而tcp只能是一对一，从这就可以看出第四方面他们的可靠性和安全性tcp明显是要高一些，也导致tcp首部要传输的信息很多，开销大，适用的场景就是文件传输，udp就可以在实时应用比如视频会议电话等场景用。
+粘包
+TCP协议是面向连接的可靠性协议。说它可靠并不表示数据信息一定会被对端接受，而是在传输失败后会放弃重传机制并中断连接来通知用户。它提供的只是数据可靠性的传输和故障通知。
+TCP是数据流传输，数据流是只有起点和终点的字节数据序列，只有输入流和输出流。根本不存在“包”的概念。粘包的包是应用层的包，应用层协议规定了包的结构和大小，本质上就是一段数据报文。比如一段http请求，
+//http 请求GET /hello.txt HTTP/1.1User-Agent: curl/7.16.3 libcurl/7.16.3 OpenSSL/0.9.7l zlib/1.2.3Host: www.example.comAccept-Language: en, mi
+TCP粘包的原因
+首先粘包的情况可能是recv-buffer这个缓冲区里有a包的一部分，或者a包和b包的一部分都有，原因从发送端来讲可能是send发送数据的时候因为还没收到接收端的ACK，就暂时将数据填充到缓冲区中等待，接收端方面就可能是因为处理数据不及时，数据都堆在缓冲区，致使ab包相连。
+如何解决粘包呢？
+
+固定包长度。每个包的大小都是一样的。
+在包中给定包大小。例如：（固定前4个字节为包大小）
+设置特定的结束标志。
+
+struct Message &#123;undefined    int packSize;    int type;    char buf[100];&#125;;
+http协议就是使用了上述的2，3方法。http使用&quot;\r\n&quot;为结束标识。
+当为post请求时则有content-Length标识请求体长度。
+Connection refused
+可能是一个网络问题，还有可能就是内核建立连接发给程序的时候，那个accept队列阻塞了。
+因为是内核帮助建立连接，程序必须通过listen里面的accept接收队列来进行一个等待程序的接收，有一个大小限制的backlog，如果队列满了可能就会造成一个报错， 是内核和程序之间发生的一个卡。
+Session , Cookie, Token
+
+因为http协议本身是一个无状态也就是浏览器没办法判断用户身份，然后cookie提供了暂时保存用户信息的一个作用，它其实是一个服务器放在浏览器上面的一个key-value形式的一个小文件，如果服务器需要保存用户状态，就通过response给客户端颁发一个cookie，下次浏览器再请求的时候再将cookie提交，服务器检查来进行辨认。
+而session呢，是域对象之一，是会话过程中服务器分的一块储存空间，但也是依赖着cookie实现的，浏览器会在cookie里面设置sessionid， 服务器根据sessionid取出session中存储的信息。
+两者区别呢就是存储空间的限制，session是没有限制的，cookie是有限制的，然后就是存储的位置，cookie是在浏览器上，session是在服务器端，这样安全性也就可以看出来cookie的不高，另一方面占用资源 session也会更多更加降低性能。
+而token呢，是因为客户端如果频繁向服务端请求数据，服务端频繁的去数据库查询会有很多压力，使用token呢，就会降低服务器压力，减少频繁访问数据库，增强健壮性，token是服务端产生的字符串，作为一个客户端请求的令牌，第一次登陆就生成给客户端，以后客户端就拿这个token来请求数据，不用用户名和密码。 和session的区别就是session存储在服务器端，而token是在浏览器端，并且还提供认证功能，安全性比session好，不会让服务器压力很大，适用于项目级的前后端分离项目，session只能在服务器和客户端在同一台机器的场景使用。
+HTTP
+常用HTTP状态码：
+
+
+
+2XX
+成功（这系列表明请求被正常处理了）
+
+
+
+
+200
+OK，表示从客户端发来的请求在服务器端被正确处理
+
+
+204
+No   content，表示请求成功，但响应报文不含实体的主体部分
+
+
+206
+Partial   Content  ，进行范围请求成功
+
+
+3XX
+重定向  （表明浏览器要执行特殊处理）
+
+
+301
+moved permanently，永久  性重定向，表示资源已被分配了新的 URL
+
+
+302
+found，临时性重定向，表示资源临时被分配了新的   URL
+
+
+303
+see   other，表示资源存在着另一个 URL，  应使用   GET 方法获取资源  （对于  301/302/  303响应，几乎所有浏览器都会删除报文主体并  自动用  GET重新请求）
+
+
+304
+not   modified ，表示服务器允许访问资源，但请求未满足条件的情况（与重定向无关）
+
+
+307
+temporary   redirect，临时重定  向，和302 含义类似，但是期望客户端保持请求方法不变向新的地址发出请求
+
+
+4XX
+客户端错误
+
+
+400
+bad   request，请求报文存在语法错误
+
+
+401
+unauthorized，表示发送的请求需要有通过   HTTP 认证的认证信息
+
+
+403
+forbidden  ，表示对请求资源的访问被服务器拒绝，可在实体主体部分返回原因描述
+
+
+404
+not   found，表示在服务器上没有找到请求的资源
+
+
+5XX
+服务器错误
+
+
+500
+internal   sever   error，表  示服务器端在执行请求时发生了错误
+
+
+501
+Not   Implemented，表示服务器不支持当前请求所需要的某个功能
+
+
+503
+service unavailable，表明服务器暂时处于超负载或正在停机维护，无法处理请求
+
+
+
+HTTP1和HTTP2
+HTTP2 可以提高了网页的性能。
+在 HTTP1 中浏览器限制了同一个域名下的请求数量（Chrome 下一般是六
+个），当在请求很多资源的时候，由于队头阻塞当浏览器达到  大请求数量时，剩余的资源需等待当前的六个请求完成后才能发起请求。
+HTTP2 中引入了多路复用的技术，这个技术可以只通过一个 TCP 连接就可以传输所有的请求数据。多路复用可以绕过浏览器限制同一个域名下的请求数量的问题，进而提高了网页的性能。
+HTTPS
+HTTP 是一个在计算机世界里专门在两点之间传输文字、图片、音频、视频等超文本数据的约定和规范
+
+
+
+区别
+HTTP
+HTTPS
+
+
+
+
+协议
+运行在   TCP 之上，明文传输，客户端与服务器端都无法验证对方的身份
+身披 SSL(   Secure   Socket   Layer  )外壳的   HTTP，运行于 SSL 上，SSL 运行于   TCP 之  上，  是添加了加密和认证机制的   HTTP。
+
+
+端口
+80
+443
+
+
+资源消耗
+较少
+由于加解密处理，会消耗更  多的 CPU 和内存资源
+
+
+开销
+无需证书
+需要证书，而证书一般需要向认证机构购买
+
+
+加密机制
+无
+共享密钥加密和公开密钥加密并用的混合加密机制
+
+
+安全性
+弱
+由于加密机制，安全性强
+
+
+
+==get和post的区别==
+
+
+GET在浏览器回退时是无害的，而POST会再次提交请求。
+GET产生的URL地址可以被Bookmark，而POST不可以。
+GET请求会被浏览器主动cache，而POST不会，除非手动设置。
+GET请求只能进行url编码，而POST支持多种编码方式。
+GET请求参数会被完整保留在浏览器历史记录里，而POST中的参数不会被保留。
+GET请求在URL中传送的参数是有长度限制的，而POST则没有。对参数的数据类型GET只接受ASCII字符，而POST即可是字符也可是字节。
+GET比POST更不安全，因为参数直接暴露在URL上，所以不能用来传递敏感信息。
+GET参数通过URL传递，POST放在Request body中。
+
+]]></content>
+      <categories>
+        <category>网络</category>
+      </categories>
+      <tags>
+        <tag>网络</tag>
+        <tag>IO</tag>
       </tags>
   </entry>
   <entry>
