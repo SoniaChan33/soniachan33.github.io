@@ -396,14 +396,14 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/hexo/</loc>
+    <loc>https://blog.soniachen.com/tags/CSS/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/CSS/</loc>
+    <loc>https://blog.soniachen.com/tags/hexo/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -466,13 +466,6 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/MySQL/</loc>
-    <lastmod>2025-07-08</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://blog.soniachen.com/tags/Redis/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
@@ -487,6 +480,13 @@
   </url>
   
   <url>
+    <loc>https://blog.soniachen.com/tags/MySQL/</loc>
+    <lastmod>2025-07-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://blog.soniachen.com/tags/Rust/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
@@ -494,7 +494,7 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/CloudFlare/</loc>
+    <loc>https://blog.soniachen.com/tags/NoSQL/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -508,14 +508,14 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/Solidity/</loc>
+    <loc>https://blog.soniachen.com/tags/CloudFlare/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/Git/</loc>
+    <loc>https://blog.soniachen.com/tags/Solidity/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -537,6 +537,13 @@
   
   <url>
     <loc>https://blog.soniachen.com/tags/java/</loc>
+    <lastmod>2025-07-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soniachen.com/tags/Git/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -654,13 +661,6 @@
     <priority>0.2</priority>
   </url>
   
-  <url>
-    <loc>https://blog.soniachen.com/tags/NoSQL/</loc>
-    <lastmod>2025-07-08</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
 
   
   <url>
@@ -671,14 +671,14 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/categories/hexo/</loc>
+    <loc>https://blog.soniachen.com/categories/%E5%89%8D%E7%AB%AF/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/categories/%E5%89%8D%E7%AB%AF/</loc>
+    <loc>https://blog.soniachen.com/categories/hexo/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -699,14 +699,14 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/categories/MySQL/</loc>
+    <loc>https://blog.soniachen.com/categories/%E9%A1%B9%E7%9B%AE/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/categories/%E9%A1%B9%E7%9B%AE/</loc>
+    <loc>https://blog.soniachen.com/categories/MySQL/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -720,7 +720,7 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/categories/Git/</loc>
+    <loc>https://blog.soniachen.com/categories/Redis/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -728,6 +728,13 @@
   
   <url>
     <loc>https://blog.soniachen.com/categories/%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/</loc>
+    <lastmod>2025-07-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soniachen.com/categories/Git/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -763,13 +770,6 @@
   
   <url>
     <loc>https://blog.soniachen.com/categories/%E7%BD%91%E7%BB%9C/</loc>
-    <lastmod>2025-07-08</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://blog.soniachen.com/categories/Redis/</loc>
     <lastmod>2025-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
