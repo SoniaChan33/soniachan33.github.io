@@ -1,0 +1,671 @@
+<!DOCTYPE html><html lang="[&quot;zh-CN&quot;,&quot;en&quot;,&quot;default&quot;]" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>Solana[part9]_Anchor入门&amp;账户的概念和用法 | Sonia33</title><meta name="keywords" content="Rust,Solana"><meta name="author" content="SoniaChen"><meta name="copyright" content="SoniaChen"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="Solana[part9]_Anchor入门&amp;账户的概念和用法"><meta name="application-name" content="Solana[part9]_Anchor入门&amp;账户的概念和用法"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="Solana[part9]_Anchor入门&amp;账户的概念和用法"><meta property="og:url" content="https://blog.soniachen.com/2025/08/13/Solana-part9-Anchor%E5%85%A5%E9%97%A8-%E8%B4%A6%E6%88%B7%E7%9A%84%E6%A6%82%E5%BF%B5%E5%92%8C%E7%94%A8%E6%B3%95-1/index.html"><meta property="og:site_name" content="Sonia33"><meta property="og:description" content="Solana[part9]_Anchor入门&amp;amp;账户的概念和用法 一、Anchor框架概述 Anchor是Solana区块链生态中用于简化智能合约开发的核心框架，其核心优势在于将复杂的账户验证逻辑与业务逻辑分离，通过声明式语法降低开发门槛。Anchor提供了以下核心功能：  账户验证：通过#["><meta property="og:locale" content="[&quot;zh-CN&quot;,&quot;en&quot;,&quot;default&quot;]"><meta property="og:image" content="https://img.soniachen.com/IMG_5493.jpg?_r_=ee1ad417-cb21-9d25-1767-56ea70c0588b"><meta property="article:author" content="SoniaChen"><meta property="article:tag"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img.soniachen.com/IMG_5493.jpg?_r_=ee1ad417-cb21-9d25-1767-56ea70c0588b"><meta name="description" content="Solana[part9]_Anchor入门&amp;amp;账户的概念和用法 一、Anchor框架概述 Anchor是Solana区块链生态中用于简化智能合约开发的核心框架，其核心优势在于将复杂的账户验证逻辑与业务逻辑分离，通过声明式语法降低开发门槛。Anchor提供了以下核心功能：  账户验证：通过#["><link rel="shortcut icon" href="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png"><link rel="canonical" href="https://blog.soniachen.com/2025/08/13/Solana-part9-Anchor%E5%85%A5%E9%97%A8-%E8%B4%A6%E6%88%B7%E7%9A%84%E6%A6%82%E5%BF%B5%E5%92%8C%E7%94%A8%E6%B3%95-1/"><link rel="preconnect" href="//cdn.cbd.int"/><meta name="google-site-verification" content="xxx"/><meta name="baidu-site-verification" content="code-xxx"/><meta name="msvalidate.01" content="xxx"/><link rel="manifest" href="/manifest.json"/><meta name="msapplication-TileColor" content="var(--anzhiyu-main)"/><link rel="mask-icon" href="/img/siteicon/apple-icon-180.png" color="#5bbad5"/><link rel="apple-touch-icon" sizes="180x180" href="/img/siteicon/apple-icon-180.png"/><link rel="apple-touch-icon-precomposed" sizes="180x180" href="/img/siteicon/apple-icon-180.png"/><link rel="icon" type="image/png" sizes="32x32" href="/img/siteicon/32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/img/siteicon/16.png"/><link rel="bookmark" href="/img/siteicon/apple-icon-180.png"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2048-2732.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2732-2048.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1668-2388.jpg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2388-1668.jpg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1536-2048.jpg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2048-1536.jpg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1668-2224.jpg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2224-1668.jpg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1620-2160.jpg" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2160-1620.jpg" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1290-2796.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2796-1290.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1179-2556.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2556-1179.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1284-2778.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2778-1284.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1170-2532.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2532-1170.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1125-2436.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2436-1125.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1242-2688.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2688-1242.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-828-1792.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1792-828.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1242-2208.jpg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2208-1242.jpg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-750-1334.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1334-750.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-640-1136.jpg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1136-640.jpg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@5.0.28/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: undefined,
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"sonia33","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: undefined,
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":6,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://twikoo-cloudflare.soniachan0831.workers.dev',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: undefined,
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","📖 读万卷书","🧗 徒步爱好者","🏀 篮球狂热爱好者","🚴 公路车爱好者","🏃 跑步爱好者"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":true,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"prismjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: SoniaChen","link":"链接: ","source":"来源: Sonia33","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"bottom-right"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.1.2/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.1.2/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: true
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Sonia33',
+  title: 'Solana[part9]_Anchor入门&账户的概念和用法',
+  postAI: '通过本学习文档，开发者可以快速掌握 Anchor 框架与 PDA 的核心概念及实战技巧，为构建安全高效的 Solana 智能合约奠定基础。建议结合实际项目进行练习，逐步深入理解区块链账户模型与程序设计范式。',
+  pageFillDescription: 'Solana[part9]_Anchor入门amp账户的概念和用法, 一、Anchor框架概述, 二、PDA（Program Derived Address）核心概念, 三、Anchor中使用PDA的典型场景, 四、PDA账户操作详解, 五、PDA安全最佳实践, 六、典型应用案例, 七、开发工具链支持, 八、常见问题与解决方案, 九、延伸学习资源入门账户的概念和用法一框架概述是区块链生态中用于简化智能合约开发的核心框架其核心优势在于将复杂的账户验证逻辑与业务逻辑分离通过声明式语法降低开发门槛提供了以下核心功能账户验证通过宏定义账户结构自动验证账户状态指令分离将交易逻辑拆分为独立的指令处理函数管理内置对的支持错误处理自定义错误类型及友好的错误提示安装与配置安装初始化项目二核心概念是中一种特殊的账户地址其生成基于特定的种子和程序与普通账户的区别在于无私钥控制地址无法通过私钥签名只能由关联程序操作确定性生成相同种子和程序生成的地址唯一安全存储用于存储程序专属数据防止外部篡改生成公式三中使用的典型场景哈希表结构通过种子组合实现键值对存储权限控制作为程序专属签名者状态隔离不同业务逻辑使用独立账户示例创建账户四账户操作详解初始化账户通过约束自动创建账户并分配存储空间重新分配空间使用约束动态调整账户存储关闭账户通过约束释放账户资源五安全最佳实践种子设计原则避免使用可变参数作为主种子关键业务使用复合种子如敏感操作添加时间戳或随机数种子值管理使用默认简化开发复杂场景可自定义值验证通过预计算地址权限控制限制操作权限到特定指令使用宏实现细粒度访问控制六典型应用案例跨链资产托管生成托管地址托管资金转移可验证随机数生成生成随机数存储随机数结果七开发工具链支持生成客户端集成计算地址八常见问题与解决方案地址不匹配检查种子顺序及编码格式确认程序是否正确使用验证地址生成账户空间不足预计算所需存储空间字节系统开销数据结构大小使用动态调整空间避免频繁创建销毁账户签名权限问题确保操作指令包含正确的授权账户检查宏中的约束使用进行签名模拟九延伸学习资源官方文档指南实战项目示例仓库章节社区支持频道',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2025-08-17 10:05:42',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+          const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+          const isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+          const hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+          if (t === undefined) {
+            if (isLightMode) activateLightMode()
+            else if (isDarkMode) activateDarkMode()
+            else if (isNotSpecified || hasNoSupport) {
+              const now = new Date()
+              const hour = now.getHours()
+              const isNight = hour <= 6 || hour >= 18
+              isNight ? activateDarkMode() : activateLightMode()
+            }
+            window.matchMedia('(prefers-color-scheme: dark)').addListener(e => {
+              if (saveToLocal.get('theme') === undefined) {
+                e.matches ? activateDarkMode() : activateLightMode()
+              }
+            })
+          } else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><meta name="generator" content="Hexo 7.3.0"></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img.soniachen.com/cover2.gif"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><div class="back-home-button"><i class="anzhiyufont anzhiyu-icon-grip-vertical"></i><div class="back-menu-list-groups"><div class="back-menu-list-group"><div class="back-menu-list-title">网页</div><div class="back-menu-list"><a class="back-menu-item" href="https://blog.soniachen.com/" title="博客"><img class="back-menu-item-icon" src="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png" alt="博客"/><span class="back-menu-item-text">博客</span></a></div></div></div></div><a id="site-name" href="/" accesskey="h"><div class="title">Sonia33</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a><div id="he-plugin-simple"></div><script>var WIDGET = {
+  "CONFIG": {
+    "modules": "0124",
+    "background": "2",
+    "tmpColor": "FFFFFF",
+    "tmpSize": "16",
+    "cityColor": "FFFFFF",
+    "citySize": "16",
+    "aqiColor": "E8D87B",
+    "aqiSize": "16",
+    "weatherIconSize": "24",
+    "alertIconSize": "18",
+    "padding": "10px 10px 10px 10px",
+    "shadow": "0",
+    "language": "auto",
+    "borderRadius": "20",
+    "fixed": "true",
+    "vertical": "top",
+    "horizontal": "left",
+    "left": "20",
+    "top": "7.1",
+    "key": "df245676fb434a0691ead1c63341cd94"
+  }
+}
+</script><link rel="stylesheet" href="https://widget.qweather.net/simple/static/css/he-simple.css?v=1.4.0"/><script src="https://widget.qweather.net/simple/static/js/he-simple.js?v=1.4.0"></script></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/?id=447363601&amp;server=netease"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/bangumis/"><i class="anzhiyufont anzhiyu-icon-bilibili faa-tada" style="font-size: 0.9em;"></i><span> 追番页</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5543.JPG" target="_blank"><img class="post-qr-code-img" alt="微信" src="https://img.soniachen.com/blog/IMG_5543.JPG"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5544.JPG" target="_blank"><img class="post-qr-code-img" alt="支付宝" src="https://img.soniachen.com/blog/IMG_5544.JPG"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/BlockChain/" style="font-size: 1.05rem;">BlockChain<sup>4</sup></a><a href="/tags/CloudFlare/" style="font-size: 1.05rem;">CloudFlare<sup>2</sup></a><a href="/tags/Foundry/" style="font-size: 1.05rem;">Foundry<sup>1</sup></a><a href="/tags/Git/" style="font-size: 1.05rem;">Git<sup>1</sup></a><a href="/tags/Java/" style="font-size: 1.05rem; font-weight: 500; color: var(--anzhiyu-lighttext)">Java<sup>1</sup></a><a href="/tags/PicGo/" style="font-size: 1.05rem;">PicGo<sup>1</sup></a><a href="/tags/Rust/" style="font-size: 1.05rem;">Rust<sup>29</sup></a><a href="/tags/Solana/" style="font-size: 1.05rem;">Solana<sup>10</sup></a><a href="/tags/Solidity/" style="font-size: 1.05rem;">Solidity<sup>4</sup></a><a href="/tags/Typora/" style="font-size: 1.05rem;">Typora<sup>1</sup></a><a href="/tags/hexo/" style="font-size: 1.05rem;">hexo<sup>2</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/08/"><span class="card-archive-list-date">八月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">11</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/07/"><span class="card-archive-list-date">七月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">23</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/06/"><span class="card-archive-list-date">六月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">5</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2022/02/"><span class="card-archive-list-date">二月 2022</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/Solana/" itemprop="url">Solana</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Rust/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Rust</span></a><a class="article-meta__tags" href="/tags/Solana/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Solana</span></a></span></div></div><h1 class="post-title" itemprop="name headline">Solana[part9]_Anchor入门&amp;账户的概念和用法</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2025-08-13T03:12:49.000Z" title="发表于 2025-08-13 11:12:49">2025-08-13</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2025-08-17T02:05:42.731Z" title="更新于 2025-08-17 10:05:42">2025-08-17</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">1.1k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>4分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为四川"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>四川</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img.soniachen.com/IMG_5493.jpg?_r_=ee1ad417-cb21-9d25-1767-56ea70c0588b"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><div class="post-ai-description"><div class="ai-title"><i class="anzhiyufont anzhiyu-icon-bilibili"></i><div class="ai-title-text">AI-摘要</div><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right"></i><i class="anzhiyufont anzhiyu-icon-circle-dot" title="朗读摘要"></i><div id="ai-tag">sonia33 GPT</div></div><div class="ai-explanation">AI初始化中...</div><div class="ai-btn-box"><div class="ai-btn-item">介绍自己 🙈</div><div class="ai-btn-item">生成本文简介 👋</div><div class="ai-btn-item">推荐相关文章 📖</div><div class="ai-btn-item">前往主页 🏠</div><div class="ai-btn-item" id="go-tianli-blog">前往爱发电购买</div></div><script data-pjax src="/js/anzhiyu/ai_abstract.js"></script></div><article class="post-content" id="article-container" itemscope itemtype="https://blog.soniachen.com/2025/08/13/Solana-part9-Anchor%E5%85%A5%E9%97%A8-%E8%B4%A6%E6%88%B7%E7%9A%84%E6%A6%82%E5%BF%B5%E5%92%8C%E7%94%A8%E6%B3%95-1/"><header><a class="post-meta-categories" href="/categories/Solana/" itemprop="url">Solana</a><a href="/tags/Rust/" tabindex="-1" itemprop="url">Rust</a><a href="/tags/Solana/" tabindex="-1" itemprop="url">Solana</a><h1 id="CrawlerTitle" itemprop="name headline">Solana[part9]_Anchor入门&amp;账户的概念和用法</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">SoniaChen</span><time itemprop="dateCreated datePublished" datetime="2025-08-13T03:12:49.000Z" title="发表于 2025-08-13 11:12:49">2025-08-13</time><time itemprop="dateCreated datePublished" datetime="2025-08-17T02:05:42.731Z" title="更新于 2025-08-17 10:05:42">2025-08-17</time></header><h1>Solana[part9]_Anchor入门&amp;账户的概念和用法</h1>
+<h4 id="一、Anchor框架概述">一、Anchor框架概述</h4>
+<p>Anchor是Solana区块链生态中用于简化智能合约开发的核心框架，其核心优势在于将复杂的账户验证逻辑与业务逻辑分离，通过声明式语法降低开发门槛。Anchor提供了以下核心功能：</p>
+<ol>
+<li><strong>账户验证</strong>：通过<code>#[account]</code>宏定义账户结构，自动验证账户状态</li>
+<li><strong>指令分离</strong>：将交易逻辑拆分为独立的指令处理函数</li>
+<li><strong>PDA管理</strong>：内置对Program Derived Addresses（PDA）的支持</li>
+<li><strong>错误处理</strong>：自定义错误类型及友好的错误提示</li>
+</ol>
+<p><strong>安装与配置</strong></p>
+<pre class="language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 安装Anchor CLI</span>
+<span class="token function">cargo</span> <span class="token function">install</span> <span class="token parameter variable">--git</span> https://github.com/coral-xyz/anchor anchor-cli <span class="token parameter variable">--locked</span>
+
+<span class="token comment"># 初始化项目</span>
+anchor init my_project
+<span class="token builtin class-name">cd</span> my_project</code></pre>
+<h4 id="二、PDA（Program-Derived-Address）核心概念">二、PDA（Program Derived Address）核心概念</h4>
+<p>PDA是Solana中一种特殊的账户地址，其生成基于特定的种子（seeds）和程序ID（Program ID）。与普通账户的区别在于：</p>
+<ul>
+<li><strong>无私钥控制</strong>：PDA地址无法通过私钥签名，只能由关联程序操作</li>
+<li><strong>确定性生成</strong>：相同种子和程序ID生成的PDA地址唯一</li>
+<li><strong>安全存储</strong>：用于存储程序专属数据，防止外部篡改</li>
+</ul>
+<p><strong>PDA生成公式</strong></p>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">anchor_lang<span class="token punctuation">::</span>prelude<span class="token punctuation">::</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">derive_pda</span><span class="token punctuation">(</span>seeds<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token punctuation">[</span><span class="token operator">&amp;</span><span class="token punctuation">[</span><span class="token keyword">u8</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">,</span> program_id<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token class-name">Pubkey</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token punctuation">(</span><span class="token class-name">Pubkey</span><span class="token punctuation">,</span> <span class="token keyword">u8</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token class-name">Pubkey</span><span class="token punctuation">::</span><span class="token function">find_program_address</span><span class="token punctuation">(</span>seeds<span class="token punctuation">,</span> program_id<span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h4 id="三、Anchor中使用PDA的典型场景">三、Anchor中使用PDA的典型场景</h4>
+<ol>
+<li><strong>哈希表结构</strong>：通过种子组合实现键值对存储</li>
+<li><strong>权限控制</strong>：作为程序专属签名者</li>
+<li><strong>状态隔离</strong>：不同业务逻辑使用独立PDA账户</li>
+</ol>
+<p><strong>示例：创建PDA账户</strong></p>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">anchor_lang<span class="token punctuation">::</span>solana_program<span class="token punctuation">::</span></span>system_program<span class="token punctuation">;</span>
+
+<span class="token attribute attr-name">#[derive(Accounts)]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">CreatePdaAccount</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+    <span class="token attribute attr-name">#[account(mut)]</span>
+    <span class="token keyword">pub</span> user<span class="token punctuation">:</span> <span class="token class-name">Signer</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span><span class="token punctuation">,</span>
+    #<span class="token punctuation">[</span><span class="token function">account</span><span class="token punctuation">(</span>
+        init<span class="token punctuation">,</span>
+        seeds <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">b"user_stats"</span><span class="token punctuation">,</span> user<span class="token punctuation">.</span><span class="token function">key</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">as_ref</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+        bump<span class="token punctuation">,</span>
+        payer <span class="token operator">=</span> user<span class="token punctuation">,</span>
+        space <span class="token operator">=</span> <span class="token number">8</span> <span class="token operator">+</span> <span class="token namespace">std<span class="token punctuation">::</span>mem<span class="token punctuation">::</span></span><span class="token function">size_of</span><span class="token punctuation">::</span><span class="token operator">&lt;</span><span class="token class-name">UserStats</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        program <span class="token operator">=</span> <span class="token namespace">my_program<span class="token punctuation">::</span></span><span class="token constant">ID</span>
+    <span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">pub</span> user_stats<span class="token punctuation">:</span> <span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">UserStats</span><span class="token operator">></span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> system_program<span class="token punctuation">:</span> <span class="token class-name">Program</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">System</span><span class="token operator">></span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token attribute attr-name">#[derive(Default, AnchorSerialize, AnchorDeserialize)]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">UserStats</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">pub</span> level<span class="token punctuation">:</span> <span class="token keyword">u16</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> name<span class="token punctuation">:</span> <span class="token class-name">String</span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h4 id="四、PDA账户操作详解">四、PDA账户操作详解</h4>
+<ol>
+<li><strong>初始化账户</strong><br>
+通过<code>init</code>约束自动创建PDA账户并分配存储空间：</li>
+</ol>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token attribute attr-name">#[derive(Accounts)]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">InitPda</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+    <span class="token attribute attr-name">#[account(mut)]</span>
+    <span class="token keyword">pub</span> authority<span class="token punctuation">:</span> <span class="token class-name">Signer</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span><span class="token punctuation">,</span>
+    #<span class="token punctuation">[</span><span class="token function">account</span><span class="token punctuation">(</span>
+        init<span class="token punctuation">,</span>
+        seeds <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">b"pda"</span><span class="token punctuation">,</span> authority<span class="token punctuation">.</span><span class="token function">key</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">as_ref</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+        bump<span class="token punctuation">,</span>
+        payer <span class="token operator">=</span> authority<span class="token punctuation">,</span>
+        space <span class="token operator">=</span> <span class="token number">8</span> <span class="token operator">+</span> <span class="token number">32</span><span class="token punctuation">,</span>
+        program <span class="token operator">=</span> <span class="token namespace">my_program<span class="token punctuation">::</span></span><span class="token constant">ID</span>
+    <span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">pub</span> pda_account<span class="token punctuation">:</span> <span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">PdaData</span><span class="token operator">></span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> system_program<span class="token punctuation">:</span> <span class="token class-name">Program</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">System</span><span class="token operator">></span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<ol start="2">
+<li><strong>重新分配空间</strong><br>
+使用<code>realloc</code>约束动态调整账户存储：</li>
+</ol>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token attribute attr-name">#[derive(Accounts)]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">ReallocPda</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+    <span class="token attribute attr-name">#[account(
+        mut,
+        realloc,
+        realloc::payer = authority,
+        realloc::zero = false,
+    )]</span>
+    <span class="token keyword">pub</span> pda_account<span class="token punctuation">:</span> <span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">PdaData</span><span class="token operator">></span><span class="token punctuation">,</span>
+    <span class="token attribute attr-name">#[account(mut)]</span>
+    <span class="token keyword">pub</span> authority<span class="token punctuation">:</span> <span class="token class-name">Signer</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> system_program<span class="token punctuation">:</span> <span class="token class-name">Program</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">System</span><span class="token operator">></span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<ol start="3">
+<li><strong>关闭账户</strong><br>
+通过<code>close</code>约束释放账户资源：</li>
+</ol>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token attribute attr-name">#[derive(Accounts)]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">ClosePda</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+    <span class="token attribute attr-name">#[account(
+        mut,
+        close = authority,
+    )]</span>
+    <span class="token keyword">pub</span> pda_account<span class="token punctuation">:</span> <span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">PdaData</span><span class="token operator">></span><span class="token punctuation">,</span>
+    <span class="token attribute attr-name">#[account(mut)]</span>
+    <span class="token keyword">pub</span> authority<span class="token punctuation">:</span> <span class="token class-name">Signer</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h4 id="五、PDA安全最佳实践">五、PDA安全最佳实践</h4>
+<ol>
+<li><strong>种子设计原则</strong></li>
+</ol>
+<ul>
+<li>避免使用可变参数作为主种子</li>
+<li>关键业务使用复合种子（如<code>[b&quot;order&quot;, order_id.as_ref(), user.key().as_ref()]</code>）</li>
+<li>敏感操作添加时间戳或随机数种子</li>
+</ul>
+<ol start="2">
+<li><strong>Bump值管理</strong></li>
+</ol>
+<ul>
+<li>使用<code>canonical bump</code>（默认255）简化开发</li>
+<li>复杂场景可自定义bump值验证</li>
+<li>通过<code>Pubkey::find_program_address</code>预计算地址</li>
+</ul>
+<ol start="3">
+<li><strong>权限控制</strong></li>
+</ol>
+<ul>
+<li>限制PDA操作权限到特定指令</li>
+<li>使用<code>#[access_control]</code>宏实现细粒度访问控制</li>
+</ul>
+<h4 id="六、典型应用案例">六、典型应用案例</h4>
+<ol>
+<li><strong>跨链资产托管</strong></li>
+</ol>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// 生成托管PDA地址</span>
+<span class="token keyword">let</span> <span class="token punctuation">(</span>escrow_pda<span class="token punctuation">,</span> _<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token class-name">Pubkey</span><span class="token punctuation">::</span><span class="token function">find_program_address</span><span class="token punctuation">(</span>
+    <span class="token operator">&amp;</span><span class="token punctuation">[</span><span class="token string">b"escrow"</span><span class="token punctuation">,</span> token_mint<span class="token punctuation">.</span><span class="token function">as_ref</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> buyer<span class="token punctuation">.</span><span class="token function">as_ref</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> seller<span class="token punctuation">.</span><span class="token function">as_ref</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    program_id<span class="token punctuation">,</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 托管资金转移</span>
+<span class="token function">transfer</span><span class="token punctuation">(</span>
+    <span class="token class-name">CpiContext</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span>
+        token_program<span class="token punctuation">.</span><span class="token function">to_account_info</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token class-name">Transfer</span> <span class="token punctuation">&#123;</span>
+            from<span class="token punctuation">:</span> user_wallet<span class="token punctuation">.</span><span class="token function">to_account_info</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            to<span class="token punctuation">:</span> escrow_pda<span class="token punctuation">.</span><span class="token function">to_account_info</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            authority<span class="token punctuation">:</span> user_wallet<span class="token punctuation">.</span><span class="token function">to_account_info</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token punctuation">&#125;</span><span class="token punctuation">,</span>
+    <span class="token punctuation">)</span><span class="token punctuation">,</span>
+    amount<span class="token punctuation">,</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<ol start="2">
+<li><strong>可验证随机数生成</strong></li>
+</ol>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// 生成随机数PDA</span>
+<span class="token keyword">let</span> <span class="token punctuation">(</span>random_pda<span class="token punctuation">,</span> _<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token class-name">Pubkey</span><span class="token punctuation">::</span><span class="token function">find_program_address</span><span class="token punctuation">(</span>
+    <span class="token operator">&amp;</span><span class="token punctuation">[</span><span class="token string">b"random"</span><span class="token punctuation">,</span> user<span class="token punctuation">.</span><span class="token function">key</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">as_ref</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> blockhash<span class="token punctuation">.</span><span class="token function">as_ref</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    program_id<span class="token punctuation">,</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 存储随机数结果</span>
+random_pda_account<span class="token punctuation">.</span>value <span class="token operator">=</span> <span class="token function">calculate_hash</span><span class="token punctuation">(</span>random_seed<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h4 id="七、开发工具链支持">七、开发工具链支持</h4>
+<ol>
+<li><strong>Anchor IDL生成</strong></li>
+</ol>
+<pre class="language-bash" data-language="bash"><code class="language-bash">anchor idl generate</code></pre>
+<ol start="2">
+<li><strong>客户端SDK集成</strong></li>
+</ol>
+<pre class="language-typescript" data-language="typescript"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">&#123;</span> Program<span class="token punctuation">,</span> web3 <span class="token punctuation">&#125;</span> <span class="token keyword">from</span> <span class="token string">'@project-serum/anchor'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">&#123;</span> MyProgram <span class="token punctuation">&#125;</span> <span class="token keyword">from</span> <span class="token string">'../target/types/my_program'</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> program <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Program<span class="token operator">&lt;</span>MyProgram<span class="token operator">></span></span><span class="token punctuation">(</span>
+    idl<span class="token punctuation">,</span>
+    <span class="token keyword">new</span> <span class="token class-name">web3</span><span class="token punctuation">.</span><span class="token function">PublicKey</span><span class="token punctuation">(</span><span class="token string">'PROGRAM_ID'</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    provider
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 计算PDA地址</span>
+<span class="token keyword">const</span> <span class="token punctuation">[</span>pdaAddress<span class="token punctuation">,</span> bump<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token keyword">await</span> web3<span class="token punctuation">.</span>PublicKey<span class="token punctuation">.</span><span class="token function">findProgramAddress</span><span class="token punctuation">(</span>
+    <span class="token punctuation">[</span>Buffer<span class="token punctuation">.</span><span class="token function">from</span><span class="token punctuation">(</span><span class="token string">'user_stats'</span><span class="token punctuation">)</span><span class="token punctuation">,</span> user<span class="token punctuation">.</span>publicKey<span class="token punctuation">.</span><span class="token function">toBuffer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    program<span class="token punctuation">.</span>programId
+<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h4 id="八、常见问题与解决方案">八、常见问题与解决方案</h4>
+<ol>
+<li><strong>PDA地址不匹配</strong></li>
+</ol>
+<ul>
+<li>检查种子顺序及编码格式</li>
+<li>确认程序ID是否正确</li>
+<li>使用<code>solana address -k ~/.config/solana/id.json</code>验证地址生成</li>
+</ul>
+<ol start="2">
+<li><strong>账户空间不足</strong></li>
+</ol>
+<ul>
+<li>预计算所需存储空间（<code>8字节系统开销 + 数据结构大小</code>）</li>
+<li>使用<code>realloc</code>动态调整空间</li>
+<li>避免频繁创建销毁账户</li>
+</ul>
+<ol start="3">
+<li><strong>签名权限问题</strong></li>
+</ol>
+<ul>
+<li>确保PDA操作指令包含正确的授权账户</li>
+<li>检查<code>#[account]</code>宏中的<code>signer</code>约束</li>
+<li>使用<code>invoke_signed</code>进行PDA签名模拟</li>
+</ul>
+<h4 id="九、延伸学习资源">九、延伸学习资源</h4>
+<ol>
+<li><strong>官方文档</strong></li>
+</ol>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://book.anchor-lang.com/">Anchor Book</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.solana.com/developing/programming-model/accounts#program-derived-addresses-pdas">Solana PDA指南</a></li>
+</ul>
+<ol start="2">
+<li><strong>实战项目</strong></li>
+</ol>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/coral-xyz/anchor/tree/master/examples">Anchor示例仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://solanacookbook.com/references/pdas.html">Solana Cookbook PDA章节</a></li>
+</ul>
+<ol start="3">
+<li><strong>社区支持</strong></li>
+</ol>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://solana.stackexchange.com/">Solana Stack Exchange</a></li>
+<li><a target="_blank" rel="noopener" href="https://discord.gg/anchor-lang">Anchor Discord频道</a></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src="https://img.soniachen.com/IMG_0151.JPG" title="头像" alt="头像"><img class="post-copyright__author_img_front" src="https://img.soniachen.com/IMG_0151.JPG" title="头像" alt="头像"></a><div class="post-copyright__author_name">SoniaChen</div><div class="post-copyright__author_desc"></div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.soniachen.com/2025/08/13/Solana-part9-Anchor%E5%85%A5%E9%97%A8-%E8%B4%A6%E6%88%B7%E7%9A%84%E6%A6%82%E5%BF%B5%E5%92%8C%E7%94%A8%E6%B3%95-1/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.soniachen.com/2025/08/13/Solana-part9-Anchor%E5%85%A5%E9%97%A8-%E8%B4%A6%E6%88%B7%E7%9A%84%E6%A6%82%E5%BF%B5%E5%92%8C%E7%94%A8%E6%B3%95-1/')">Solana[part9]_Anchor入门&amp;账户的概念和用法</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"><div class="post-reward" onclick="anzhiyu.addRewardMask()"><div class="reward-button button--animated" title="赞赏作者"><i class="anzhiyufont anzhiyu-icon-hand-heart-fill"></i>打赏作者</div><div class="reward-main"><div class="reward-all"><span class="reward-title">感谢你赐予我前进的力量</span><ul class="reward-group"><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5543.JPG" target="_blank"><img class="post-qr-code-img" src="https://img.soniachen.com/blog/IMG_5543.JPG" alt="微信"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5544.JPG" target="_blank"><img class="post-qr-code-img" src="https://img.soniachen.com/blog/IMG_5544.JPG" alt="支付宝"/></a><div class="post-qr-code-desc">支付宝</div></li></ul><a class="reward-main-btn" href="/about/#about-reward" target="_blank"><div class="reward-text">赞赏者名单</div><div class="reward-dec">因为你们的支持让我意识到写文章的价值🙏</div></a></div></div></div><div id="quit-box" onclick="anzhiyu.removeRewardMask()" style="display: none"></div></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.soniachen.com/2025/08/13/Solana-part9-Anchor%E5%85%A5%E9%97%A8-%E8%B4%A6%E6%88%B7%E7%9A%84%E6%A6%82%E5%BF%B5%E5%92%8C%E7%94%A8%E6%B3%95-1/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><div class="share-link weibo"><a class="share-button" target="_blank" href="https://service.weibo.com/share/share.php?title=Solana[part9]_Anchor入门&amp;账户的概念和用法&amp;url=https://blog.soniachen.com/2025/08/13/Solana-part9-Anchor%E5%85%A5%E9%97%A8-%E8%B4%A6%E6%88%B7%E7%9A%84%E6%A6%82%E5%BF%B5%E5%92%8C%E7%94%A8%E6%B3%95-1/&amp;pic=https://img.soniachen.com/IMG_5493.jpg?_r_=ee1ad417-cb21-9d25-1767-56ea70c0588b" rel="external nofollow noreferrer noopener"><i class="anzhiyufont anzhiyu-icon-weibo"></i></a></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.soniachen.com" target="_blank">Sonia33</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Rust/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Rust<span class="tagsPageCount">29</span></a><a class="post-meta__box__tags" href="/tags/Solana/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Solana<span class="tagsPageCount">10</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img.soniachen.com/IMG_5493.jpg?_r_=690d36f1-8a6d-df74-35c4-728ad73e3543" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2025/08/12/Solana-part8-Solana-%E7%94%9F%E6%80%81%E4%B8%AD%E7%9A%84%E5%8D%8F%E8%AE%AE%E4%B8%8E%E6%A0%87%E5%87%86%E5%BA%93/"><img class="prev-cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=6bca6596-b0ab-f3bb-33f5-b3d0a2bc0b49" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Solana[part8]_Solana 生态中的协议与标准库</div></div></a></div><div class="next-post pull-right"><a href="/2025/08/14/Solana-part10-anchor%E5%AE%9E%E6%88%981/"><img class="next-cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=690d36f1-8a6d-df74-35c4-728ad73e3543" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Solana[part10]_Anchor实战：创建用户profile</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/2025/08/14/Solana-part10-anchor%E5%AE%9E%E6%88%981/" title="Solana[part10]_Anchor实战：创建用户profile"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=690d36f1-8a6d-df74-35c4-728ad73e3543" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-14</div><div class="title">Solana[part10]_Anchor实战：创建用户profile</div></div></a></div><div><a href="/2025/08/12/Solana-part8-Solana-%E7%94%9F%E6%80%81%E4%B8%AD%E7%9A%84%E5%8D%8F%E8%AE%AE%E4%B8%8E%E6%A0%87%E5%87%86%E5%BA%93/" title="Solana[part8]_Solana 生态中的协议与标准库"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=6bca6596-b0ab-f3bb-33f5-b3d0a2bc0b49" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-12</div><div class="title">Solana[part8]_Solana 生态中的协议与标准库</div></div></a></div><div><a href="/2025/08/11/Solana-part7-%E7%A4%BE%E4%BA%A4%E9%A1%B9%E7%9B%AE2%E2%80%94%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%96%87%E6%A1%A3/" title="Solana[part7]_社交项目2-客户端文档"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=8901cc2d-b027-928f-cd02-bcde5dcbd95a" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-11</div><div class="title">Solana[part7]_社交项目2-客户端文档</div></div></a></div><div><a href="/2025/08/08/Solana-part6-%E7%A4%BE%E4%BA%A4%E9%A1%B9%E7%9B%AE/" title="Solana[part6]_社交项目1-合约部分文档"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=4d186c84-454d-a974-1d10-bd9ac29e1bdb" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-08</div><div class="title">Solana[part6]_社交项目1-合约部分文档</div></div></a></div><div><a href="/2025/08/07/Solana-part5-SPLToken%E5%90%88%E7%BA%A6%E7%AE%80%E5%8D%95%E5%AE%9E%E7%8E%B0/" title="Solana[part5]_SPLToken合约简单实现"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=8c37effc-c922-7893-7a09-0ac0e253fb22" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-07</div><div class="title">Solana[part5]_SPLToken合约简单实现</div></div></a></div><div><a href="/2025/08/06/Solana-part4-Token%E8%A7%A3%E6%9E%90-%E5%88%9B%E5%BB%BA/" title="Solana[part4]_Token解析&amp;创建"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=2e4b42c2-aebc-8d13-e35d-bf1bf58999e6" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-06</div><div class="title">Solana[part4]_Token解析&amp;创建</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content is-expand"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link"><span class="toc-number">1.</span> <span class="toc-text">Solana[part9]_Anchor入门&amp;账户的概念和用法</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%80%E3%80%81Anchor%E6%A1%86%E6%9E%B6%E6%A6%82%E8%BF%B0"><span class="toc-number">1.0.0.1.</span> <span class="toc-text">一、Anchor框架概述</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%8C%E3%80%81PDA%EF%BC%88Program-Derived-Address%EF%BC%89%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="toc-number">1.0.0.2.</span> <span class="toc-text">二、PDA（Program Derived Address）核心概念</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%89%E3%80%81Anchor%E4%B8%AD%E4%BD%BF%E7%94%A8PDA%E7%9A%84%E5%85%B8%E5%9E%8B%E5%9C%BA%E6%99%AF"><span class="toc-number">1.0.0.3.</span> <span class="toc-text">三、Anchor中使用PDA的典型场景</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%9B%9B%E3%80%81PDA%E8%B4%A6%E6%88%B7%E6%93%8D%E4%BD%9C%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.0.0.4.</span> <span class="toc-text">四、PDA账户操作详解</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%94%E3%80%81PDA%E5%AE%89%E5%85%A8%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">1.0.0.5.</span> <span class="toc-text">五、PDA安全最佳实践</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%85%B8%E5%9E%8B%E5%BA%94%E7%94%A8%E6%A1%88%E4%BE%8B"><span class="toc-number">1.0.0.6.</span> <span class="toc-text">六、典型应用案例</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7%E9%93%BE%E6%94%AF%E6%8C%81"><span class="toc-number">1.0.0.7.</span> <span class="toc-text">七、开发工具链支持</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E4%B8%8E%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">1.0.0.8.</span> <span class="toc-text">八、常见问题与解决方案</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E5%BB%B6%E4%BC%B8%E5%AD%A6%E4%B9%A0%E8%B5%84%E6%BA%90"><span class="toc-number">1.0.0.9.</span> <span class="toc-text">九、延伸学习资源</span></a></li></ol></li></ol></li></ol></li></ol></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div id="footer_deal"><a class="deal_link" href="/soniachan0831@gmail.com" title="email"><i class="anzhiyufont anzhiyu-icon-envelope"></i></a><img class="footer_mini_logo" title="返回顶部" alt="返回顶部" onclick="anzhiyu.scrollToDest(0, 500)" src="https://img.soniachen.com/IMG_0151.JPG" size="50px"/><a class="deal_link" target="_blank" rel="noopener" href="https://github.com/SoniaChan33" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://space.bilibili.com/360939620" title="Bilibili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="deal_link" href="/copyright" title="CC"><i class="anzhiyufont anzhiyu-icon-copyright-line"></i></a></div><div class="copyright">&copy;2021 - 2025 By SoniaChen</div><div id="workboard"><div id="runtimeTextTip"></div></div><p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo_v5.4.0" title="博客框架为Hexo_v5.4.0"><img src="https://npm.elemecdn.com/anzhiyu-blog@2.1.5/img/badge/Frame-Hexo.svg" alt="博客框架为Hexo_v5.4.0"/></a></p></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">40</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">11</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">5</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="back-menu-list-groups"><div class="back-menu-list-group"><div class="back-menu-list-title">网页</div><div class="back-menu-list"><a class="back-menu-item" href="https://blog.soniachen.com/" title="博客"><img class="back-menu-item-icon" src="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png" alt="博客"/><span class="back-menu-item-text">博客</span></a></div></div></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/?id=447363601&amp;server=netease"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/bangumis/"><i class="anzhiyufont anzhiyu-icon-bilibili faa-tada" style="font-size: 0.9em;"></i><span> 追番页</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/BlockChain/" style="font-size: 0.88rem;">BlockChain<sup>4</sup></a><a href="/tags/CloudFlare/" style="font-size: 0.88rem;">CloudFlare<sup>2</sup></a><a href="/tags/Foundry/" style="font-size: 0.88rem;">Foundry<sup>1</sup></a><a href="/tags/Git/" style="font-size: 0.88rem;">Git<sup>1</sup></a><a href="/tags/Java/" style="font-size: 0.88rem;">Java<sup>1</sup></a><a href="/tags/PicGo/" style="font-size: 0.88rem;">PicGo<sup>1</sup></a><a href="/tags/Rust/" style="font-size: 0.88rem;">Rust<sup>29</sup></a><a href="/tags/Solana/" style="font-size: 0.88rem;">Solana<sup>10</sup></a><a href="/tags/Solidity/" style="font-size: 0.88rem;">Solidity<sup>4</sup></a><a href="/tags/Typora/" style="font-size: 0.88rem;">Typora<sup>1</sup></a><a href="/tags/hexo/" style="font-size: 0.88rem;">hexo<sup>2</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="447363601" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=447363601&amp;userid=321481294&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@5.0.28/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><canvas id="universe"></canvas><script async src="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/dark/dark.js"></script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("04/01/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎使用安知鱼!`,
+    `生活明朗, 万物可爱`,
+    `
+        
+       █████╗ ███╗   ██╗███████╗██╗  ██╗██╗██╗   ██╗██╗   ██╗
+      ██╔══██╗████╗  ██║╚══███╔╝██║  ██║██║╚██╗ ██╔╝██║   ██║
+      ███████║██╔██╗ ██║  ███╔╝ ███████║██║ ╚████╔╝ ██║   ██║
+      ██╔══██║██║╚██╗██║ ███╔╝  ██╔══██║██║  ╚██╔╝  ██║   ██║
+      ██║  ██║██║ ╚████║███████╗██║  ██║██║   ██║   ╚██████╔╝
+      ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝╚═╝   ╚═╝    ╚═════╝
+        
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By 安知鱼 V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by 安知鱼 %c 你正在访问 SoniaChen 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script async="async">(function () {
+  var grt = new Date("04/01/2021 00:00:00"); //设置网站上线时间
+  var now = new Date();
+  var dnum;
+  var hnum;
+  var mnum;
+  var snum;
+  var nowHour;
+
+  // 计算并更新天数、小时数、分钟数和秒数
+  function updateTime() {
+    now = new Date(); // 更新 now 的值
+    nowHour = now.getHours(); // 更新 nowHour 的值
+    var days = (now - grt) / 1000 / 60 / 60 / 24;
+    dnum = Math.floor(days);
+    var hours = (now - grt) / 1000 / 60 / 60 - 24 * dnum;
+    hnum = Math.floor(hours);
+    if (String(hnum).length == 1) {
+      hnum = "0" + hnum;
+    }
+    var minutes = (now - grt) / 1000 / 60 - 24 * 60 * dnum - 60 * hnum;
+    mnum = Math.floor(minutes);
+    if (String(mnum).length == 1) {
+      mnum = "0" + mnum;
+    }
+    var seconds = (now - grt) / 1000 - 24 * 60 * 60 * dnum - 60 * 60 * hnum - 60 * mnum;
+    snum = Math.round(seconds);
+    if (String(snum).length == 1) {
+      snum = "0" + snum;
+    }
+  }
+
+  // 更新网页中显示的网站运行时间
+  function updateHtml() {
+    const footer = document.getElementById("footer");
+    if (!footer) return
+    let currentTimeHtml = "";
+    if (nowHour < 18 && nowHour >= 9) {
+      // 如果是上班时间，默认就是"安知鱼-上班摸鱼中.svg"图片，不需要更改
+      currentTimeHtml = `本站居然运行了 ${dnum} 天<span id='runtime'> ${hnum} 小时 ${mnum} 分 ${snum} 秒 </span><i class='anzhiyufont anzhiyu-icon-heartbeat' style='color:red'></i>`;
+    } else {
+      // 如果是下班时间，插入"安知鱼-下班啦.svg"图片
+      let img = document.querySelector("#workboard .workSituationImg");
+      if (img != null) {
+        img.src = "";
+        img.title = "";
+        img.alt = "";
+      }
+
+      currentTimeHtml = `本站居然运行了 ${dnum} 天<span id='runtime'> ${hnum} 小时 ${mnum} 分 ${snum} 秒 </span><i class='anzhiyufont anzhiyu-icon-heartbeat' style='color:red'></i>`;
+    }
+
+    if (document.getElementById("runtimeTextTip")) {
+      document.getElementById("runtimeTextTip").innerHTML = currentTimeHtml;
+    }
+  }
+
+  setInterval(() => {
+    updateTime();
+    updateHtml();
+  }, 1000);
+})();</script><script src="/js/search/local-search.js"></script><div class="js-pjax"><input type="hidden" name="page-type" id="page-type" value="post"></div><script>var visitorMail = "visitor@soniachen.com";
+</script><script async data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><script src="/js/anzhiyu/right_click_menu.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="true" src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/dist/click-show-text.min.js" data-mobile="false" data-text="Don't,Click,Me" data-fontsize="15px" data-random="false" async="async"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404.html')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div><script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"left","width":150,"height":300},"mobile":{"show":true},"log":false});</script></body></html>
