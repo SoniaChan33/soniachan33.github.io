@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.soniachen.com/2025/08/19/Solana-part13-Anchor%E5%AE%9E%E6%88%98%EF%BC%9A%E4%B8%BA%E7%94%A8%E6%88%B7Mint-Spl-TOKEN/</loc>
+    
+    <lastmod>2025-08-19</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://blog.soniachen.com/2025/08/18/Solana-part12-Anchor%E5%AE%9E%E6%88%98%EF%BC%9A/</loc>
     
     <lastmod>2025-08-19</lastmod>
@@ -491,13 +500,6 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/Solidity/</loc>
-    <lastmod>2025-08-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://blog.soniachen.com/tags/hexo/</loc>
     <lastmod>2025-08-19</lastmod>
     <changefreq>weekly</changefreq>
@@ -506,6 +508,13 @@
   
   <url>
     <loc>https://blog.soniachen.com/tags/CloudFlare/</loc>
+    <lastmod>2025-08-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soniachen.com/tags/Solidity/</loc>
     <lastmod>2025-08-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
