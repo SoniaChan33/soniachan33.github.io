@@ -2,6 +2,33 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.soniachen.com/2025/08/24/Solana-part19-ETF%E7%9A%84%E4%BB%8B%E7%BB%8D%E5%92%8C%E5%88%9B%E5%BB%BA%E6%8C%87%E4%BB%A4%E5%AE%9E%E7%8E%B0/</loc>
+    
+    <lastmod>2025-08-25</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soniachen.com/2025/08/25/Solana-part20-ETF%E7%9A%84%E8%B4%AD%E4%B9%B0/</loc>
+    
+    <lastmod>2025-08-25</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soniachen.com/2025/08/24/Solana%E5%AE%9E%E6%88%98Bug%E8%AE%B0%E5%BD%95/</loc>
+    
+    <lastmod>2025-08-24</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://blog.soniachen.com/2025/08/23/Solana-part18-Solana-DAPP-%E5%89%8D%E7%AB%AF%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95%E4%B8%8E%E5%90%88%E7%BA%A6%E6%8E%A5%E5%85%A5/</loc>
     
     <lastmod>2025-08-23</lastmod>
@@ -517,7 +544,7 @@
 
   <url>
     <loc>https://blog.soniachen.com/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -525,84 +552,91 @@
   
   <url>
     <loc>https://blog.soniachen.com/tags/Rust/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/tags/Solana/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/tags/TypeScript/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/tags/BlockChain/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/tags/Solidity/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/Foundry/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <loc>https://blog.soniachen.com/tags/Bug/</loc>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/tags/Git/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/tags/CloudFlare/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/tags/Typora/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/tags/hexo/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/tags/PicGo/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soniachen.com/tags/Foundry/</loc>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/tags/Java/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
@@ -611,35 +645,35 @@
   
   <url>
     <loc>https://blog.soniachen.com/categories/Rust/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/categories/Solana/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/categories/Web3/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/categories/hexo/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://blog.soniachen.com/categories/%E7%AE%97%E6%B3%95/</loc>
-    <lastmod>2025-08-23</lastmod>
+    <lastmod>2025-08-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
