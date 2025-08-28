@@ -590,7 +590,14 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/Bug/</loc>
+    <loc>https://blog.soniachen.com/tags/BlockChain/</loc>
+    <lastmod>2025-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soniachen.com/tags/Solidity/</loc>
     <lastmod>2025-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -611,14 +618,7 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/BlockChain/</loc>
-    <lastmod>2025-08-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://blog.soniachen.com/tags/Solidity/</loc>
+    <loc>https://blog.soniachen.com/tags/Bug/</loc>
     <lastmod>2025-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -676,14 +676,14 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/categories/hexo/</loc>
+    <loc>https://blog.soniachen.com/categories/Web3/</loc>
     <lastmod>2025-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/categories/Web3/</loc>
+    <loc>https://blog.soniachen.com/categories/hexo/</loc>
     <lastmod>2025-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
