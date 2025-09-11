@@ -2675,6 +2675,342 @@ members = ["course","lib_add","lib_divide"]
       </tags>
   </entry>
   <entry>
+    <title>Rust进阶[part1]_智能指针概述&amp;box指针</title>
+    <url>/2025/07/18/Rust%E8%BF%9B%E9%98%B6-part1-%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E6%A6%82%E8%BF%B0-box%E6%8C%87%E9%92%88/</url>
+    <content><![CDATA[Rust进阶[part1]_智能指针概述&amp;box指针
+智能指针概述
+在Rust中，智能指针是一类特殊的数据结构，它们不仅像普通指针一样可以引用数据，还带有额外的元数据和功能。与普通指针不同，智能指针通常使用结构体实现，并且会实现 Deref 和 Drop 等特定的trait，以提供更强大的功能和更安全的内存管理。
+智能指针在Rust编程中扮演着重要的角色，它们能够帮助开发者处理复杂的内存管理场景，确保程序的安全性和性能。例如，在处理动态大小的数据、递归数据结构或者需要自定义资源释放逻辑时，智能指针就显得尤为重要。
+Box指针
+内存分配到堆上
+在Rust中，栈内存的分配和释放是自动且高效的，但栈空间是有限的。对于一些大型的数据结构或者需要在运行时动态确定大小的数据，将其存储在栈上可能会导致栈溢出。这时，我们可以使用 Box 指针将数据分配到堆上。
+Box 是Rust标准库中最基本的智能指针之一，它允许我们在堆上分配内存，并将数据存储在其中。通过 Box 指针，我们可以在栈上存储一个指向堆上数据的引用，从而实现对堆上数据的访问。
+以下是一个简单的示例，展示了如何使用 Box 将一个整数分配到堆上：
+fn main() &#123;
+    let boxed_int = Box::new(42);
+    println!("The value inside the box is: &#123;&#125;", *boxed_int);
+&#125;
+在这个示例中，Box::new(42) 创建了一个 Box 指针，它指向堆上存储的整数 42。
+通过解引用运算符 *，我们可以访问堆上的数据。
+允许处理动态大小类型（DST）
+Rust中的动态大小类型（DST）是指在编译时无法确定大小的数据类型，例如切片（[T]）和特征对象（dyn Trait）。
+由于栈上的内存分配需要在编译时确定大小，因此无法直接将DST存储在栈上。而 Box 指针可以用于存储DST，因为它会在堆上分配内存，从而避免了栈上内存分配的限制。
+以下是一个使用 Box 存储切片的示例：
+fn main() &#123;
+    let slice: &amp;[i32] = &amp;[1, 2, 3];
+    let boxed_slice: Box&lt;[i32]> = Box::from(slice);
+    println!("The boxed slice contains: &#123;:?&#125;", boxed_slice);
+&#125;
+在这个示例中，我们首先创建了一个切片 slice，然后使用 Box::from 方法将其转换为 Box&lt;[i32]&gt; 类型，从而将切片存储在堆上。
+
+// 允许处理动态大小类型，比如结构体和元组
+let boxed_tuple = Box::new((String::from("hello"), 5));
+println!("Boxed tuple: &#123;:?&#125;", boxed_tuple);
+
+递归数据结构
+递归数据结构是指包含自身类型的成员的结构体或枚举。由于递归数据结构的大小在编译时无法确定，因此无法直接将其存储在栈上。Box 指针可以用于解决这个问题，通过在递归数据结构中使用 Box 指针，我们可以将递归成员存储在堆上，从而避免栈溢出的问题。
+以下是一个使用 Box 实现链表节点的示例：
+#[derive(Debug)]
+enum List &#123;
+    Cons(i32, Box&lt;List>),
+    Nil,
+&#125;
+
+fn main() &#123;
+    let list = List::Cons(1, Box::new(List::Cons(2, Box::new(List::Nil))));
+    println!("The list is: &#123;:?&#125;", list);
+&#125;
+在这个示例中，List 枚举表示一个链表，其中 Cons 变体包含一个整数和一个指向另一个 List 节点的 Box 指针。通过使用 Box 指针，我们可以创建一个递归的链表结构。
+类型擦除
+类型擦除是指在编译时隐藏具体的类型信息，只保留类型的共性。在Rust中，我们可以使用 Box&lt;dyn Trait&gt; 来实现类型擦除。Box&lt;dyn Trait&gt; 是一个特征对象，它可以存储任何实现了指定特征的类型的值。
+以下是一个使用 Box&lt;dyn Trait&gt; 实现类型擦除的示例：
+trait Draw &#123;
+    fn draw(&amp;self);
+&#125;
+
+struct Circle;
+impl Draw for Circle &#123;
+    fn draw(&amp;self) &#123;
+        println!("Drawing a circle");
+    &#125;
+&#125;
+
+struct Square;
+impl Draw for Square &#123;
+    fn draw(&amp;self) &#123;
+        println!("Drawing a square");
+    &#125;
+&#125;
+
+fn main() &#123;
+    let shapes: Vec&lt;Box&lt;dyn Draw>> = vec![
+        Box::new(Circle),
+        Box::new(Square),
+    ];
+
+    for shape in shapes &#123;
+        shape.draw();
+    &#125;
+&#125;
+在这个示例中，我们定义了一个 Draw 特征，并为 Circle 和 Square 结构体实现了该特征。然后，我们创建了一个 Vec&lt;Box&lt;dyn Draw&gt;&gt; 类型的向量，其中存储了 Circle 和 Square 的实例。通过使用 Box&lt;dyn Draw&gt;，我们实现了类型擦除，使得向量可以存储不同类型的形状。
+内存管理和性能优化
+Box 指针在内存管理方面具有重要的作用。当 Box 指针离开作用域时，Rust会自动调用其 Drop 实现，从而释放堆上分配的内存。这种自动内存管理机制确保了内存的安全性，避免了内存泄漏的问题。
+在性能方面，由于 Box 指针涉及到堆上的内存分配和释放，因此会比栈上的内存分配和释放稍微慢一些。但是，对于需要动态分配内存或者处理动态大小类型的场景，使用 Box 指针是必要的。在实际编程中，我们应该根据具体的需求和性能要求来选择合适的内存分配方式。
+box的优缺点
+优点
+
+动态内存分配：允许在运行时动态分配内存，处理大型数据结构和动态大小类型。
+递归数据结构支持：可以用于实现递归数据结构，避免栈溢出的问题。
+类型擦除：支持类型擦除，使得代码更加灵活和可复用。
+自动内存管理：Rust的所有权系统确保了 Box 指针离开作用域时，堆上的内存会被自动释放，避免了内存泄漏。
+
+缺点
+
+性能开销：堆上的内存分配和释放比栈上的内存分配和释放稍微慢一些，可能会影响性能。
+额外的间接访问：使用 Box 指针需要通过指针进行间接访问，可能会增加一定的开销。
+
+Drop Trait
+Drop trait 用于自定义当值离开作用域时执行的代码，通常用于释放资源，例如内存、文件句柄、网络连接等。当一个实现了 Drop trait 的值离开作用域时，Rust会自动调用其 drop 方法。
+以下是一个简单的示例，展示了如何实现 Drop trait：
+struct CustomSmartPointer &#123;
+    data: String,
+&#125;
+
+impl Drop for CustomSmartPointer &#123;
+    fn drop(&amp;mut self) &#123;
+        println!("Dropping CustomSmartPointer with data `&#123;&#125;`!", self.data);
+    &#125;
+&#125;
+
+fn main() &#123;
+    let c = CustomSmartPointer &#123; data: String::from("my stuff") &#125;;
+    let d = CustomSmartPointer &#123; data: String::from("other stuff") &#125;;
+    println!("CustomSmartPointers created.");
+&#125;
+在这个示例中，我们定义了一个 CustomSmartPointer 结构体，并为其实现了 Drop trait。当 c 和 d 离开作用域时，Rust会自动调用它们的 drop 方法，打印出相应的信息。
+Deref Trait
+Deref trait 用于重载解引用运算符（*），允许我们自定义指针类型的解引用行为。通过实现 Deref trait，我们可以让自定义的智能指针像普通指针一样使用解引用运算符。
+Deref trait 定义了一个 deref 方法，该方法返回一个指向内部数据的引用。
+以下是一个简单的示例，展示了如何实现 Deref trait：
+use std::ops::Deref;
+
+struct MyBox&lt;T>(T);
+
+impl&lt;T> MyBox&lt;T> &#123;
+    fn new(x: T) -> MyBox&lt;T> &#123;
+        MyBox(x)
+    &#125;
+&#125;
+
+impl&lt;T> Deref for MyBox&lt;T> &#123;
+    type Target = T;
+
+    fn deref(&amp;self) -> &amp;Self::Target &#123;
+        &amp;self.0
+    &#125;
+&#125;
+
+fn main() &#123;
+    let x = 5;
+    let y = MyBox::new(x);
+
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
+&#125;
+在这个示例中，我们定义了一个 MyBox 结构体，并为其实现了 Deref trait。通过实现 deref 方法，我们可以使用解引用运算符 * 来访问 MyBox 内部的数据。
+练习
+1. 创建一个大型数组并将其分配在堆上，然后测量和比较分配在堆和栈上的性能差异。
+使用instant::now() ; 以及elapsed()
+use std::time::Instant;
+
+const ARRAY_SIZE: usize = 1000000;
+
+fn main() &#123;
+    // 测量栈上分配的时间
+    let start_stack = Instant::now();
+    let _stack_array: [i32; ARRAY_SIZE] = [0; ARRAY_SIZE];
+    let stack_duration = start_stack.elapsed();
+
+    // 测量堆上分配的时间
+    let start_heap = Instant::now();
+    let _heap_array: Box&lt;[i32]> = vec![0; ARRAY_SIZE].into_boxed_slice();
+    let heap_duration = start_heap.elapsed();
+
+    println!("Stack allocation time: &#123;:?&#125;", stack_duration);
+    println!("Heap allocation time: &#123;:?&#125;", heap_duration);
+&#125;
+2. 创建一个包含1_000_000个元素的数据，分别将其分配在堆和栈上。使用std::time::Instant来测量分配和访问时间。
+use std::time::Instant;
+
+const ELEMENT_COUNT: usize = 1_000_000;
+
+fn main() &#123;
+    // 栈上分配
+    let start_stack_alloc = Instant::now();
+    let stack_data: [i32; ELEMENT_COUNT] = [0; ELEMENT_COUNT];
+    let stack_alloc_time = start_stack_alloc.elapsed();
+
+    let start_stack_access = Instant::now();
+    for i in 0..ELEMENT_COUNT &#123;
+        let _ = stack_data[i];
+    &#125;
+    let stack_access_time = start_stack_access.elapsed();
+
+    // 堆上分配
+    let start_heap_alloc = Instant::now();
+    let heap_data: Box&lt;[i32]> = vec![0; ELEMENT_COUNT].into_boxed_slice();
+    let heap_alloc_time = start_heap_alloc.elapsed();
+
+    let start_heap_access = Instant::now();
+    for i in 0..ELEMENT_COUNT &#123;
+        let _ = heap_data[i];
+    &#125;
+    let heap_access_time = start_heap_access.elapsed();
+
+    println!("Stack allocation time: &#123;:?&#125;", stack_alloc_time);
+    println!("Stack access time: &#123;:?&#125;", stack_access_time);
+    println!("Heap allocation time: &#123;:?&#125;", heap_alloc_time);
+    println!("Heap access time: &#123;:?&#125;", heap_access_time);
+&#125;
+通过以上练习，我们可以更深入地了解 Box 指针在堆上分配内存的性能特点，以及与栈上分配的差异。
+3. 实现一个简单的文件系统模拟
+目标
+实现一个简单的文件系统模拟，其中包含文件和文件夹的概念。文件夹可以包含文件和其他文件夹。使用 Box 来管理内存，并实现对文件系统的基本操作（如创建文件、创建文件夹、列出文件和文件夹）。
+作业要求
+
+
+定义 FileSystem trait 和 Node 枚举
+
+FileSystem trait 包含 create_file、create_folder 和 list_contents 方法。
+Node 枚举包含 File 和 Folder 变体。
+
+
+
+实现 FolderNode 结构体
+
+FolderNode 实现 FileSystem trait，包含 name 和 contents 字段。
+使用 Box 管理 contents 中的子节点。
+
+
+
+实现文件系统的基本操作
+
+create_file 方法在文件夹中创建文件。
+create_folder 方法在文件夹中创建子文件夹。
+list_contents 方法列出文件夹的所有内容。
+
+
+
+测试文件系统的操作
+
+创建根文件夹并添加文件和文件夹。
+创建子文件夹并添加文件。
+列出文件夹的内容并输出文件系统结构。
+
+
+
+提示
+
+使用 Box 来管理 Folder 中的子节点。
+使用递归方法来遍历和列出文件和文件夹的内容。
+考虑使用 Vec 来存储文件夹的子节点。
+
+/**
+ * ---------------文件系统----------------------------
+ */
+// 节点枚举 用来区分文件夹还是文件，文件夹通过box包装来避免递归类型的大小歧义
+// 定义 Node 枚举：包含文件（File）和文件夹（Folder）两种变体
+#[derive(Debug)]
+enum Node &#123;
+    File(String),            // 文件：存储文件名
+    Folder(Box&lt;FolderNode>), // 文件夹：存储 FolderNode 的 Box（避免递归结构的大小问题）
+&#125;
+
+// 定义 FileSystem trait：包含文件系统的核心操作
+trait FileSystem &#123;
+    fn create_file(&amp;mut self, name: String); // 在当前文件夹创建文件
+    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self; // 在当前文件夹创建子文件夹（返回子文件夹引用以便链式操作）
+    fn list_contents(&amp;self, indent: &amp;str); // 列出当前文件夹内容（带缩进，方便展示结构）
+&#125;
+
+// 定义 FolderNode 结构体：表示文件夹节点
+#[derive(Debug)]
+struct FolderNode &#123;
+    name: String,        // 文件夹名称
+    contents: Vec&lt;Node>, // 存储子节点（文件或文件夹）
+&#125;
+
+// 为 FolderNode 实现 FileSystem trait
+impl FileSystem for FolderNode &#123;
+    // 1. 创建文件：向 contents 添加 File 节点
+    fn create_file(&amp;mut self, name: String) &#123;
+        self.contents.push(Node::File(name));
+    &#125;
+
+    // 2. 创建子文件夹：向 contents 添加 Folder 节点，并返回子文件夹的可变引用
+    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self &#123;
+        // 新建子文件夹节点
+        let new_folder = FolderNode &#123;
+            name: name.clone(),
+            contents: Vec::new(),
+        &#125;;
+        // 将子文件夹包装为 Box 并加入 contents
+        self.contents.push(Node::Folder(Box::new(new_folder)));
+
+        // 找到刚添加的子文件夹并返回其可变引用（通过 last_mut 确保是最后一个元素）
+        match self.contents.last_mut() &#123;
+            Some(Node::Folder(folder_box)) => &amp;mut **folder_box,
+            _ => panic!("创建文件夹失败：逻辑错误"), // 理论上不会触发
+        &#125;
+    &#125;
+
+    // 3. 列出内容：递归遍历子节点，带缩进展示结构
+    fn list_contents(&amp;self, indent: &amp;str) &#123;
+        // 打印当前文件夹名称
+        println!("&#123;&#125;&#123;&#125;", indent, self.name);
+        // 遍历子节点
+        for node in &amp;self.contents &#123;
+            match node &#123;
+                Node::File(file_name) => println!("&#123;&#125;&#123;&#125;", indent, file_name), // 打印文件
+                Node::Folder(folder) => folder.list_contents(&amp;format!("&#123;&#125;  ", indent)), // 递归打印子文件夹（增加缩进）
+            &#125;
+        &#125;
+    &#125;
+&#125;
+
+// 测试代码：创建文件系统并执行操作
+#[test]
+fn test_file_system() &#123;
+    // 1. 创建根文件夹
+    let mut root = FolderNode &#123;
+        name: "Root".to_string(),
+        contents: Vec::new(),
+    &#125;;
+
+    // 2. 根文件夹操作：创建文件 + 子文件夹
+    root.create_file("file1.txt".to_string()); // 根目录创建文件
+    let mut sub1 = root.create_folder("sub1".to_string()); // 根目录创建子文件夹 sub1
+    sub1.create_file("subfile1.txt".to_string()); // 在 sub1 中创建文件
+
+    // 3. 子文件夹嵌套操作
+    let mut sub2 = root.create_folder("sub2".to_string()); // 根目录创建子文件夹 sub2
+    let mut subsub2 = sub2.create_folder("subsub2".to_string()); // 在 sub2 中创建子文件夹 subsub2
+    subsub2.create_file("deepfile.txt".to_string()); // 在 subsub2 中创建文件
+
+    // 4. 列出根文件夹内容（从空缩进开始）
+    println!("文件系统结构：");
+    root.list_contents("");
+&#125;
+
+]]></content>
+      <categories>
+        <category>Rust</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Rust进阶[part10]_并发-概念、线程、通信、共享内存</title>
     <url>/2025/08/01/Rust%E8%BF%9B%E9%98%B6-part10-%E5%B9%B6%E5%8F%91-%E6%A6%82%E5%BF%B5%E3%80%81%E7%BA%BF%E7%A8%8B%E3%80%81%E9%80%9A%E4%BF%A1/</url>
     <content><![CDATA[Rust进阶[part10]_并发
@@ -3260,429 +3596,6 @@ fn main() &#123;
 
 总结
 Rust通过所有权系统、Send/Sync trait、channel和Mutex/Arc等工具，在编译期保证并发安全，避免数据竞争。开发中应根据场景选择消息传递（channel）或共享内存（Mutex+Arc）模式，优先使用消息传递（更易保证安全）。
-]]></content>
-      <categories>
-        <category>Rust</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Rust进阶[part1]_智能指针概述&amp;box指针</title>
-    <url>/2025/07/18/Rust%E8%BF%9B%E9%98%B6-part1-%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E6%A6%82%E8%BF%B0-box%E6%8C%87%E9%92%88/</url>
-    <content><![CDATA[Rust进阶[part1]_智能指针概述&amp;box指针
-智能指针概述
-在Rust中，智能指针是一类特殊的数据结构，它们不仅像普通指针一样可以引用数据，还带有额外的元数据和功能。与普通指针不同，智能指针通常使用结构体实现，并且会实现 Deref 和 Drop 等特定的trait，以提供更强大的功能和更安全的内存管理。
-智能指针在Rust编程中扮演着重要的角色，它们能够帮助开发者处理复杂的内存管理场景，确保程序的安全性和性能。例如，在处理动态大小的数据、递归数据结构或者需要自定义资源释放逻辑时，智能指针就显得尤为重要。
-Box指针
-内存分配到堆上
-在Rust中，栈内存的分配和释放是自动且高效的，但栈空间是有限的。对于一些大型的数据结构或者需要在运行时动态确定大小的数据，将其存储在栈上可能会导致栈溢出。这时，我们可以使用 Box 指针将数据分配到堆上。
-Box 是Rust标准库中最基本的智能指针之一，它允许我们在堆上分配内存，并将数据存储在其中。通过 Box 指针，我们可以在栈上存储一个指向堆上数据的引用，从而实现对堆上数据的访问。
-以下是一个简单的示例，展示了如何使用 Box 将一个整数分配到堆上：
-fn main() &#123;
-    let boxed_int = Box::new(42);
-    println!("The value inside the box is: &#123;&#125;", *boxed_int);
-&#125;
-在这个示例中，Box::new(42) 创建了一个 Box 指针，它指向堆上存储的整数 42。
-通过解引用运算符 *，我们可以访问堆上的数据。
-允许处理动态大小类型（DST）
-Rust中的动态大小类型（DST）是指在编译时无法确定大小的数据类型，例如切片（[T]）和特征对象（dyn Trait）。
-由于栈上的内存分配需要在编译时确定大小，因此无法直接将DST存储在栈上。而 Box 指针可以用于存储DST，因为它会在堆上分配内存，从而避免了栈上内存分配的限制。
-以下是一个使用 Box 存储切片的示例：
-fn main() &#123;
-    let slice: &amp;[i32] = &amp;[1, 2, 3];
-    let boxed_slice: Box&lt;[i32]> = Box::from(slice);
-    println!("The boxed slice contains: &#123;:?&#125;", boxed_slice);
-&#125;
-在这个示例中，我们首先创建了一个切片 slice，然后使用 Box::from 方法将其转换为 Box&lt;[i32]&gt; 类型，从而将切片存储在堆上。
-
-// 允许处理动态大小类型，比如结构体和元组
-let boxed_tuple = Box::new((String::from("hello"), 5));
-println!("Boxed tuple: &#123;:?&#125;", boxed_tuple);
-
-递归数据结构
-递归数据结构是指包含自身类型的成员的结构体或枚举。由于递归数据结构的大小在编译时无法确定，因此无法直接将其存储在栈上。Box 指针可以用于解决这个问题，通过在递归数据结构中使用 Box 指针，我们可以将递归成员存储在堆上，从而避免栈溢出的问题。
-以下是一个使用 Box 实现链表节点的示例：
-#[derive(Debug)]
-enum List &#123;
-    Cons(i32, Box&lt;List>),
-    Nil,
-&#125;
-
-fn main() &#123;
-    let list = List::Cons(1, Box::new(List::Cons(2, Box::new(List::Nil))));
-    println!("The list is: &#123;:?&#125;", list);
-&#125;
-在这个示例中，List 枚举表示一个链表，其中 Cons 变体包含一个整数和一个指向另一个 List 节点的 Box 指针。通过使用 Box 指针，我们可以创建一个递归的链表结构。
-类型擦除
-类型擦除是指在编译时隐藏具体的类型信息，只保留类型的共性。在Rust中，我们可以使用 Box&lt;dyn Trait&gt; 来实现类型擦除。Box&lt;dyn Trait&gt; 是一个特征对象，它可以存储任何实现了指定特征的类型的值。
-以下是一个使用 Box&lt;dyn Trait&gt; 实现类型擦除的示例：
-trait Draw &#123;
-    fn draw(&amp;self);
-&#125;
-
-struct Circle;
-impl Draw for Circle &#123;
-    fn draw(&amp;self) &#123;
-        println!("Drawing a circle");
-    &#125;
-&#125;
-
-struct Square;
-impl Draw for Square &#123;
-    fn draw(&amp;self) &#123;
-        println!("Drawing a square");
-    &#125;
-&#125;
-
-fn main() &#123;
-    let shapes: Vec&lt;Box&lt;dyn Draw>> = vec![
-        Box::new(Circle),
-        Box::new(Square),
-    ];
-
-    for shape in shapes &#123;
-        shape.draw();
-    &#125;
-&#125;
-在这个示例中，我们定义了一个 Draw 特征，并为 Circle 和 Square 结构体实现了该特征。然后，我们创建了一个 Vec&lt;Box&lt;dyn Draw&gt;&gt; 类型的向量，其中存储了 Circle 和 Square 的实例。通过使用 Box&lt;dyn Draw&gt;，我们实现了类型擦除，使得向量可以存储不同类型的形状。
-内存管理和性能优化
-Box 指针在内存管理方面具有重要的作用。当 Box 指针离开作用域时，Rust会自动调用其 Drop 实现，从而释放堆上分配的内存。这种自动内存管理机制确保了内存的安全性，避免了内存泄漏的问题。
-在性能方面，由于 Box 指针涉及到堆上的内存分配和释放，因此会比栈上的内存分配和释放稍微慢一些。但是，对于需要动态分配内存或者处理动态大小类型的场景，使用 Box 指针是必要的。在实际编程中，我们应该根据具体的需求和性能要求来选择合适的内存分配方式。
-box的优缺点
-优点
-
-动态内存分配：允许在运行时动态分配内存，处理大型数据结构和动态大小类型。
-递归数据结构支持：可以用于实现递归数据结构，避免栈溢出的问题。
-类型擦除：支持类型擦除，使得代码更加灵活和可复用。
-自动内存管理：Rust的所有权系统确保了 Box 指针离开作用域时，堆上的内存会被自动释放，避免了内存泄漏。
-
-缺点
-
-性能开销：堆上的内存分配和释放比栈上的内存分配和释放稍微慢一些，可能会影响性能。
-额外的间接访问：使用 Box 指针需要通过指针进行间接访问，可能会增加一定的开销。
-
-Drop Trait
-Drop trait 用于自定义当值离开作用域时执行的代码，通常用于释放资源，例如内存、文件句柄、网络连接等。当一个实现了 Drop trait 的值离开作用域时，Rust会自动调用其 drop 方法。
-以下是一个简单的示例，展示了如何实现 Drop trait：
-struct CustomSmartPointer &#123;
-    data: String,
-&#125;
-
-impl Drop for CustomSmartPointer &#123;
-    fn drop(&amp;mut self) &#123;
-        println!("Dropping CustomSmartPointer with data `&#123;&#125;`!", self.data);
-    &#125;
-&#125;
-
-fn main() &#123;
-    let c = CustomSmartPointer &#123; data: String::from("my stuff") &#125;;
-    let d = CustomSmartPointer &#123; data: String::from("other stuff") &#125;;
-    println!("CustomSmartPointers created.");
-&#125;
-在这个示例中，我们定义了一个 CustomSmartPointer 结构体，并为其实现了 Drop trait。当 c 和 d 离开作用域时，Rust会自动调用它们的 drop 方法，打印出相应的信息。
-Deref Trait
-Deref trait 用于重载解引用运算符（*），允许我们自定义指针类型的解引用行为。通过实现 Deref trait，我们可以让自定义的智能指针像普通指针一样使用解引用运算符。
-Deref trait 定义了一个 deref 方法，该方法返回一个指向内部数据的引用。
-以下是一个简单的示例，展示了如何实现 Deref trait：
-use std::ops::Deref;
-
-struct MyBox&lt;T>(T);
-
-impl&lt;T> MyBox&lt;T> &#123;
-    fn new(x: T) -> MyBox&lt;T> &#123;
-        MyBox(x)
-    &#125;
-&#125;
-
-impl&lt;T> Deref for MyBox&lt;T> &#123;
-    type Target = T;
-
-    fn deref(&amp;self) -> &amp;Self::Target &#123;
-        &amp;self.0
-    &#125;
-&#125;
-
-fn main() &#123;
-    let x = 5;
-    let y = MyBox::new(x);
-
-    assert_eq!(5, x);
-    assert_eq!(5, *y);
-&#125;
-在这个示例中，我们定义了一个 MyBox 结构体，并为其实现了 Deref trait。通过实现 deref 方法，我们可以使用解引用运算符 * 来访问 MyBox 内部的数据。
-练习
-1. 创建一个大型数组并将其分配在堆上，然后测量和比较分配在堆和栈上的性能差异。
-使用instant::now() ; 以及elapsed()
-use std::time::Instant;
-
-const ARRAY_SIZE: usize = 1000000;
-
-fn main() &#123;
-    // 测量栈上分配的时间
-    let start_stack = Instant::now();
-    let _stack_array: [i32; ARRAY_SIZE] = [0; ARRAY_SIZE];
-    let stack_duration = start_stack.elapsed();
-
-    // 测量堆上分配的时间
-    let start_heap = Instant::now();
-    let _heap_array: Box&lt;[i32]> = vec![0; ARRAY_SIZE].into_boxed_slice();
-    let heap_duration = start_heap.elapsed();
-
-    println!("Stack allocation time: &#123;:?&#125;", stack_duration);
-    println!("Heap allocation time: &#123;:?&#125;", heap_duration);
-&#125;
-2. 创建一个包含1_000_000个元素的数据，分别将其分配在堆和栈上。使用std::time::Instant来测量分配和访问时间。
-use std::time::Instant;
-
-const ELEMENT_COUNT: usize = 1_000_000;
-
-fn main() &#123;
-    // 栈上分配
-    let start_stack_alloc = Instant::now();
-    let stack_data: [i32; ELEMENT_COUNT] = [0; ELEMENT_COUNT];
-    let stack_alloc_time = start_stack_alloc.elapsed();
-
-    let start_stack_access = Instant::now();
-    for i in 0..ELEMENT_COUNT &#123;
-        let _ = stack_data[i];
-    &#125;
-    let stack_access_time = start_stack_access.elapsed();
-
-    // 堆上分配
-    let start_heap_alloc = Instant::now();
-    let heap_data: Box&lt;[i32]> = vec![0; ELEMENT_COUNT].into_boxed_slice();
-    let heap_alloc_time = start_heap_alloc.elapsed();
-
-    let start_heap_access = Instant::now();
-    for i in 0..ELEMENT_COUNT &#123;
-        let _ = heap_data[i];
-    &#125;
-    let heap_access_time = start_heap_access.elapsed();
-
-    println!("Stack allocation time: &#123;:?&#125;", stack_alloc_time);
-    println!("Stack access time: &#123;:?&#125;", stack_access_time);
-    println!("Heap allocation time: &#123;:?&#125;", heap_alloc_time);
-    println!("Heap access time: &#123;:?&#125;", heap_access_time);
-&#125;
-通过以上练习，我们可以更深入地了解 Box 指针在堆上分配内存的性能特点，以及与栈上分配的差异。
-3. 实现一个简单的文件系统模拟
-目标
-实现一个简单的文件系统模拟，其中包含文件和文件夹的概念。文件夹可以包含文件和其他文件夹。使用 Box 来管理内存，并实现对文件系统的基本操作（如创建文件、创建文件夹、列出文件和文件夹）。
-作业要求
-
-
-定义 FileSystem trait 和 Node 枚举
-
-FileSystem trait 包含 create_file、create_folder 和 list_contents 方法。
-Node 枚举包含 File 和 Folder 变体。
-
-
-
-实现 FolderNode 结构体
-
-FolderNode 实现 FileSystem trait，包含 name 和 contents 字段。
-使用 Box 管理 contents 中的子节点。
-
-
-
-实现文件系统的基本操作
-
-create_file 方法在文件夹中创建文件。
-create_folder 方法在文件夹中创建子文件夹。
-list_contents 方法列出文件夹的所有内容。
-
-
-
-测试文件系统的操作
-
-创建根文件夹并添加文件和文件夹。
-创建子文件夹并添加文件。
-列出文件夹的内容并输出文件系统结构。
-
-
-
-提示
-
-使用 Box 来管理 Folder 中的子节点。
-使用递归方法来遍历和列出文件和文件夹的内容。
-考虑使用 Vec 来存储文件夹的子节点。
-
-/**
- * ---------------文件系统----------------------------
- */
-// 节点枚举 用来区分文件夹还是文件，文件夹通过box包装来避免递归类型的大小歧义
-// 定义 Node 枚举：包含文件（File）和文件夹（Folder）两种变体
-#[derive(Debug)]
-enum Node &#123;
-    File(String),            // 文件：存储文件名
-    Folder(Box&lt;FolderNode>), // 文件夹：存储 FolderNode 的 Box（避免递归结构的大小问题）
-&#125;
-
-// 定义 FileSystem trait：包含文件系统的核心操作
-trait FileSystem &#123;
-    fn create_file(&amp;mut self, name: String); // 在当前文件夹创建文件
-    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self; // 在当前文件夹创建子文件夹（返回子文件夹引用以便链式操作）
-    fn list_contents(&amp;self, indent: &amp;str); // 列出当前文件夹内容（带缩进，方便展示结构）
-&#125;
-
-// 定义 FolderNode 结构体：表示文件夹节点
-#[derive(Debug)]
-struct FolderNode &#123;
-    name: String,        // 文件夹名称
-    contents: Vec&lt;Node>, // 存储子节点（文件或文件夹）
-&#125;
-
-// 为 FolderNode 实现 FileSystem trait
-impl FileSystem for FolderNode &#123;
-    // 1. 创建文件：向 contents 添加 File 节点
-    fn create_file(&amp;mut self, name: String) &#123;
-        self.contents.push(Node::File(name));
-    &#125;
-
-    // 2. 创建子文件夹：向 contents 添加 Folder 节点，并返回子文件夹的可变引用
-    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self &#123;
-        // 新建子文件夹节点
-        let new_folder = FolderNode &#123;
-            name: name.clone(),
-            contents: Vec::new(),
-        &#125;;
-        // 将子文件夹包装为 Box 并加入 contents
-        self.contents.push(Node::Folder(Box::new(new_folder)));
-
-        // 找到刚添加的子文件夹并返回其可变引用（通过 last_mut 确保是最后一个元素）
-        match self.contents.last_mut() &#123;
-            Some(Node::Folder(folder_box)) => &amp;mut **folder_box,
-            _ => panic!("创建文件夹失败：逻辑错误"), // 理论上不会触发
-        &#125;
-    &#125;
-
-    // 3. 列出内容：递归遍历子节点，带缩进展示结构
-    fn list_contents(&amp;self, indent: &amp;str) &#123;
-        // 打印当前文件夹名称
-        println!("&#123;&#125;&#123;&#125;", indent, self.name);
-        // 遍历子节点
-        for node in &amp;self.contents &#123;
-            match node &#123;
-                Node::File(file_name) => println!("&#123;&#125;&#123;&#125;", indent, file_name), // 打印文件
-                Node::Folder(folder) => folder.list_contents(&amp;format!("&#123;&#125;  ", indent)), // 递归打印子文件夹（增加缩进）
-            &#125;
-        &#125;
-    &#125;
-&#125;
-
-// 测试代码：创建文件系统并执行操作
-#[test]
-fn test_file_system() &#123;
-    // 1. 创建根文件夹
-    let mut root = FolderNode &#123;
-        name: "Root".to_string(),
-        contents: Vec::new(),
-    &#125;;
-
-    // 2. 根文件夹操作：创建文件 + 子文件夹
-    root.create_file("file1.txt".to_string()); // 根目录创建文件
-    let mut sub1 = root.create_folder("sub1".to_string()); // 根目录创建子文件夹 sub1
-    sub1.create_file("subfile1.txt".to_string()); // 在 sub1 中创建文件
-
-    // 3. 子文件夹嵌套操作
-    let mut sub2 = root.create_folder("sub2".to_string()); // 根目录创建子文件夹 sub2
-    let mut subsub2 = sub2.create_folder("subsub2".to_string()); // 在 sub2 中创建子文件夹 subsub2
-    subsub2.create_file("deepfile.txt".to_string()); // 在 subsub2 中创建文件
-
-    // 4. 列出根文件夹内容（从空缩进开始）
-    println!("文件系统结构：");
-    root.list_contents("");
-&#125;
-
-]]></content>
-      <categories>
-        <category>Rust</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Rust基础[part1]</title>
-    <url>/2025/07/08/Rust%E5%9F%BA%E7%A1%80-part1/</url>
-    <content><![CDATA[Rust基础[part1]
-安装
-➜  rust curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
-安装成功
-
-验证
-➜  rust rustc --version
-zsh: command not found: rustc
-因为我是用的是zsh，所以zsh配置文件需要加入配置
-➜  rust echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
-➜  rust source ~/.zshrc
-➜  rust rustc --version
-rustc 1.88.0 (6b00bc388 2025-06-23)
-安装成功！
-其他命令：
-➜  rust rustup update # 安装
-➜  rust rustup self uninstall # 卸载
-VsCode插件
-rust语言支持：
-
-rust包支持：
-
-toml支持：
-
-rustc
-创建目录
-mkdir hello-world
-cd hello-world
-创建源文件main.rs
-fn main() &#123;
-    println!("Hello, world!");
-&#125;
-终端输入 rustc main.rs 会得到一个二进制的文件mian
-执行mian 会得到输出
-
-cargo
-初始化
-
-
-初始化项目 cargo new [项目名] 
-
-
-构建 cargo build并运行./target/debug/hello_cargo ；或者直接使用cargo run
-
-
-当项目最终准备好发布时，可通过以下命令对 Rust 项目进行优化编译：
-cargo build --release  
-
-输出目录：编译产物会生成在 target/release 目录下（开发阶段默认的 cargo build 会输出到 target/debug）。
-优化特性：--release 会启用 Rust 编译器的性能优化（如代码内联、循环展开、冗余代码消除等），使最终程序的运行速度显著提升。
-
-依赖
-crate是Rust的一个代码库，可以包含任意能被其他程序使用的代码，但是不能只执行。
-cargo.toml中 [dependencies]  增加配置
-[dependencies]
-rand="0.8.5"
-重新构建执行cargo build 会从cargo.io拉到指定的依赖版本到cargo.lock中。
-执行cargo update会忽略cargo.lock 的版本，从cargo.io拉到最新的依赖版本
-配置国内镜像
-➜  hello_cargo git:(main) touch ~/.cargo/config.toml
-➜  hello_cargo git:(main) vim ~/.cargo/config.toml
-第一种配置：
-[registries]
-ustc = &#123; index = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/" &#125;
-前缀 sparse+ 启用稀疏模式，比传统全量索引更快
-Cargo.toml 指定镜像地址
-[dependencies]
-rand = &#123;registry = "ustc", version = "0.8.5"&#125;
-第二种配置
-直接覆盖原cargo.io ，不用指定镜像地址了
-[source.crates-io]
-replace-with = "ustc"
-
-[source.ustc]
-registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"
-重新build一遍
 ]]></content>
       <categories>
         <category>Rust</category>
@@ -5922,6 +5835,195 @@ import &#123; createTweet, getTweet, createLike &#125; from "./api/tweet";
       </tags>
   </entry>
   <entry>
+    <title>Solana[part13]_Anchor实战：为用户Mint Spl TOKEN</title>
+    <url>/2025/08/19/Solana-part13-Anchor%E5%AE%9E%E6%88%98%EF%BC%9A%E4%B8%BA%E7%94%A8%E6%88%B7Mint-Spl-TOKEN/</url>
+    <content><![CDATA[Solana[part13]_Anchor实战：为用户Mint Spl TOKEN
+该部分代码见：https://github.com/SoniaChan33/anchor_social/commit/5abd954500f2926d999ac644c18a97c91cde9fb6
+createLike指令添加需要的account
+/anchor_social/src/instructions/tweet.rs
+#[derive(Accounts)]
+pub struct CreateLike&lt;'info> &#123;
+    #[account(
+        mut,
+        seeds = [b"mint_v3",],
+        bump,
+    )]
+    pub mint_account: Account&lt;'info, Mint>,
+
+    #[account(
+        init_if_needed,
+        payer = authority,
+        associated_token::mint = mint_account,
+        associated_token::authority = author_wallet,
+    )]
+    pub author_token_account: Account&lt;'info, TokenAccount>,
+
+    /// CHECK : THIS IS AUTHOR WALLET
+    pub author_wallet: AccountInfo&lt;'info>,
+
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + Like::INIT_SPACE,
+        seeds = [
+            Like::SEED_PREFIX.as_bytes().as_ref(),
+            profile.key().as_ref(),
+            tweet.key().as_ref()
+        ],
+        bump
+    )]
+    pub like: Account&lt;'info, Like>,
+
+    #[account(mut)]
+    pub tweet: Account&lt;'info, Tweet>,
+
+
+    #[account(mut, seeds = [Profile::SEED_PREFIX.as_bytes(), authority.key().as_ref()], bump)]
+    pub profile: Account&lt;'info, Profile>,
+    #[account(mut)]
+    pub authority: Signer&lt;'info>,
+    pub system_program: Program&lt;'info, System>,
+
+    pub associated_token_program: Program&lt;'info, AssociatedToken>,
+
+    pub token_program: Program&lt;'info, Token>, // 新增的Token程序字段
+&#125;
+
+tweet结构体修改
+#[account]
+#[derive(InitSpace)]
+pub struct Tweet &#123;
+    #[max_len(50)]
+    pub body: String,
+
+    pub like_count: u64,
+    pub author: Pubkey,
+&#125;
+impl Tweet &#123;
+    pub const SEED_PREFIX: &amp;'static str = "tweet";
+
+    pub fn new(body: String, author: Pubkey) -> Self &#123;
+        Self &#123;
+            body,
+            like_count: 0,
+            author,
+        &#125;
+    &#125;
+&#125;
+
+添加author属性记录要mint to的author token account 地址
+同时需要修改create_tweet函数的细节：
+pub fn create_tweet(ctx: Context&lt;CreateTweet>, body: String) -> Result&lt;()> &#123;
+    let profile = &amp;mut ctx.accounts.profile;
+    profile.tweet_count += 1;
+    let tweet = Tweet::new(body, ctx.accounts.tweet.key()); // 这里添加tweet的地址
+    ctx.accounts.tweet.set_inner(tweet.clone());
+    Ok(())
+&#125;
+
+修改createLike方法
+pub fn create_like(ctx: Context&lt;CreateLike>) -> Result&lt;()> &#123;
+    let tweet = &amp;mut ctx.accounts.tweet;
+    tweet.like_count += 1;
+
+    let like = Like::new(ctx.accounts.profile.key(), tweet.key());
+    ctx.accounts.like.set_inner(like);
+    // 打印mint_account的地址
+    msg!("mint_account: &#123;&#125;", ctx.accounts.mint_account.key());
+    msg!(
+        "author_token_account: &#123;&#125;",
+        ctx.accounts.author_token_account.key()
+    );
+
+    mint_to(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            MintTo &#123;
+                mint: ctx.accounts.mint_account.to_account_info(),
+                to: ctx.accounts.author_token_account.to_account_info(),
+                authority: ctx.accounts.mint_account.to_account_info(),
+            &#125;,
+            &amp;[&amp;[b"mint_v3", &amp;[ctx.bumps.mint_account]]],
+        ),
+        100,
+    )?;
+    Ok(())
+&#125;
+关键参数解析：
+
+
+CpiContext::new_with_signer：创建跨程序调用（CPI）上下文，因为铸造代币需要调用 Solana 的 Token 程序（token_program）。
+
+
+MintTo
+结构体：指定铸造相关的账户：
+
+mint：代币的铸造账户（mint_account），负责生成新代币。
+to：接收代币的账户（author_token_account，推文作者的代币账户）。
+authority：铸造权限的拥有者（这里是mint_account自身，因为该账户的权限通过种子验证）。
+
+
+
+签名种子&amp;[&amp;[b&quot;mint_v3&quot;, &amp;[ctx.bumps.mint_account]]]：用于验证mint_account的权限（该账户是通过b&quot;mint_v3&quot;种子和 bump 值创建的，因此需要用相同种子证明有权限铸造代币）。
+
+
+最后一个参数100：指定铸造的代币数量（向作者账户铸造 100 个代币）。
+
+
+api重新调用这部分代码
+// 创建推文
+const [pda, r3] = await createTweet(defaultWallet, "Hello, world!");
+
+const r4 = await getTweet(defaultWallet, pda);
+console.log("defaultWallet public key:", defaultWallet.publicKey);
+
+console.log(r4);
+
+// 创建点赞
+const visitorPublicKey = visitorWallet.publicKey;
+console.log("Visitor public key:", visitorPublicKey.toString());
+const r5 = await createLike(visitorWallet, pda);
+console.log("Like created:", r5);
+
+const r6 = await getTweet(defaultWallet, pda);
+console.log(r6);
+结果校验
+  anchor_social git:(main) anchor run api
+yarn run v1.22.18
+warning ../package.json: No license field
+$ /Users/tinachan/anchor_social/node_modules/.bin/ts-node app/index.ts
+defaultWallet public key: PublicKey [PublicKey(FcKkQZRxD5P6JwGv58vGRAcX3CkjbX8oqFiygz6ohceU)] &#123;
+  _bn: &lt;BN: d91024e709f54d65b29c9328658d06a488414c4cabc36522130c330322428769>
+&#125;
+&#123;
+  body: 'Hello, world!',
+  likeCount: &lt;BN: 0>,
+  author: PublicKey [PublicKey(BiQgNLwkejkdYyvbSSCjKhTsdK6tmn6YZiXhApX88L1q)] &#123;
+    _bn: &lt;BN: 9f3074c28783b31efe51bdc42e5a0a6a8c2314d017da6a8ed713ccecd1aee164>
+  &#125;
+&#125;
+Visitor public key: 7rQKPb1bPLS4xU93a43GYmBK7MfY3ChSTSVfA8fcxbRF
+Like created: 59rjviQxEK68USP6VfPjqpciwKNcf98jTUpv7CBWEdFqNbAvh9FBTwH3RCcwviK8Wu92G3WACgwv6rafsWgitWDT
+&#123;
+  body: 'Hello, world!',
+  likeCount: &lt;BN: 1>,
+  author: PublicKey [PublicKey(BiQgNLwkejkdYyvbSSCjKhTsdK6tmn6YZiXhApX88L1q)] &#123;
+    _bn: &lt;BN: 9f3074c28783b31efe51bdc42e5a0a6a8c2314d017da6a8ed713ccecd1aee164>
+  &#125;
+&#125;
+✨  Done in 2.45s.
+成功后查看author token account的账户
+
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Solana</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Solana[part12]_Anchor实战：spl token&amp;mint账户的创建</title>
     <url>/2025/08/18/Solana-part12-Anchor%E5%AE%9E%E6%88%98%EF%BC%9A/</url>
     <content><![CDATA[Solana[part12]_Anchor实战：spl token&amp;mint账户的创建
@@ -6185,195 +6287,6 @@ createTokenMintAccount 功能通过 Anchor 框架整合了 SPL Token 和 Metaple
 前端需正确生成 PDA 并传入完整账户参数才能触发交易。
 
 测试时需重点关注环境配置、PDA 种子一致性和账户参数完整性，避免因链上程序依赖或权限问题导致失败。
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-        <tag>Solana</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solana[part13]_Anchor实战：为用户Mint Spl TOKEN</title>
-    <url>/2025/08/19/Solana-part13-Anchor%E5%AE%9E%E6%88%98%EF%BC%9A%E4%B8%BA%E7%94%A8%E6%88%B7Mint-Spl-TOKEN/</url>
-    <content><![CDATA[Solana[part13]_Anchor实战：为用户Mint Spl TOKEN
-该部分代码见：https://github.com/SoniaChan33/anchor_social/commit/5abd954500f2926d999ac644c18a97c91cde9fb6
-createLike指令添加需要的account
-/anchor_social/src/instructions/tweet.rs
-#[derive(Accounts)]
-pub struct CreateLike&lt;'info> &#123;
-    #[account(
-        mut,
-        seeds = [b"mint_v3",],
-        bump,
-    )]
-    pub mint_account: Account&lt;'info, Mint>,
-
-    #[account(
-        init_if_needed,
-        payer = authority,
-        associated_token::mint = mint_account,
-        associated_token::authority = author_wallet,
-    )]
-    pub author_token_account: Account&lt;'info, TokenAccount>,
-
-    /// CHECK : THIS IS AUTHOR WALLET
-    pub author_wallet: AccountInfo&lt;'info>,
-
-    #[account(
-        init,
-        payer = authority,
-        space = 8 + Like::INIT_SPACE,
-        seeds = [
-            Like::SEED_PREFIX.as_bytes().as_ref(),
-            profile.key().as_ref(),
-            tweet.key().as_ref()
-        ],
-        bump
-    )]
-    pub like: Account&lt;'info, Like>,
-
-    #[account(mut)]
-    pub tweet: Account&lt;'info, Tweet>,
-
-
-    #[account(mut, seeds = [Profile::SEED_PREFIX.as_bytes(), authority.key().as_ref()], bump)]
-    pub profile: Account&lt;'info, Profile>,
-    #[account(mut)]
-    pub authority: Signer&lt;'info>,
-    pub system_program: Program&lt;'info, System>,
-
-    pub associated_token_program: Program&lt;'info, AssociatedToken>,
-
-    pub token_program: Program&lt;'info, Token>, // 新增的Token程序字段
-&#125;
-
-tweet结构体修改
-#[account]
-#[derive(InitSpace)]
-pub struct Tweet &#123;
-    #[max_len(50)]
-    pub body: String,
-
-    pub like_count: u64,
-    pub author: Pubkey,
-&#125;
-impl Tweet &#123;
-    pub const SEED_PREFIX: &amp;'static str = "tweet";
-
-    pub fn new(body: String, author: Pubkey) -> Self &#123;
-        Self &#123;
-            body,
-            like_count: 0,
-            author,
-        &#125;
-    &#125;
-&#125;
-
-添加author属性记录要mint to的author token account 地址
-同时需要修改create_tweet函数的细节：
-pub fn create_tweet(ctx: Context&lt;CreateTweet>, body: String) -> Result&lt;()> &#123;
-    let profile = &amp;mut ctx.accounts.profile;
-    profile.tweet_count += 1;
-    let tweet = Tweet::new(body, ctx.accounts.tweet.key()); // 这里添加tweet的地址
-    ctx.accounts.tweet.set_inner(tweet.clone());
-    Ok(())
-&#125;
-
-修改createLike方法
-pub fn create_like(ctx: Context&lt;CreateLike>) -> Result&lt;()> &#123;
-    let tweet = &amp;mut ctx.accounts.tweet;
-    tweet.like_count += 1;
-
-    let like = Like::new(ctx.accounts.profile.key(), tweet.key());
-    ctx.accounts.like.set_inner(like);
-    // 打印mint_account的地址
-    msg!("mint_account: &#123;&#125;", ctx.accounts.mint_account.key());
-    msg!(
-        "author_token_account: &#123;&#125;",
-        ctx.accounts.author_token_account.key()
-    );
-
-    mint_to(
-        CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            MintTo &#123;
-                mint: ctx.accounts.mint_account.to_account_info(),
-                to: ctx.accounts.author_token_account.to_account_info(),
-                authority: ctx.accounts.mint_account.to_account_info(),
-            &#125;,
-            &amp;[&amp;[b"mint_v3", &amp;[ctx.bumps.mint_account]]],
-        ),
-        100,
-    )?;
-    Ok(())
-&#125;
-关键参数解析：
-
-
-CpiContext::new_with_signer：创建跨程序调用（CPI）上下文，因为铸造代币需要调用 Solana 的 Token 程序（token_program）。
-
-
-MintTo
-结构体：指定铸造相关的账户：
-
-mint：代币的铸造账户（mint_account），负责生成新代币。
-to：接收代币的账户（author_token_account，推文作者的代币账户）。
-authority：铸造权限的拥有者（这里是mint_account自身，因为该账户的权限通过种子验证）。
-
-
-
-签名种子&amp;[&amp;[b&quot;mint_v3&quot;, &amp;[ctx.bumps.mint_account]]]：用于验证mint_account的权限（该账户是通过b&quot;mint_v3&quot;种子和 bump 值创建的，因此需要用相同种子证明有权限铸造代币）。
-
-
-最后一个参数100：指定铸造的代币数量（向作者账户铸造 100 个代币）。
-
-
-api重新调用这部分代码
-// 创建推文
-const [pda, r3] = await createTweet(defaultWallet, "Hello, world!");
-
-const r4 = await getTweet(defaultWallet, pda);
-console.log("defaultWallet public key:", defaultWallet.publicKey);
-
-console.log(r4);
-
-// 创建点赞
-const visitorPublicKey = visitorWallet.publicKey;
-console.log("Visitor public key:", visitorPublicKey.toString());
-const r5 = await createLike(visitorWallet, pda);
-console.log("Like created:", r5);
-
-const r6 = await getTweet(defaultWallet, pda);
-console.log(r6);
-结果校验
-  anchor_social git:(main) anchor run api
-yarn run v1.22.18
-warning ../package.json: No license field
-$ /Users/tinachan/anchor_social/node_modules/.bin/ts-node app/index.ts
-defaultWallet public key: PublicKey [PublicKey(FcKkQZRxD5P6JwGv58vGRAcX3CkjbX8oqFiygz6ohceU)] &#123;
-  _bn: &lt;BN: d91024e709f54d65b29c9328658d06a488414c4cabc36522130c330322428769>
-&#125;
-&#123;
-  body: 'Hello, world!',
-  likeCount: &lt;BN: 0>,
-  author: PublicKey [PublicKey(BiQgNLwkejkdYyvbSSCjKhTsdK6tmn6YZiXhApX88L1q)] &#123;
-    _bn: &lt;BN: 9f3074c28783b31efe51bdc42e5a0a6a8c2314d017da6a8ed713ccecd1aee164>
-  &#125;
-&#125;
-Visitor public key: 7rQKPb1bPLS4xU93a43GYmBK7MfY3ChSTSVfA8fcxbRF
-Like created: 59rjviQxEK68USP6VfPjqpciwKNcf98jTUpv7CBWEdFqNbAvh9FBTwH3RCcwviK8Wu92G3WACgwv6rafsWgitWDT
-&#123;
-  body: 'Hello, world!',
-  likeCount: &lt;BN: 1>,
-  author: PublicKey [PublicKey(BiQgNLwkejkdYyvbSSCjKhTsdK6tmn6YZiXhApX88L1q)] &#123;
-    _bn: &lt;BN: 9f3074c28783b31efe51bdc42e5a0a6a8c2314d017da6a8ed713ccecd1aee164>
-  &#125;
-&#125;
-✨  Done in 2.45s.
-成功后查看author token account的账户
-
 ]]></content>
       <categories>
         <category>Solana</category>
@@ -6797,353 +6710,6 @@ Validator not found：确认验证者投票账户地址正确，且已通过add-
       </tags>
   </entry>
   <entry>
-    <title>Solana[part16]_Solana质押-编写应用级别的质押合约-质押部分</title>
-    <url>/2025/08/22/Solana-part16-Solana%E8%B4%A8%E6%8A%BC-%E7%BC%96%E5%86%99%E5%BA%94%E7%94%A8%E7%BA%A7%E5%88%AB%E7%9A%84%E8%B4%A8%E6%8A%BC%E5%90%88%E7%BA%A6-%E8%B4%A8%E6%8A%BC%E9%83%A8%E5%88%86/</url>
-    <content><![CDATA[Solana质押-编写应用级别的质押合约-质押部分
-
-核心代码见：
-https://github.com/SoniaChan33/anchor_social/commit/48b428c2a33213275cea8cc42be199f8bfc7a332 nft mint 编写
-https://github.com/SoniaChan33/anchor_social/commit/a27180fc342c3be81e670794f0e0ddf22817881c  stake nft
-
-1. NFT 铸造（Mint）功能
-1.1 功能说明
-通过 nft_mint_v1 方法实现 NFT 铸造，遵循 MPL Token Metadata 标准，创建包含元数据的唯一 NFT，主要流程包括：
-
-创建 NFT 元数据账户
-铸造 1 个代币到关联账户
-创建主版本账户（Master Edition）确保唯一性
-
-1.2 核心实现（nft_mint.rs）
-1.2.1 铸造方法
-pub fn nft_mint_v1(ctx: Context&lt;NFTMint>, nft_id: String) -> Result&lt;()> &#123;
-    // 定义签名种子（PDA）
-    let signer_seeds: &amp;[&amp;[&amp;[u8]]] = &amp;[&amp;[
-        MyNFT::SEED_PREFIX.as_bytes(),
-        nft_id.as_bytes(),
-        &amp;[ctx.bumps.nft_mint_account],
-    ]];
-
-    // 创建元数据账户
-    create_metadata_accounts_v3(
-        CpiContext::new_with_signer(
-            ctx.accounts.token_metadata_program.to_account_info(),
-            CreateMetadataAccountsV3 &#123;
-                metadata: ctx.accounts.meta_account.to_account_info(),
-                mint: ctx.accounts.nft_mint_account.to_account_info(),
-                mint_authority: ctx.accounts.nft_mint_account.to_account_info(),
-                update_authority: ctx.accounts.nft_mint_account.to_account_info(),
-                payer: ctx.accounts.authority.to_account_info(),
-                system_program: ctx.accounts.system_program.to_account_info(),
-                rent: ctx.accounts.rent.to_account_info(),
-            &#125;,
-            signer_seeds,
-        ),
-        DataV2 &#123;
-            name: format!("&#123;&#125; #&#123;&#125;", MyNFT::TOKEN_NAME.to_string(), nft_id),
-            symbol: MyNFT::TOKEN_SYMBOL.to_string(),
-            uri: MyNFT::TOKEN_URL.to_string(),
-            seller_fee_basis_points: 0,
-            creators: None,
-            collection: None,
-            uses: None,
-        &#125;,
-        false,
-        true,
-        None,
-    )?;
-
-    // 铸造 1 个 NFT 到关联账户
-    mint_to(
-        CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            MintTo &#123;
-                mint: ctx.accounts.nft_mint_account.to_account_info(),
-                to: ctx.accounts.nft_associated_token_account.to_account_info(),
-                authority: ctx.accounts.nft_mint_account.to_account_info(),
-            &#125;,
-            signer_seeds,
-        ),
-        1,
-    )?;
-
-    // 创建主版本账户（限制最大发行量为 1）
-    create_master_edition_v3(
-        CpiContext::new_with_signer(
-            ctx.accounts.token_metadata_program.to_account_info(),
-            CreateMasterEditionV3 &#123;
-                edition: ctx.accounts.master_edition_account.to_account_info(),
-                payer: ctx.accounts.authority.to_account_info(),
-                mint: ctx.accounts.nft_mint_account.to_account_info(),
-                metadata: ctx.accounts.meta_account.to_account_info(),
-                mint_authority: ctx.accounts.nft_mint_account.to_account_info(),
-                update_authority: ctx.accounts.nft_mint_account.to_account_info(),
-                system_program: ctx.accounts.system_program.to_account_info(),
-                token_program: ctx.accounts.token_program.to_account_info(),
-                rent: ctx.accounts.rent.to_account_info(),
-            &#125;,
-            signer_seeds,
-        ),
-        Some(1), // 最大发行量，确保 NFT 唯一性
-    )?;
-
-    Ok(())
-&#125;
-1.2.2 账户结构（NFTMint）
-#[derive(Accounts)]
-#[instruction(nft_id: String)]
-pub struct NFTMint&lt;'info> &#123;
-    /// 主版本账户（MPL 标准）
-    #[account(
-        mut,
-        seeds = [
-            b"metadata",
-            token_metadata_program.key().as_ref(),
-            nft_mint_account.key().as_ref(),
-            b"edition".as_ref(),
-        ],
-        bump,
-        seeds::program = token_metadata_program.key(),
-    )]
-    pub master_edition_account: UncheckedAccount&lt;'info>,
-
-    /// 元数据账户（MPL 标准）
-    #[account(
-        mut,
-        seeds = [
-            b"metadata",
-            token_metadata_program.key().as_ref(),
-            nft_mint_account.key().as_ref(),
-        ],
-        bump,
-        seeds::program = token_metadata_program.key(),
-    )]
-    pub meta_account: UncheckedAccount&lt;'info>,
-
-    /// NFT Mint 账户（PDA 派生）
-    #[account(
-        init_if_needed,
-        payer = authority,
-        seeds = [MyNFT::SEED_PREFIX.as_bytes(), &amp;nft_id.to_string().as_bytes()],
-        bump,
-        mint::decimals = MyNFT::TOKEN_DECIMALS,
-        mint::authority = nft_mint_account.key(),
-        mint::freeze_authority = nft_mint_account.key(),
-    )]
-    pub nft_mint_account: Account&lt;'info, Mint>,
-
-    /// 用户关联的 NFT 代币账户
-    #[account(
-        init_if_needed,
-        payer = authority,
-        associated_token::mint = nft_mint_account,
-        associated_token::authority = authority,
-    )]
-    pub nft_associated_token_account: Account&lt;'info, TokenAccount>,
-
-    #[account(mut)]
-    pub authority: Signer&lt;'info>, // 发起者签名账户
-
-    // 依赖程序
-    pub token_program: Program&lt;'info, Token>,
-    pub system_program: Program&lt;'info, System>,
-    pub token_metadata_program: Program&lt;'info, Metadata>,
-    pub associated_token_program: Program&lt;'info, AssociatedToken>,
-    pub rent: Sysvar&lt;'info, Rent>,
-&#125;
-1.2.3 NFT 配置常量（state/nft.rs）
-pub struct MyNFT;
-
-impl MyNFT &#123;
-    pub const SEED_PREFIX: &amp;'static str = "MyNFT_v1"; // PDA 种子前缀
-    pub const TOKEN_DECIMALS: u8 = 0; // NFT 通常使用 0 位小数
-    pub const TOKEN_NAME: &amp;'static str = "My NFT"; // 名称前缀
-    pub const TOKEN_SYMBOL: &amp;'static str = "MTK"; // 符号
-    pub const TOKEN_URL: &amp;'static str = "https://img.soniachen.com/IMG_0151.JPG"; // 元数据 URI
-&#125;
-1.3 客户端调用示例（app/api/nft.ts）
-import * as anchor from "@coral-xyz/anchor";
-import &#123; program &#125; from "./wallet";
-
-export async function nftMint(wallet: anchor.Wallet, nftId: string) &#123;
-    const tx = await program.methods.nftMint(nftId).accounts(&#123;
-        authority: wallet.publicKey,
-    &#125;).rpc();
-    return tx;
-&#125;
-2. NFT 质押（Stake）功能
-2.1 功能说明
-通过 nft_stake 方法实现 NFT 质押，主要流程包括：
-
-创建质押信息记录（StakeInfo）
-将 NFT 从用户账户转移到质押池（程序托管账户）
-铸造流动性代币作为质押奖励
-
-2.2 核心实现（nft_stake.rs）
-2.2.1 质押方法
-pub fn nft_stake(ctx: Context&lt;NFTStake>) -> Result&lt;()> &#123;
-    // 记录质押关系
-    let stake_info = StakeInfo::new(
-        ctx.accounts.authority.key(),
-        ctx.accounts.nft_mint_account.key(),
-    );
-    ctx.accounts.stake_info.set_inner(stake_info.clone());
-
-    // 将 NFT 从用户账户转移到质押池
-    transfer(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            Transfer &#123;
-                from: ctx.accounts.nft_associated_token_account.to_account_info(),
-                to: ctx.accounts.program_receipt_ata.to_account_info(),
-                authority: ctx.accounts.authority.to_account_info(),
-            &#125;,
-        ),
-        1, // NFT 数量为 1
-    )?;
-
-    // 铸造流动性代币作为奖励
-    let signer_seeds: &amp;[&amp;[&amp;[u8]]] = &amp;[&amp;[
-        MyToken::SEED_PREFIX.as_bytes(),
-        &amp;[ctx.bumps.token_mint_account],
-    ]];
-
-    mint_to(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            MintTo &#123;
-                mint: ctx.accounts.token_mint_account.to_account_info(),
-                to: ctx.accounts.associated_token_account.to_account_info(),
-                authority: ctx.accounts.token_mint_account.to_account_info(),
-            &#125;,
-        )
-        .with_signer(signer_seeds),
-        10000, // 奖励代币数量
-    )?;
-
-    Ok(())
-&#125;
-2.2.2 账户结构（NFTStake）
-#[derive(Accounts)]
-pub struct NFTStake&lt;'info> &#123;
-    /// 质押信息记录账户
-    #[account(
-        init_if_needed,
-        payer = authority,
-        space = 8 + StakeInfo::INIT_SPACE,
-        seeds = [
-            StakeInfo::SEED_PREFIX.as_bytes(),
-            nft_mint_account.key().as_ref(),
-        ],
-        bump,
-    )]
-    pub stake_info: Box&lt;Account&lt;'info, StakeInfo>>,
-
-    /// 质押池接收 NFT 的账户
-    #[account(
-        init_if_needed,
-        payer = authority,
-        associated_token::mint = nft_mint_account,
-        associated_token::authority = stake_info,
-    )]
-    pub program_receipt_ata: Box&lt;Account&lt;'info, TokenAccount>>,
-
-    /// 流动性代币 Mint 账户
-    #[account(
-        mut,
-        seeds = [MyToken::SEED_PREFIX.as_bytes(),],
-        bump,
-    )]
-    pub token_mint_account: Box&lt;Account&lt;'info, Mint>>,
-
-    /// 用户的流动性代币关联账户
-    #[account(
-        init_if_needed,
-        payer = authority,
-        associated_token::mint = token_mint_account,
-        associated_token::authority = authority,
-    )]
-    pub associated_token_account: Box&lt;Account&lt;'info, TokenAccount>>,
-
-    /// 被质押的 NFT Mint 账户
-    #[account(mut)]
-    pub nft_mint_account: Box&lt;Account&lt;'info, Mint>>,
-
-    /// 用户的 NFT 关联账户
-    #[account(mut,
-        associated_token::mint = nft_mint_account,
-        associated_token::authority = authority,
-    )]
-    pub nft_associated_token_account: Box&lt;Account&lt;'info, TokenAccount>>,
-
-    #[account(mut)]
-    pub authority: Signer&lt;'info>, // 发起者签名账户
-
-    // 依赖程序
-    pub token_program: Program&lt;'info, Token>,
-    pub system_program: Program&lt;'info, System>,
-    pub associated_token_program: Program&lt;'info, AssociatedToken>,
-&#125;
-2.2.3 质押信息结构（state/stake.rs）
-#[account]
-#[derive(InitSpace)]
-pub struct StakeInfo &#123;
-    pub staker: Pubkey,           // 质押人地址
-    pub nft_mint_account: Pubkey, // 质押的 NFT Mint 地址
-    pub staked_at: u64,           // 质押时间（纪元）
-&#125;
-
-impl StakeInfo &#123;
-    pub const SEED_PREFIX: &amp;'static str = "stake_v1"; // PDA 种子前缀
-
-    pub fn new(staker: Pubkey, nft_mint_account: Pubkey) -> Self &#123;
-        Self &#123;
-            staker,
-            nft_mint_account,
-            staked_at: Clock::get().unwrap().epoch,
-        &#125;
-    &#125;
-&#125;
-2.3 客户端调用示例（app/api/stake.ts）
-import * as anchor from "@coral-xyz/anchor";
-import &#123; program &#125; from "./wallet";
-import &#123; getNftMintAccount &#125; from "./account";
-
-export async function stakeNFT(wallet: anchor.Wallet, nft_id: string) &#123;
-    return await program.methods.nftStake().accounts(&#123;
-        nftMintAccount: getNftMintAccount(nft_id),
-    &#125;).signers([wallet.payer]).rpc();
-&#125;
-3. 关键技术点
-
-
-PDA 账户管理：通过种子（Seed）派生程序派生地址（PDA）管理 NFT Mint 账户、质押信息账户等，确保账户安全性和可预测性。
-
-
-MPL 元数据标准：遵循 Metaplex Token Metadata 标准创建 NFT 元数据和主版本账户，确保 NFT 兼容性和唯一性。
-
-
-代币转移与铸造权限：使用 SPL Token 程序进行代币转移，通过 PDA 签名授予铸造权限，避免私钥直接暴露。
-
-
-关联代币账户（ATA）：使用关联代币账户规范管理用户与代币的关联关系，简化账户创建和管理流程。
-
-
-质押奖励机制：质押 NFT 时铸造流动性代币作为奖励，实现激励机制闭环。
-
-
-验证
-查看账号，发现我的nft已经转移走了，取而代之的是token发放到我的账户中
-
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-        <tag>Solana</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Solana[part17]_Solana质押-编写应用级别的质押合约-解质押部分</title>
     <url>/2025/08/22/Solana-part17-Solana%E8%B4%A8%E6%8A%BC-%E7%BC%96%E5%86%99%E5%BA%94%E7%94%A8%E7%BA%A7%E5%88%AB%E7%9A%84%E8%B4%A8%E6%8A%BC%E5%90%88%E7%BA%A6-%E8%A7%A3%E8%B4%A8%E6%8A%BC%E9%83%A8%E5%88%86/</url>
     <content><![CDATA[Solana质押-编写应用级别的质押合约-解质押部分
@@ -7491,257 +7057,127 @@ TypeScript 类型系统帮助匹配程序接口（IDL），减少调用错误
       </tags>
   </entry>
   <entry>
-    <title>Solana[part19]_ETF的介绍和创建指令实现</title>
-    <url>/2025/08/24/Solana-part19-ETF%E7%9A%84%E4%BB%8B%E7%BB%8D%E5%92%8C%E5%88%9B%E5%BB%BA%E6%8C%87%E4%BB%A4%E5%AE%9E%E7%8E%B0/</url>
-    <content><![CDATA[ETF的介绍和创建指令实现
-
-
-代码提交地址：https://github.com/SoniaChan33/iswap/commit/25b017929923a3d1e46d853f3a12da05f0b77172
-
-一、项目概述
-iSwap项目中的ETF创建功能用于在Solana区块链上生成自定义ETF（交易所交易基金），核心目标是实现ETF相关账户的创建与管理，包括ETF信息存储账户、资产关联账户（ATA）、ETF代币铸造账户（Mint）及元数据（Metadata）账户，确保所有操作的原子性与链上数据一致性。
-二、核心链上组件（Rust程序）
-链上逻辑通过Solana程序（智能合约）实现，负责ETF相关账户的初始化、数据存储及跨程序调用（CPI）。
-1. 账户结构定义（etf_token.rs）
-定义了链上存储ETF数据的核心账户结构，用于持久化ETF的关键信息。
-EtfToken 账户
-存储ETF的整体信息，包括铸造账户地址、创建者、创建时间、描述及资产列表：
-#[account]
-#[derive(InitSpace)]
-pub struct EtfToken &#123;
-    pub mint_account: Pubkey,       // ETF代币的Mint账户地址
-    pub creator: Pubkey,            // ETF创建者地址
-    pub create_at: i64,             // 创建时间（Unix时间戳）
-    #[max_len(50)]
-    pub descriptor: String,         // ETF描述信息（最大长度50）
-    #[max_len(10)]
-    pub assets: Vec&lt;EtfAsset>,      // 包含的资产列表（最多10个资产）
+    <title>Rust进阶[part2]_泛型</title>
+    <url>/2025/07/29/Rust%E8%BF%9B%E9%98%B6-part2-%E6%B3%9B%E5%9E%8B/</url>
+    <content><![CDATA[Rust进阶[part2]_泛型
+泛型概述
+在定义函数时运用泛型，可将原本函数签名里明确指定参数和返回值类型的部分，用泛型来替代。这种方式能增强代码的适应性，为函数调用者赋予更多功能，还能避免代码重复。
+fn add&lt;T>(a:T, b:T) -> T&#123;
+  a + b
 &#125;
-
-种子前缀：SEEDS_PREFIX = &quot;ETF_TOKEN&quot;（用于PDA派生）
-初始化方法：new 方法接收参数并返回实例，自动填充创建时间（通过Clock获取）。
-
-EtfAsset 账户
-存储ETF中单个资产的信息（代币地址及权重）：
-#[account]
-#[derive(InitSpace)]
-pub struct EtfAsset &#123;
-    pub token: Pubkey,  // 资产代币的Mint地址
-    pub weight: u16,    // 资产在ETF中的权重（数值类型为无符号16位整数）
+不过，并非所有的T类型都能进行相加操作，此时会提示错误：
+genertic_type.rs(5, 9): consider restricting type parameter 'T' with trait 'Add': ': std::ops::Add&lt;Output = T&gt;'
+修正后的代码如下：
+fn add&lt;T: std::ops::Add&lt;Output = T>>(a: T, b: T) -> T &#123;
+    a + b
 &#125;
-
-初始化方法：new 方法接收代币地址和权重，返回实例。
-
-2. ETF创建指令（etf_create.rs）
-实现ETF创建的核心逻辑，包括账户初始化、元数据创建及数据存储。
-输入参数 EtfTokenArgs
-客户端传入的ETF配置信息，用于初始化链上数据：
-#[account]
-pub struct EtfTokenArgs &#123;
-    pub name: String,        // ETF名称
-    pub symbol: String,      // ETF符号（唯一标识，用于派生地址）
-    pub description: String, // ETF描述
-    pub url: String,         // ETF元数据URL（如官网、详情页）
-    pub assets: Vec&lt;EtfAsset>, // 包含的资产列表
-&#125;
-账户约束 EtfTokenCreate
-定义指令所需的账户及约束条件，确保账户合法性：
-#[derive(Accounts)]
-#[instruction(args: EtfTokenArgs)]
-pub struct EtfTokenCreate&lt;'info> &#123;
-    // ETF信息账户（PDA），若不存在则初始化
-    #[account(
-        init_if_needed,
-        payer = authority,
-        space = 8 + EtfToken::INIT_SPACE,  // 8字节为账户 discriminator
-        seeds = [EtfToken::SEEDS_PREFIX.as_bytes(), etf_token_mint_account.key().as_ref()],
-        bump
-    )]
-    pub etf_token_info: Account&lt;'info, EtfToken>,
-
-    // ETF元数据账户（关联Mint，通过元数据程序规则派生）
-    #[account(
-        mut,
-        seeds = [b"metadata", token_metadata_program.key().as_ref(), etf_token_mint_account.key().as_ref()],
-        bump,
-        seeds::program = token_metadata_program.key()
-    )]
-    pub etf_metadata_account: UncheckedAccount&lt;'info>,
-
-    // ETF代币Mint账户（PDA），若不存在则初始化
-    #[account(
-        init_if_needed,
-        payer = authority,
-        seeds = [EtfToken::SEEDS_PREFIX.as_bytes(), args.symbol.as_bytes()],
-        bump,
-        mint::decimals = 9,  // 固定小数位为9
-        mint::authority = etf_token_info.key()  // 权限归属于ETF信息账户
-    )]
-    pub etf_token_mint_account: Account&lt;'info, Mint>,
-
-    #[account(mut)]
-    pub authority: Signer&lt;'info>,  // 交易签名者（创建者钱包）
-    pub rent: Sysvar&lt;'info, Rent>, // Solana租金系统变量
-    pub token_program: Program&lt;'info, Token>, // SPL Token程序
-    pub system_program: Program&lt;'info, System>, // 系统程序
-    pub token_metadata_program: Program&lt;'info, Metadata>, // MPL元数据程序
-&#125;
-指令逻辑 etf_token_create
-
-派生PDA签名种子：使用etf_token_info的种子和bump生成签名种子（用于CPI授权）。
-创建元数据账户：通过CPI调用MPL元数据程序，创建关联ETF Mint的元数据账户，包含名称、符号、URL等信息。
-初始化ETF信息账户：将EtfTokenArgs转换为EtfToken实例，存储创建者、Mint地址、时间等数据。
-
-三、客户端核心逻辑（TypeScript）
-客户端负责构建交易、派生地址、处理账户交互，最终调用链上程序完成ETF创建。
-1. 基础配置（const.ts）
-提供程序实例、Provider及默认钱包，作为客户端与链上交互的基础：
-import * as anchor from "@coral-xyz/anchor";
-import &#123; Iswap &#125; from "../../target/types/iswap";
-
-// 初始化Provider（连接Solana网络）
-let provider = anchor.AnchorProvider.env();
-anchor.setProvider(provider);
-
-// 程序实例（关联iSwap程序）
-const program = anchor.workspace.Iswap as anchor.Program&lt;Iswap>;
-
-// 默认钱包（本地钱包）
-export function useDefaultWallet() &#123;
-    const wallet = anchor.Wallet.local();
-    return wallet;
-&#125;
-
-export &#123; program, provider &#125;;
-2. 地址派生（address.ts）
-通过种子规则派生ETF相关账户的PDA地址，确保客户端与链上程序地址一致。
-deriveEtfTokenMintAccount
-根据ETF符号（symbol）派生Mint账户地址：
-export function deriveEtfTokenMintAccount(symbol: string) &#123;
-    return anchor.web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("etf_token"), Buffer.from(symbol)], // 种子：前缀 + symbol
-        program.programId
-    );
-&#125;
-deriveEtfInfoAccount
-根据Mint账户地址派生ETF信息账户（etf_token_info）地址：
-export function deriveEtfInfoAccount(symbol: string) &#123;
-    const [mintAccount,] = deriveEtfTokenMintAccount(symbol);
-    return anchor.web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("etf_token"), mintAccount.toBuffer()], // 种子：前缀 + Mint地址
-        program.programId
-    );
-&#125;
-3. ETF创建函数（etf_token.ts）
-createETF函数是客户端创建ETF的入口，负责构建交易并发送至链上：
-核心流程：
-
-派生账户地址：通过deriveEtfInfoAccount获取etf_token_info账户地址。
-创建资产ATA账户：为ETF包含的每个资产创建关联Token账户（ATA），若账户不存在则添加创建指令（确保ETF能持有资产）。
-构建交易：
-
-添加ATA创建指令（若需要）。
-添加调用链上etfCreate方法的指令（传入名称、符号、资产等参数）。
-
-
-发送交易：使用Provider发送交易，由创建者钱包签名。
-
-export async function createETF(wallet: anchor.Wallet, name: string, symbol: string, description: string, url: string, assets: &#123; token: PublicKey, weight: number &#125;[]) &#123;
-    // 派生ETF信息账户地址
-    const [etfTokenInfoAddress,] = deriveEtfInfoAccount(symbol);
-
-    // 初始化交易
-    let tx = new anchor.web3.Transaction();
-
-    // 为每个资产创建ATA（若不存在）
-    for (const &#123; token &#125; of assets) &#123;
-        const address = await getAssociatedTokenAddressSync(token, etfTokenInfoAddress, true);
-        try &#123;
-            await getAccount(provider.connection, address); // 检查账户是否存在
-        &#125; catch (e) &#123;
-            if (e instanceof TokenAccountNotFoundError) &#123;
-                // 添加创建ATA的指令
-                tx.add(createAssociatedTokenAccountInstruction(
-                    wallet.payer.publicKey, //  payer
-                    address,                // ATA地址
-                    etfTokenInfoAddress,    // 所有者（ETF信息账户）
-                    token                   // 资产代币Mint
-                ));
-            &#125;
+使用场景
+在函数定义中使用泛型
+fn largest&lt;T: std::cmp::PartialOrd>(list: &amp;[T]) -> &amp;T &#123;
+    let mut largest = &amp;list[0];
+    for item in list &#123;
+        if item > largest &#123;
+            largest = item;
         &#125;
     &#125;
-
-    // 添加调用链上程序的指令
-    tx.add(await program.methods.etfCreate(&#123;
-        name, symbol, description, url, assets
-    &#125;).transaction());
-
-    // 发送并确认交易
-    return await anchor.web3.sendAndConfirmTransaction(
-        provider.connection,
-        tx,
-        [wallet.payer] // 签名者
-    );
+    largest
 &#125;
-4. 示例调用（index.ts）
-演示如何使用createETF函数创建ETF，包含参数示例：
-(async () => &#123;
-    const defaultWallet = useDefaultWallet(); // 使用默认钱包
-    // ETF基本信息
-    const [name, symbol, description, url] = [
-        "MyETF3",
-        "MYETF3",
-        "This is my ETF3",
-        "https://my-etf.com",
-    ];
-    // 包含的资产（代币地址+权重）
-    const assets = [
-        &#123;
-            token: new anchor.web3.PublicKey("FGNSbKTiKd4d1Zv97c2iQACADB8N7MnDnDsv5auHGAHo"),
-            weight: 90,
-        &#125;,
-        &#123;
-            token: new anchor.web3.PublicKey("GTzKipZ6PcTEV2iV4LP1Yowwc4QPt1hvKmk6vuqY8ywp"),
-            weight: 10,
-        &#125;,
-    ];
-    // 调用创建函数并打印交易哈希
-    const tx = await createETF(defaultWallet, name, symbol, description, url, assets);
-    console.log(tx);
-&#125;)();
-四、完整流程总结
+在结构体中使用泛型
+struct Point&lt;T> &#123;
+    x: T,
+    y: T,
+&#125;
 
-客户端准备：用户指定ETF参数（名称、符号、资产等），通过useDefaultWallet获取签名钱包。
-地址派生：客户端通过deriveEtfTokenMintAccount和deriveEtfInfoAccount计算Mint和信息账户的PDA地址。
-交易构建：
+// 实例化泛型结构体
+let integer = Point &#123; x: 5, y: 10 &#125;;
+let float = Point &#123; x: 1.0, y: 4.0 &#125;;
+在枚举里面使用泛型
+enum Result&lt;T, E> &#123;
+    Ok(T),
+    Err(E),
+&#125;
 
-检查并创建资产ATA账户（确保ETF可持有资产）。
-构建调用链上etfCreate指令的交易。
+// 实例化泛型枚举
+fn divide(numerator: f64, denominator: f64) -> Result&lt;f64, String> &#123;
+    if denominator == 0.0 &#123;
+        Err("Division by zero".to_string())
+    &#125; else &#123;
+        Ok(numerator / denominator)
+    &#125;
+&#125;
+impl之后声明泛型T
+泛型参数可以和结构体定义中声明的泛型参数不一样。
+struct Point&lt;T, U> &#123;
+    x: T,
+    y: U,
+&#125;
+
+impl&lt;T, U> Point&lt;T, U> &#123;
+    fn mixup&lt;V, W>(self, other: Point&lt;V, W>) -> Point&lt;T, W> &#123;
+        Point &#123;
+            x: self.x,
+            y: other.y,
+        &#125;
+    &#125;
+&#125;
+
+// 示例用法
+let p1 = Point &#123; x: 5, y: 10.4 &#125;;
+let p2 = Point &#123; x: "Hello", y: 'c' &#125;;
+let p3 = p1.mixup(p2);
+const泛型
+// 定义一个固定大小的数组类型
+struct ArrayBuffer&lt;T, const N: usize> &#123;
+    data: [T; N],
+    len: usize,
+&#125;
+
+impl&lt;T, const N: usize> ArrayBuffer&lt;T, N>
+where
+    T: Default + Copy,
+&#123;
+    fn new() -> Self &#123;
+        ArrayBuffer &#123;
+            data: [Default::default(); N],
+            len: 0,
+        &#125;
+    &#125;
+&#125;
 
 
-链上处理：
+// 创建一个可以存储10个i32的缓冲区
+let buffer: ArrayBuffer&lt;i32, 10> = ArrayBuffer::new();
+where子句可以直接写在泛型参数后面，例如：
+// 写法1：使用where子句
+fn new_array_buffer&lt;T, const N: usize>() -> ArrayBuffer&lt;T, N>
+where
+    T: Default + Copy,
+&#123; ... &#125;
 
-程序验证账户约束，初始化Mint账户（若不存在）。
-通过CPI创建元数据账户，关联Mint。
-初始化etf_token_info账户，存储ETF数据。
+// 写法2：直接在泛型参数后指定约束
+fn new_array_buffer&lt;T: Default + Copy, const N: usize>() -> ArrayBuffer&lt;T, N> &#123; ... &#125;
+泛型代码的性能
+Rust通过在编译时对泛型代码进行单态化来保证效率。
+当代码运行时，其执行效率和手写每个具体定义的重复代码一样。正是这个单态化过程，使得Rust泛型在运行时极为高效。
+// 泛型代码
+fn add&lt;T: std::ops::Add&lt;Output = T>>(a: T, b: T) -> T &#123;
+    a + b
+&#125;
 
+// 单态化后的代码示例
+fn add_i32(a: i32, b: i32) -> i32 &#123;
+    a + b
+&#125;
 
-交易确认：客户端接收交易哈希，完成ETF创建。
-
-五、关键技术点
-
-PDA（Program Derived Address）：用于生成Mint和信息账户地址，确保地址唯一性和程序控制权。
-ATA（Associated Token Account）：为ETF自动创建资产持有账户，遵循SPL Token标准。
-CPI（Cross-Program Invocation）：调用MPL元数据程序创建元数据，实现模块化功能复用。
-原子性交易：所有操作（ATA创建、程序调用）在同一交易中完成，确保要么全部成功，要么全部失败。
-
+fn add_f64(a: f64, b: f64) -> f64 &#123;
+    a + b
+&#125;
 ]]></content>
       <categories>
-        <category>Solana</category>
+        <category>Rust</category>
       </categories>
       <tags>
         <tag>Rust</tag>
-        <tag>Solana</tag>
       </tags>
   </entry>
   <entry>
@@ -7831,90 +7267,343 @@ fn binding() &#123;
       </tags>
   </entry>
   <entry>
-    <title>Solana[part20]_ETF的购买</title>
-    <url>/2025/08/25/Solana-part20-ETF%E7%9A%84%E8%B4%AD%E4%B9%B0/</url>
-    <content><![CDATA[Solana[part20]_ETF的购买
-购买 ETF
-基本思路
-以 ETF No.1 为例，ETF No.1 包含 jitoSOL 和 mSOL，权重分别为 20%、80%。 「 etf里面不是token账户吗 拿来的sol 」
-当前价格
+    <title>Solana[part16]_Solana质押-编写应用级别的质押合约-质押部分</title>
+    <url>/2025/08/22/Solana-part16-Solana%E8%B4%A8%E6%8A%BC-%E7%BC%96%E5%86%99%E5%BA%94%E7%94%A8%E7%BA%A7%E5%88%AB%E7%9A%84%E8%B4%A8%E6%8A%BC%E5%90%88%E7%BA%A6-%E8%B4%A8%E6%8A%BC%E9%83%A8%E5%88%86/</url>
+    <content><![CDATA[Solana质押-编写应用级别的质押合约-质押部分
 
-1 JitoSOL = 1.16 SOL
-1 mSOL = 1.25 SOL
+核心代码见：
+https://github.com/SoniaChan33/anchor_social/commit/48b428c2a33213275cea8cc42be199f8bfc7a332 nft mint 编写
+https://github.com/SoniaChan33/anchor_social/commit/a27180fc342c3be81e670794f0e0ddf22817881c  stake nft
 
-用户需求与成本计算
-用户当前持有 SOL，计划购买 ETF No.1 100 份，需花费：100×20%×1.16+100×80%×1.25=123.2 SOL
-方案一：前端 swap
+1. NFT 铸造（Mint）功能
+1.1 功能说明
+通过 nft_mint_v1 方法实现 NFT 铸造，遵循 MPL Token Metadata 标准，创建包含元数据的唯一 NFT，主要流程包括：
 
-【用户】 通过 ray 或 okx 等平台，将 123.2 SOL 换出 80 mSOL 和 20 JitoSOL。
-【用户】 执行【Transfer】操作，将 JitoSOL 20 份和 mSOL 80 份转入【合约】。
-【合约】 执行【Mint】操作，向【用户】发行 100 份 ETF No.1。
+创建 NFT 元数据账户
+铸造 1 个代币到关联账户
+创建主版本账户（Master Edition）确保唯一性
 
-方案二：合约 swap
+1.2 核心实现（nft_mint.rs）
+1.2.1 铸造方法
+pub fn nft_mint_v1(ctx: Context&lt;NFTMint>, nft_id: String) -> Result&lt;()> &#123;
+    // 定义签名种子（PDA）
+    let signer_seeds: &amp;[&amp;[&amp;[u8]]] = &amp;[&amp;[
+        MyNFT::SEED_PREFIX.as_bytes(),
+        nft_id.as_bytes(),
+        &amp;[ctx.bumps.nft_mint_account],
+    ]];
 
-【用户】 执行【Transfer】操作，将 123.2 SOL 转入【合约】。
-【合约】 通过 ray 或 okx 等平台，将 123.2 SOL 换出 80 mSOL 和 20 JitoSOL。
-【合约】 执行【Mint】操作，向【用户】发行 100 份 ETF No.1。
+    // 创建元数据账户
+    create_metadata_accounts_v3(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_metadata_program.to_account_info(),
+            CreateMetadataAccountsV3 &#123;
+                metadata: ctx.accounts.meta_account.to_account_info(),
+                mint: ctx.accounts.nft_mint_account.to_account_info(),
+                mint_authority: ctx.accounts.nft_mint_account.to_account_info(),
+                update_authority: ctx.accounts.nft_mint_account.to_account_info(),
+                payer: ctx.accounts.authority.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                rent: ctx.accounts.rent.to_account_info(),
+            &#125;,
+            signer_seeds,
+        ),
+        DataV2 &#123;
+            name: format!("&#123;&#125; #&#123;&#125;", MyNFT::TOKEN_NAME.to_string(), nft_id),
+            symbol: MyNFT::TOKEN_SYMBOL.to_string(),
+            uri: MyNFT::TOKEN_URL.to_string(),
+            seller_fee_basis_points: 0,
+            creators: None,
+            collection: None,
+            uses: None,
+        &#125;,
+        false,
+        true,
+        None,
+    )?;
 
-（注：操作中的【Transfer】【Mint】为链上交互动作，需结合具体合约逻辑执行。）
-前置准备：
-➜  anchor git:(main) ✗ spl-token create-token
-Creating token HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+    // 铸造 1 个 NFT 到关联账户
+    mint_to(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            MintTo &#123;
+                mint: ctx.accounts.nft_mint_account.to_account_info(),
+                to: ctx.accounts.nft_associated_token_account.to_account_info(),
+                authority: ctx.accounts.nft_mint_account.to_account_info(),
+            &#125;,
+            signer_seeds,
+        ),
+        1,
+    )?;
 
-Address:  HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
-Decimals:  9
+    // 创建主版本账户（限制最大发行量为 1）
+    create_master_edition_v3(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_metadata_program.to_account_info(),
+            CreateMasterEditionV3 &#123;
+                edition: ctx.accounts.master_edition_account.to_account_info(),
+                payer: ctx.accounts.authority.to_account_info(),
+                mint: ctx.accounts.nft_mint_account.to_account_info(),
+                metadata: ctx.accounts.meta_account.to_account_info(),
+                mint_authority: ctx.accounts.nft_mint_account.to_account_info(),
+                update_authority: ctx.accounts.nft_mint_account.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                token_program: ctx.accounts.token_program.to_account_info(),
+                rent: ctx.accounts.rent.to_account_info(),
+            &#125;,
+            signer_seeds,
+        ),
+        Some(1), // 最大发行量，确保 NFT 唯一性
+    )?;
 
-Signature: qkrfqj8QKGHWiCSr3DjooVd9EB2FHvSPMfgk95f3R4n2G7AkdoSN1ufoFj6Suw9rYKzxcDJa441uokk5i5xosfC
+    Ok(())
+&#125;
+1.2.2 账户结构（NFTMint）
+#[derive(Accounts)]
+#[instruction(nft_id: String)]
+pub struct NFTMint&lt;'info> &#123;
+    /// 主版本账户（MPL 标准）
+    #[account(
+        mut,
+        seeds = [
+            b"metadata",
+            token_metadata_program.key().as_ref(),
+            nft_mint_account.key().as_ref(),
+            b"edition".as_ref(),
+        ],
+        bump,
+        seeds::program = token_metadata_program.key(),
+    )]
+    pub master_edition_account: UncheckedAccount&lt;'info>,
 
-➜  anchor git:(main) ✗ spl-token create-token
-Creating token D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+    /// 元数据账户（MPL 标准）
+    #[account(
+        mut,
+        seeds = [
+            b"metadata",
+            token_metadata_program.key().as_ref(),
+            nft_mint_account.key().as_ref(),
+        ],
+        bump,
+        seeds::program = token_metadata_program.key(),
+    )]
+    pub meta_account: UncheckedAccount&lt;'info>,
 
-Address:  D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
-Decimals:  9
+    /// NFT Mint 账户（PDA 派生）
+    #[account(
+        init_if_needed,
+        payer = authority,
+        seeds = [MyNFT::SEED_PREFIX.as_bytes(), &amp;nft_id.to_string().as_bytes()],
+        bump,
+        mint::decimals = MyNFT::TOKEN_DECIMALS,
+        mint::authority = nft_mint_account.key(),
+        mint::freeze_authority = nft_mint_account.key(),
+    )]
+    pub nft_mint_account: Account&lt;'info, Mint>,
 
-Signature: aR8akG7j4A15h9Qs4MnUMbMtNA965g5rDSj53oaCyvfXNQsQHYDSVQ6Mw5En8EcMLwfX3AHWNjCWpGciHJQZTbb
+    /// 用户关联的 NFT 代币账户
+    #[account(
+        init_if_needed,
+        payer = authority,
+        associated_token::mint = nft_mint_account,
+        associated_token::authority = authority,
+    )]
+    pub nft_associated_token_account: Account&lt;'info, TokenAccount>,
 
-➜  anchor git:(main) ✗ spl-token create-account D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
-Creating account FKFZdRon44c7UG3sWDhkfdRhsbnjnPdERFHT4eVwZbkM
+    #[account(mut)]
+    pub authority: Signer&lt;'info>, // 发起者签名账户
 
-Signature: 5xoKsk1VmbSYzsVivUv3vQqEjpURMBqPzDDbLDHZ1DsWqJjdqoJbcUAUBAFR5VdGcjrh5ik3mdJo85SRiHgotK8k
+    // 依赖程序
+    pub token_program: Program&lt;'info, Token>,
+    pub system_program: Program&lt;'info, System>,
+    pub token_metadata_program: Program&lt;'info, Metadata>,
+    pub associated_token_program: Program&lt;'info, AssociatedToken>,
+    pub rent: Sysvar&lt;'info, Rent>,
+&#125;
+1.2.3 NFT 配置常量（state/nft.rs）
+pub struct MyNFT;
 
-➜  anchor git:(main) ✗ spl-token create-account HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
-Creating account For4aUqGLAVwvJCJ7W7xp9oNXAtQQqTdyA5kityMxhkB
+impl MyNFT &#123;
+    pub const SEED_PREFIX: &amp;'static str = "MyNFT_v1"; // PDA 种子前缀
+    pub const TOKEN_DECIMALS: u8 = 0; // NFT 通常使用 0 位小数
+    pub const TOKEN_NAME: &amp;'static str = "My NFT"; // 名称前缀
+    pub const TOKEN_SYMBOL: &amp;'static str = "MTK"; // 符号
+    pub const TOKEN_URL: &amp;'static str = "https://img.soniachen.com/IMG_0151.JPG"; // 元数据 URI
+&#125;
+1.3 客户端调用示例（app/api/nft.ts）
+import * as anchor from "@coral-xyz/anchor";
+import &#123; program &#125; from "./wallet";
 
-Signature: 3o2UV8S756A6vtL4bKgpWQRf8oS5mmQx5RuG8drarjFpnEFwucVyAZoapcRrBVVryukmu8Mxuf7EyrnLJyVy3Rpp
+export async function nftMint(wallet: anchor.Wallet, nftId: string) &#123;
+    const tx = await program.methods.nftMint(nftId).accounts(&#123;
+        authority: wallet.publicKey,
+    &#125;).rpc();
+    return tx;
+&#125;
+2. NFT 质押（Stake）功能
+2.1 功能说明
+通过 nft_stake 方法实现 NFT 质押，主要流程包括：
 
-➜  anchor git:(main) ✗ spl-token mint HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  100
-Minting 100 tokens
-  Token: HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
-  Recipient: For4aUqGLAVwvJCJ7W7xp9oNXAtQQqTdyA5kityMxhkB
+创建质押信息记录（StakeInfo）
+将 NFT 从用户账户转移到质押池（程序托管账户）
+铸造流动性代币作为质押奖励
 
-Signature: 5mijdTfBDZvD51zKfhw31JNaxNvZYesCKoHbDD48zCcMkwN1oMqZcjYamjpM4MCAD1fvbsu1BK5sKoHX4Ghiehfo
+2.2 核心实现（nft_stake.rs）
+2.2.1 质押方法
+pub fn nft_stake(ctx: Context&lt;NFTStake>) -> Result&lt;()> &#123;
+    // 记录质押关系
+    let stake_info = StakeInfo::new(
+        ctx.accounts.authority.key(),
+        ctx.accounts.nft_mint_account.key(),
+    );
+    ctx.accounts.stake_info.set_inner(stake_info.clone());
 
-➜  anchor git:(main) ✗ spl-token mint D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW 100
-Minting 100 tokens
-  Token: D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
-  Recipient: FKFZdRon44c7UG3sWDhkfdRhsbnjnPdERFHT4eVwZbkM
+    // 将 NFT 从用户账户转移到质押池
+    transfer(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            Transfer &#123;
+                from: ctx.accounts.nft_associated_token_account.to_account_info(),
+                to: ctx.accounts.program_receipt_ata.to_account_info(),
+                authority: ctx.accounts.authority.to_account_info(),
+            &#125;,
+        ),
+        1, // NFT 数量为 1
+    )?;
 
-Signature: 5ZMfewBZQfrVC7jcE62FtKNKckcDk4WfwiLhqQAmukgGYBpNwnhoirTNHT31oFoaYVje29fhp9ege4KATAiKPt2n
+    // 铸造流动性代币作为奖励
+    let signer_seeds: &amp;[&amp;[&amp;[u8]]] = &amp;[&amp;[
+        MyToken::SEED_PREFIX.as_bytes(),
+        &amp;[ctx.bumps.token_mint_account],
+    ]];
 
-➜  anchor git:(main) ✗ spl-token accounts
-Token                                         Balance
------------------------------------------------------
-D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW  100
-HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  100
-运行成功：
-➜  anchor git:(main) ✗ anchor run example
-6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H
-4Zcee6VcEoATiTjwMHp9LPsvYLW2tmYmExQFhZ6TkQGYGganfDJGKXSuicAdFrWMZJjWomgunEQ3keGHNEyvfhLN
-➜  anchor git:(main) ✗ spl-token accounts
-Token                                         Balance
------------------------------------------------------
-6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H  200
-D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW  90 
-HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  10 
-但是却是两百份
-定位问题发现是mint逻辑放在了循环里面，购买了两次
+    mint_to(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            MintTo &#123;
+                mint: ctx.accounts.token_mint_account.to_account_info(),
+                to: ctx.accounts.associated_token_account.to_account_info(),
+                authority: ctx.accounts.token_mint_account.to_account_info(),
+            &#125;,
+        )
+        .with_signer(signer_seeds),
+        10000, // 奖励代币数量
+    )?;
+
+    Ok(())
+&#125;
+2.2.2 账户结构（NFTStake）
+#[derive(Accounts)]
+pub struct NFTStake&lt;'info> &#123;
+    /// 质押信息记录账户
+    #[account(
+        init_if_needed,
+        payer = authority,
+        space = 8 + StakeInfo::INIT_SPACE,
+        seeds = [
+            StakeInfo::SEED_PREFIX.as_bytes(),
+            nft_mint_account.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub stake_info: Box&lt;Account&lt;'info, StakeInfo>>,
+
+    /// 质押池接收 NFT 的账户
+    #[account(
+        init_if_needed,
+        payer = authority,
+        associated_token::mint = nft_mint_account,
+        associated_token::authority = stake_info,
+    )]
+    pub program_receipt_ata: Box&lt;Account&lt;'info, TokenAccount>>,
+
+    /// 流动性代币 Mint 账户
+    #[account(
+        mut,
+        seeds = [MyToken::SEED_PREFIX.as_bytes(),],
+        bump,
+    )]
+    pub token_mint_account: Box&lt;Account&lt;'info, Mint>>,
+
+    /// 用户的流动性代币关联账户
+    #[account(
+        init_if_needed,
+        payer = authority,
+        associated_token::mint = token_mint_account,
+        associated_token::authority = authority,
+    )]
+    pub associated_token_account: Box&lt;Account&lt;'info, TokenAccount>>,
+
+    /// 被质押的 NFT Mint 账户
+    #[account(mut)]
+    pub nft_mint_account: Box&lt;Account&lt;'info, Mint>>,
+
+    /// 用户的 NFT 关联账户
+    #[account(mut,
+        associated_token::mint = nft_mint_account,
+        associated_token::authority = authority,
+    )]
+    pub nft_associated_token_account: Box&lt;Account&lt;'info, TokenAccount>>,
+
+    #[account(mut)]
+    pub authority: Signer&lt;'info>, // 发起者签名账户
+
+    // 依赖程序
+    pub token_program: Program&lt;'info, Token>,
+    pub system_program: Program&lt;'info, System>,
+    pub associated_token_program: Program&lt;'info, AssociatedToken>,
+&#125;
+2.2.3 质押信息结构（state/stake.rs）
+#[account]
+#[derive(InitSpace)]
+pub struct StakeInfo &#123;
+    pub staker: Pubkey,           // 质押人地址
+    pub nft_mint_account: Pubkey, // 质押的 NFT Mint 地址
+    pub staked_at: u64,           // 质押时间（纪元）
+&#125;
+
+impl StakeInfo &#123;
+    pub const SEED_PREFIX: &amp;'static str = "stake_v1"; // PDA 种子前缀
+
+    pub fn new(staker: Pubkey, nft_mint_account: Pubkey) -> Self &#123;
+        Self &#123;
+            staker,
+            nft_mint_account,
+            staked_at: Clock::get().unwrap().epoch,
+        &#125;
+    &#125;
+&#125;
+2.3 客户端调用示例（app/api/stake.ts）
+import * as anchor from "@coral-xyz/anchor";
+import &#123; program &#125; from "./wallet";
+import &#123; getNftMintAccount &#125; from "./account";
+
+export async function stakeNFT(wallet: anchor.Wallet, nft_id: string) &#123;
+    return await program.methods.nftStake().accounts(&#123;
+        nftMintAccount: getNftMintAccount(nft_id),
+    &#125;).signers([wallet.payer]).rpc();
+&#125;
+3. 关键技术点
+
+
+PDA 账户管理：通过种子（Seed）派生程序派生地址（PDA）管理 NFT Mint 账户、质押信息账户等，确保账户安全性和可预测性。
+
+
+MPL 元数据标准：遵循 Metaplex Token Metadata 标准创建 NFT 元数据和主版本账户，确保 NFT 兼容性和唯一性。
+
+
+代币转移与铸造权限：使用 SPL Token 程序进行代币转移，通过 PDA 签名授予铸造权限，避免私钥直接暴露。
+
+
+关联代币账户（ATA）：使用关联代币账户规范管理用户与代币的关联关系，简化账户创建和管理流程。
+
+
+质押奖励机制：质押 NFT 时铸造流动性代币作为奖励，实现激励机制闭环。
+
+
+验证
+查看账号，发现我的nft已经转移走了，取而代之的是token发放到我的账户中
+
 ]]></content>
       <categories>
         <category>Solana</category>
@@ -8364,6 +8053,569 @@ Anchor：生产环境首选，大幅提升开发效率，生态工具丰富。
       </tags>
   </entry>
   <entry>
+    <title>Solana[part19]_ETF的介绍和创建指令实现</title>
+    <url>/2025/08/24/Solana-part19-ETF%E7%9A%84%E4%BB%8B%E7%BB%8D%E5%92%8C%E5%88%9B%E5%BB%BA%E6%8C%87%E4%BB%A4%E5%AE%9E%E7%8E%B0/</url>
+    <content><![CDATA[ETF的介绍和创建指令实现
+
+
+代码提交地址：https://github.com/SoniaChan33/iswap/commit/25b017929923a3d1e46d853f3a12da05f0b77172
+
+一、项目概述
+iSwap项目中的ETF创建功能用于在Solana区块链上生成自定义ETF（交易所交易基金），核心目标是实现ETF相关账户的创建与管理，包括ETF信息存储账户、资产关联账户（ATA）、ETF代币铸造账户（Mint）及元数据（Metadata）账户，确保所有操作的原子性与链上数据一致性。
+二、核心链上组件（Rust程序）
+链上逻辑通过Solana程序（智能合约）实现，负责ETF相关账户的初始化、数据存储及跨程序调用（CPI）。
+1. 账户结构定义（etf_token.rs）
+定义了链上存储ETF数据的核心账户结构，用于持久化ETF的关键信息。
+EtfToken 账户
+存储ETF的整体信息，包括铸造账户地址、创建者、创建时间、描述及资产列表：
+#[account]
+#[derive(InitSpace)]
+pub struct EtfToken &#123;
+    pub mint_account: Pubkey,       // ETF代币的Mint账户地址
+    pub creator: Pubkey,            // ETF创建者地址
+    pub create_at: i64,             // 创建时间（Unix时间戳）
+    #[max_len(50)]
+    pub descriptor: String,         // ETF描述信息（最大长度50）
+    #[max_len(10)]
+    pub assets: Vec&lt;EtfAsset>,      // 包含的资产列表（最多10个资产）
+&#125;
+
+种子前缀：SEEDS_PREFIX = &quot;ETF_TOKEN&quot;（用于PDA派生）
+初始化方法：new 方法接收参数并返回实例，自动填充创建时间（通过Clock获取）。
+
+EtfAsset 账户
+存储ETF中单个资产的信息（代币地址及权重）：
+#[account]
+#[derive(InitSpace)]
+pub struct EtfAsset &#123;
+    pub token: Pubkey,  // 资产代币的Mint地址
+    pub weight: u16,    // 资产在ETF中的权重（数值类型为无符号16位整数）
+&#125;
+
+初始化方法：new 方法接收代币地址和权重，返回实例。
+
+2. ETF创建指令（etf_create.rs）
+实现ETF创建的核心逻辑，包括账户初始化、元数据创建及数据存储。
+输入参数 EtfTokenArgs
+客户端传入的ETF配置信息，用于初始化链上数据：
+#[account]
+pub struct EtfTokenArgs &#123;
+    pub name: String,        // ETF名称
+    pub symbol: String,      // ETF符号（唯一标识，用于派生地址）
+    pub description: String, // ETF描述
+    pub url: String,         // ETF元数据URL（如官网、详情页）
+    pub assets: Vec&lt;EtfAsset>, // 包含的资产列表
+&#125;
+账户约束 EtfTokenCreate
+定义指令所需的账户及约束条件，确保账户合法性：
+#[derive(Accounts)]
+#[instruction(args: EtfTokenArgs)]
+pub struct EtfTokenCreate&lt;'info> &#123;
+    // ETF信息账户（PDA），若不存在则初始化
+    #[account(
+        init_if_needed,
+        payer = authority,
+        space = 8 + EtfToken::INIT_SPACE,  // 8字节为账户 discriminator
+        seeds = [EtfToken::SEEDS_PREFIX.as_bytes(), etf_token_mint_account.key().as_ref()],
+        bump
+    )]
+    pub etf_token_info: Account&lt;'info, EtfToken>,
+
+    // ETF元数据账户（关联Mint，通过元数据程序规则派生）
+    #[account(
+        mut,
+        seeds = [b"metadata", token_metadata_program.key().as_ref(), etf_token_mint_account.key().as_ref()],
+        bump,
+        seeds::program = token_metadata_program.key()
+    )]
+    pub etf_metadata_account: UncheckedAccount&lt;'info>,
+
+    // ETF代币Mint账户（PDA），若不存在则初始化
+    #[account(
+        init_if_needed,
+        payer = authority,
+        seeds = [EtfToken::SEEDS_PREFIX.as_bytes(), args.symbol.as_bytes()],
+        bump,
+        mint::decimals = 9,  // 固定小数位为9
+        mint::authority = etf_token_info.key()  // 权限归属于ETF信息账户
+    )]
+    pub etf_token_mint_account: Account&lt;'info, Mint>,
+
+    #[account(mut)]
+    pub authority: Signer&lt;'info>,  // 交易签名者（创建者钱包）
+    pub rent: Sysvar&lt;'info, Rent>, // Solana租金系统变量
+    pub token_program: Program&lt;'info, Token>, // SPL Token程序
+    pub system_program: Program&lt;'info, System>, // 系统程序
+    pub token_metadata_program: Program&lt;'info, Metadata>, // MPL元数据程序
+&#125;
+指令逻辑 etf_token_create
+
+派生PDA签名种子：使用etf_token_info的种子和bump生成签名种子（用于CPI授权）。
+创建元数据账户：通过CPI调用MPL元数据程序，创建关联ETF Mint的元数据账户，包含名称、符号、URL等信息。
+初始化ETF信息账户：将EtfTokenArgs转换为EtfToken实例，存储创建者、Mint地址、时间等数据。
+
+三、客户端核心逻辑（TypeScript）
+客户端负责构建交易、派生地址、处理账户交互，最终调用链上程序完成ETF创建。
+1. 基础配置（const.ts）
+提供程序实例、Provider及默认钱包，作为客户端与链上交互的基础：
+import * as anchor from "@coral-xyz/anchor";
+import &#123; Iswap &#125; from "../../target/types/iswap";
+
+// 初始化Provider（连接Solana网络）
+let provider = anchor.AnchorProvider.env();
+anchor.setProvider(provider);
+
+// 程序实例（关联iSwap程序）
+const program = anchor.workspace.Iswap as anchor.Program&lt;Iswap>;
+
+// 默认钱包（本地钱包）
+export function useDefaultWallet() &#123;
+    const wallet = anchor.Wallet.local();
+    return wallet;
+&#125;
+
+export &#123; program, provider &#125;;
+2. 地址派生（address.ts）
+通过种子规则派生ETF相关账户的PDA地址，确保客户端与链上程序地址一致。
+deriveEtfTokenMintAccount
+根据ETF符号（symbol）派生Mint账户地址：
+export function deriveEtfTokenMintAccount(symbol: string) &#123;
+    return anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("etf_token"), Buffer.from(symbol)], // 种子：前缀 + symbol
+        program.programId
+    );
+&#125;
+deriveEtfInfoAccount
+根据Mint账户地址派生ETF信息账户（etf_token_info）地址：
+export function deriveEtfInfoAccount(symbol: string) &#123;
+    const [mintAccount,] = deriveEtfTokenMintAccount(symbol);
+    return anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("etf_token"), mintAccount.toBuffer()], // 种子：前缀 + Mint地址
+        program.programId
+    );
+&#125;
+3. ETF创建函数（etf_token.ts）
+createETF函数是客户端创建ETF的入口，负责构建交易并发送至链上：
+核心流程：
+
+派生账户地址：通过deriveEtfInfoAccount获取etf_token_info账户地址。
+创建资产ATA账户：为ETF包含的每个资产创建关联Token账户（ATA），若账户不存在则添加创建指令（确保ETF能持有资产）。
+构建交易：
+
+添加ATA创建指令（若需要）。
+添加调用链上etfCreate方法的指令（传入名称、符号、资产等参数）。
+
+
+发送交易：使用Provider发送交易，由创建者钱包签名。
+
+export async function createETF(wallet: anchor.Wallet, name: string, symbol: string, description: string, url: string, assets: &#123; token: PublicKey, weight: number &#125;[]) &#123;
+    // 派生ETF信息账户地址
+    const [etfTokenInfoAddress,] = deriveEtfInfoAccount(symbol);
+
+    // 初始化交易
+    let tx = new anchor.web3.Transaction();
+
+    // 为每个资产创建ATA（若不存在）
+    for (const &#123; token &#125; of assets) &#123;
+        const address = await getAssociatedTokenAddressSync(token, etfTokenInfoAddress, true);
+        try &#123;
+            await getAccount(provider.connection, address); // 检查账户是否存在
+        &#125; catch (e) &#123;
+            if (e instanceof TokenAccountNotFoundError) &#123;
+                // 添加创建ATA的指令
+                tx.add(createAssociatedTokenAccountInstruction(
+                    wallet.payer.publicKey, //  payer
+                    address,                // ATA地址
+                    etfTokenInfoAddress,    // 所有者（ETF信息账户）
+                    token                   // 资产代币Mint
+                ));
+            &#125;
+        &#125;
+    &#125;
+
+    // 添加调用链上程序的指令
+    tx.add(await program.methods.etfCreate(&#123;
+        name, symbol, description, url, assets
+    &#125;).transaction());
+
+    // 发送并确认交易
+    return await anchor.web3.sendAndConfirmTransaction(
+        provider.connection,
+        tx,
+        [wallet.payer] // 签名者
+    );
+&#125;
+4. 示例调用（index.ts）
+演示如何使用createETF函数创建ETF，包含参数示例：
+(async () => &#123;
+    const defaultWallet = useDefaultWallet(); // 使用默认钱包
+    // ETF基本信息
+    const [name, symbol, description, url] = [
+        "MyETF3",
+        "MYETF3",
+        "This is my ETF3",
+        "https://my-etf.com",
+    ];
+    // 包含的资产（代币地址+权重）
+    const assets = [
+        &#123;
+            token: new anchor.web3.PublicKey("FGNSbKTiKd4d1Zv97c2iQACADB8N7MnDnDsv5auHGAHo"),
+            weight: 90,
+        &#125;,
+        &#123;
+            token: new anchor.web3.PublicKey("GTzKipZ6PcTEV2iV4LP1Yowwc4QPt1hvKmk6vuqY8ywp"),
+            weight: 10,
+        &#125;,
+    ];
+    // 调用创建函数并打印交易哈希
+    const tx = await createETF(defaultWallet, name, symbol, description, url, assets);
+    console.log(tx);
+&#125;)();
+四、完整流程总结
+
+客户端准备：用户指定ETF参数（名称、符号、资产等），通过useDefaultWallet获取签名钱包。
+地址派生：客户端通过deriveEtfTokenMintAccount和deriveEtfInfoAccount计算Mint和信息账户的PDA地址。
+交易构建：
+
+检查并创建资产ATA账户（确保ETF可持有资产）。
+构建调用链上etfCreate指令的交易。
+
+
+链上处理：
+
+程序验证账户约束，初始化Mint账户（若不存在）。
+通过CPI创建元数据账户，关联Mint。
+初始化etf_token_info账户，存储ETF数据。
+
+
+交易确认：客户端接收交易哈希，完成ETF创建。
+
+五、关键技术点
+
+PDA（Program Derived Address）：用于生成Mint和信息账户地址，确保地址唯一性和程序控制权。
+ATA（Associated Token Account）：为ETF自动创建资产持有账户，遵循SPL Token标准。
+CPI（Cross-Program Invocation）：调用MPL元数据程序创建元数据，实现模块化功能复用。
+原子性交易：所有操作（ATA创建、程序调用）在同一交易中完成，确保要么全部成功，要么全部失败。
+
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Solana</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Rust基础[part1]</title>
+    <url>/2025/07/08/Rust%E5%9F%BA%E7%A1%80-part1/</url>
+    <content><![CDATA[Rust基础[part1]
+安装
+➜  rust curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+安装成功
+
+验证
+➜  rust rustc --version
+zsh: command not found: rustc
+因为我是用的是zsh，所以zsh配置文件需要加入配置
+➜  rust echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
+➜  rust source ~/.zshrc
+➜  rust rustc --version
+rustc 1.88.0 (6b00bc388 2025-06-23)
+安装成功！
+其他命令：
+➜  rust rustup update # 安装
+➜  rust rustup self uninstall # 卸载
+VsCode插件
+rust语言支持：
+
+rust包支持：
+
+toml支持：
+
+rustc
+创建目录
+mkdir hello-world
+cd hello-world
+创建源文件main.rs
+fn main() &#123;
+    println!("Hello, world!");
+&#125;
+终端输入 rustc main.rs 会得到一个二进制的文件mian
+执行mian 会得到输出
+
+cargo
+初始化
+
+
+初始化项目 cargo new [项目名] 
+
+
+构建 cargo build并运行./target/debug/hello_cargo ；或者直接使用cargo run
+
+
+当项目最终准备好发布时，可通过以下命令对 Rust 项目进行优化编译：
+cargo build --release  
+
+输出目录：编译产物会生成在 target/release 目录下（开发阶段默认的 cargo build 会输出到 target/debug）。
+优化特性：--release 会启用 Rust 编译器的性能优化（如代码内联、循环展开、冗余代码消除等），使最终程序的运行速度显著提升。
+
+依赖
+crate是Rust的一个代码库，可以包含任意能被其他程序使用的代码，但是不能只执行。
+cargo.toml中 [dependencies]  增加配置
+[dependencies]
+rand="0.8.5"
+重新构建执行cargo build 会从cargo.io拉到指定的依赖版本到cargo.lock中。
+执行cargo update会忽略cargo.lock 的版本，从cargo.io拉到最新的依赖版本
+配置国内镜像
+➜  hello_cargo git:(main) touch ~/.cargo/config.toml
+➜  hello_cargo git:(main) vim ~/.cargo/config.toml
+第一种配置：
+[registries]
+ustc = &#123; index = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/" &#125;
+前缀 sparse+ 启用稀疏模式，比传统全量索引更快
+Cargo.toml 指定镜像地址
+[dependencies]
+rand = &#123;registry = "ustc", version = "0.8.5"&#125;
+第二种配置
+直接覆盖原cargo.io ，不用指定镜像地址了
+[source.crates-io]
+replace-with = "ustc"
+
+[source.ustc]
+registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"
+重新build一遍
+]]></content>
+      <categories>
+        <category>Rust</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solana[part20]_ETF的购买</title>
+    <url>/2025/08/25/Solana-part20-ETF%E7%9A%84%E8%B4%AD%E4%B9%B0/</url>
+    <content><![CDATA[Solana[part20]_ETF的购买
+购买 ETF
+基本思路
+以 ETF No.1 为例，ETF No.1 包含 jitoSOL 和 mSOL，权重分别为 20%、80%。 「 etf里面不是token账户吗 拿来的sol 」
+当前价格
+
+1 JitoSOL = 1.16 SOL
+1 mSOL = 1.25 SOL
+
+用户需求与成本计算
+用户当前持有 SOL，计划购买 ETF No.1 100 份，需花费：100×20%×1.16+100×80%×1.25=123.2 SOL
+方案一：前端 swap
+
+【用户】 通过 ray 或 okx 等平台，将 123.2 SOL 换出 80 mSOL 和 20 JitoSOL。
+【用户】 执行【Transfer】操作，将 JitoSOL 20 份和 mSOL 80 份转入【合约】。
+【合约】 执行【Mint】操作，向【用户】发行 100 份 ETF No.1。
+
+方案二：合约 swap
+
+【用户】 执行【Transfer】操作，将 123.2 SOL 转入【合约】。
+【合约】 通过 ray 或 okx 等平台，将 123.2 SOL 换出 80 mSOL 和 20 JitoSOL。
+【合约】 执行【Mint】操作，向【用户】发行 100 份 ETF No.1。
+
+（注：操作中的【Transfer】【Mint】为链上交互动作，需结合具体合约逻辑执行。）
+前置准备：
+➜  anchor git:(main) ✗ spl-token create-token
+Creating token HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+
+Address:  HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
+Decimals:  9
+
+Signature: qkrfqj8QKGHWiCSr3DjooVd9EB2FHvSPMfgk95f3R4n2G7AkdoSN1ufoFj6Suw9rYKzxcDJa441uokk5i5xosfC
+
+➜  anchor git:(main) ✗ spl-token create-token
+Creating token D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+
+Address:  D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
+Decimals:  9
+
+Signature: aR8akG7j4A15h9Qs4MnUMbMtNA965g5rDSj53oaCyvfXNQsQHYDSVQ6Mw5En8EcMLwfX3AHWNjCWpGciHJQZTbb
+
+➜  anchor git:(main) ✗ spl-token create-account D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
+Creating account FKFZdRon44c7UG3sWDhkfdRhsbnjnPdERFHT4eVwZbkM
+
+Signature: 5xoKsk1VmbSYzsVivUv3vQqEjpURMBqPzDDbLDHZ1DsWqJjdqoJbcUAUBAFR5VdGcjrh5ik3mdJo85SRiHgotK8k
+
+➜  anchor git:(main) ✗ spl-token create-account HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
+Creating account For4aUqGLAVwvJCJ7W7xp9oNXAtQQqTdyA5kityMxhkB
+
+Signature: 3o2UV8S756A6vtL4bKgpWQRf8oS5mmQx5RuG8drarjFpnEFwucVyAZoapcRrBVVryukmu8Mxuf7EyrnLJyVy3Rpp
+
+➜  anchor git:(main) ✗ spl-token mint HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  100
+Minting 100 tokens
+  Token: HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
+  Recipient: For4aUqGLAVwvJCJ7W7xp9oNXAtQQqTdyA5kityMxhkB
+
+Signature: 5mijdTfBDZvD51zKfhw31JNaxNvZYesCKoHbDD48zCcMkwN1oMqZcjYamjpM4MCAD1fvbsu1BK5sKoHX4Ghiehfo
+
+➜  anchor git:(main) ✗ spl-token mint D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW 100
+Minting 100 tokens
+  Token: D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
+  Recipient: FKFZdRon44c7UG3sWDhkfdRhsbnjnPdERFHT4eVwZbkM
+
+Signature: 5ZMfewBZQfrVC7jcE62FtKNKckcDk4WfwiLhqQAmukgGYBpNwnhoirTNHT31oFoaYVje29fhp9ege4KATAiKPt2n
+
+➜  anchor git:(main) ✗ spl-token accounts
+Token                                         Balance
+-----------------------------------------------------
+D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW  100
+HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  100
+运行成功：
+➜  anchor git:(main) ✗ anchor run example
+6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H
+4Zcee6VcEoATiTjwMHp9LPsvYLW2tmYmExQFhZ6TkQGYGganfDJGKXSuicAdFrWMZJjWomgunEQ3keGHNEyvfhLN
+➜  anchor git:(main) ✗ spl-token accounts
+Token                                         Balance
+-----------------------------------------------------
+6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H  200
+D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW  90 
+HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  10 
+但是却是两百份
+定位问题发现是mint逻辑放在了循环里面，购买了两次
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Solana</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solana[part21]_ETF的赎回</title>
+    <url>/2025/08/26/Solana-part21-ETF%E7%9A%84%E8%B5%8E%E5%9B%9E/</url>
+    <content><![CDATA[Solana[part21]_ETF的赎回
+
+代码：https://github.com/SoniaChan33/iswap/commit/c648cb122b2cc9a80a8085d78bdc9033ab83c954
+
+赎回 ETF
+以 ETF No.1 为例，ETF No.1 包含 jitoSOL 和 mSOL，权重为 20%、80%
+当前价格： 1 JitoSOL = 1.06 SOL 1 mSOL = 1.35 SOL
+用户当前持有 100 份 ETF No.1，计划卖出 ETF No.1 100 份
+获得：(100 \times 20% \times 1.06 + 100 \times 80% \times 1.35 = 129.2 \ \text{SOL})
+方案：
+
+【用户】【Burn】100 份 ETF No.1（注：原文 “ETE” 为笔误，应为 “ETF”）
+【合约】【Transfer】JitoSOL 20 份和 mSOL 80 份到【用户】
+【用户】通过 ray 或者 okx 等平台，将 80 mSOL 和 20 JitoSOL 兑换为 129.2 SOL
+
+➜  anchor git:(main) ✗ spl-token accounts                        
+Token                                         Balance
+-----------------------------------------------------
+6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H  200
+76EV8QxLELcs63zrjwu9o1ifeX9LaYMixrzwmSHp7EHH  10 
+HhGykz9QW6hTZ4kcfcfGPDVxmRQ2hGAFtAehBrwxdDNE  90 
+成功赎回
+
+➜  anchor git:(main) ✗ spl-token accounts           
+Token                                         Balance
+-----------------------------------------------------
+6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H  100
+76EV8QxLELcs63zrjwu9o1ifeX9LaYMixrzwmSHp7EHH  100
+HhGykz9QW6hTZ4kcfcfGPDVxmRQ2hGAFtAehBrwxdDNE  100
+扩展信息
+前置准备：安装一些依赖
+➜  anchor git:(main) ✗ pnpm install @metaplex-foundation/mpl-token-metadata
+➜  anchor git:(main) ✗ pnpm install @metaplex-foundation/umi
+➜  anchor git:(main) ✗ pnpm install @metaplex-foundation/umi-web3js-adapters
+
+
+导入
+import &#123; createUmi &#125; from "@metaplex-foundation/umi-bundle-defaults"
+import &#123; fetchDigitalAsset, mplTokenMetadata &#125; from "@metaplex-foundation/mpl-token-metadata";
+import &#123; fromWeb3JsPublicKey &#125; from "@metaplex-foundation/umi-web3js-adapters"
+获取ETF的一些信息
+// 获取etf详情
+export async function etfDetail(
+    wallet: anchor.Wallet,
+    eftAddress: PublicKey,
+) &#123;
+
+    // const mintAccount = await getMint(provider.connection, eftAddress);
+    // return mintAccount;
+
+    const [etfTokenInfoAddress,] = deriveEtfInfoAccount(eftAddress);
+    const etfInfo = await program.account.etfToken.fetch(etfTokenInfoAddress);
+
+    // 创建Umi实例
+    const umi = createUmi(provider.connection.rpcEndpoint)
+    umi.use(mplTokenMetadata())
+    // 获取mint账户信息
+    const mintAccount = await fetchDigitalAsset(umi, fromWeb3JsPublicKey(eftAddress));
+    let log = ""
+    if (mintAccount.metadata.uri) &#123;
+        const response = await fetch(mintAccount.metadata.uri);
+        const rj = await response.json();
+        log = rj.image;
+    &#125;
+    return &#123;
+        public_key: eftAddress.toString(),
+        supply: mintAccount.mint.supply,
+        decimal: mintAccount.mint.decimals,
+        name: mintAccount.metadata.name,
+        symbol: mintAccount.metadata.symbol,
+        description: etfInfo.descriptor,
+        creator: etfInfo.creator.toString(),
+        create_at: etfInfo.createAt.toNumber(),
+        logo: log
+    &#125;
+&#125;
+
+// 获取etf的数量
+export async function etfAmount(
+    wallet: anchor.Wallet,
+    eftAddress: PublicKey,
+) &#123;
+
+    // 用户钱包ATA
+    const ata = getAssociatedTokenAddressSync(
+        eftAddress,
+        wallet.publicKey
+    );
+
+    const mintAccount = await getAccount(provider.connection, ata);
+    return mintAccount.amount;
+&#125;
+输出
+➜  anchor git:(main) ✗ anchor run example
+&#123;
+  address: PublicKey [PublicKey(2cKK6qLFkNGUxaBeLkPDyDkecroPVXYU1gAuadAD9KUx)] &#123;
+    _bn: &lt;BN: 17e7b884e0e312137f273e5411cb4e238a7ad46b7efa97e71f6d19e86774a8fd>
+  &#125;,
+  mint: PublicKey [PublicKey(6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H)] &#123;
+    _bn: &lt;BN: 508aa85ad2105c7f71d84700d877d7ae7910d5de69aa3742f381f1da8e3938e4>
+  &#125;,
+  owner: PublicKey [PublicKey(FcKkQZRxD5P6JwGv58vGRAcX3CkjbX8oqFiygz6ohceU)] &#123;
+    _bn: &lt;BN: d91024e709f54d65b29c9328658d06a488414c4cabc36522130c330322428769>
+  &#125;,
+  amount: 100000000000n,
+  delegate: null,
+  delegatedAmount: 0n,
+  isInitialized: true,
+  isFrozen: false,
+  isNative: false,
+  rentExemptReserve: null,
+  closeAuthority: null,
+  tlvData: &lt;Buffer >
+&#125;
+
+
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Solana</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Solana[part22]_DeFi项目拆解</title>
     <url>/2025/08/26/Solana-part22-DeFi%E9%A1%B9%E7%9B%AE%E6%8B%86%E8%A7%A3/</url>
     <content><![CDATA[
@@ -8509,478 +8761,6 @@ deposit（添加流动性）
 withdraw（提现-减少流动性）
 swap_base_input（基于输入数量的代币交换）
 swap_base_output（基于输出数量的代币交换）
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-        <tag>Solana</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solana[part21]_ETF的赎回</title>
-    <url>/2025/08/26/Solana-part21-ETF%E7%9A%84%E8%B5%8E%E5%9B%9E/</url>
-    <content><![CDATA[Solana[part21]_ETF的赎回
-
-代码：https://github.com/SoniaChan33/iswap/commit/c648cb122b2cc9a80a8085d78bdc9033ab83c954
-
-赎回 ETF
-以 ETF No.1 为例，ETF No.1 包含 jitoSOL 和 mSOL，权重为 20%、80%
-当前价格： 1 JitoSOL = 1.06 SOL 1 mSOL = 1.35 SOL
-用户当前持有 100 份 ETF No.1，计划卖出 ETF No.1 100 份
-获得：(100 \times 20% \times 1.06 + 100 \times 80% \times 1.35 = 129.2 \ \text{SOL})
-方案：
-
-【用户】【Burn】100 份 ETF No.1（注：原文 “ETE” 为笔误，应为 “ETF”）
-【合约】【Transfer】JitoSOL 20 份和 mSOL 80 份到【用户】
-【用户】通过 ray 或者 okx 等平台，将 80 mSOL 和 20 JitoSOL 兑换为 129.2 SOL
-
-➜  anchor git:(main) ✗ spl-token accounts                        
-Token                                         Balance
------------------------------------------------------
-6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H  200
-76EV8QxLELcs63zrjwu9o1ifeX9LaYMixrzwmSHp7EHH  10 
-HhGykz9QW6hTZ4kcfcfGPDVxmRQ2hGAFtAehBrwxdDNE  90 
-成功赎回
-
-➜  anchor git:(main) ✗ spl-token accounts           
-Token                                         Balance
------------------------------------------------------
-6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H  100
-76EV8QxLELcs63zrjwu9o1ifeX9LaYMixrzwmSHp7EHH  100
-HhGykz9QW6hTZ4kcfcfGPDVxmRQ2hGAFtAehBrwxdDNE  100
-扩展信息
-前置准备：安装一些依赖
-➜  anchor git:(main) ✗ pnpm install @metaplex-foundation/mpl-token-metadata
-➜  anchor git:(main) ✗ pnpm install @metaplex-foundation/umi
-➜  anchor git:(main) ✗ pnpm install @metaplex-foundation/umi-web3js-adapters
-
-
-导入
-import &#123; createUmi &#125; from "@metaplex-foundation/umi-bundle-defaults"
-import &#123; fetchDigitalAsset, mplTokenMetadata &#125; from "@metaplex-foundation/mpl-token-metadata";
-import &#123; fromWeb3JsPublicKey &#125; from "@metaplex-foundation/umi-web3js-adapters"
-获取ETF的一些信息
-// 获取etf详情
-export async function etfDetail(
-    wallet: anchor.Wallet,
-    eftAddress: PublicKey,
-) &#123;
-
-    // const mintAccount = await getMint(provider.connection, eftAddress);
-    // return mintAccount;
-
-    const [etfTokenInfoAddress,] = deriveEtfInfoAccount(eftAddress);
-    const etfInfo = await program.account.etfToken.fetch(etfTokenInfoAddress);
-
-    // 创建Umi实例
-    const umi = createUmi(provider.connection.rpcEndpoint)
-    umi.use(mplTokenMetadata())
-    // 获取mint账户信息
-    const mintAccount = await fetchDigitalAsset(umi, fromWeb3JsPublicKey(eftAddress));
-    let log = ""
-    if (mintAccount.metadata.uri) &#123;
-        const response = await fetch(mintAccount.metadata.uri);
-        const rj = await response.json();
-        log = rj.image;
-    &#125;
-    return &#123;
-        public_key: eftAddress.toString(),
-        supply: mintAccount.mint.supply,
-        decimal: mintAccount.mint.decimals,
-        name: mintAccount.metadata.name,
-        symbol: mintAccount.metadata.symbol,
-        description: etfInfo.descriptor,
-        creator: etfInfo.creator.toString(),
-        create_at: etfInfo.createAt.toNumber(),
-        logo: log
-    &#125;
-&#125;
-
-// 获取etf的数量
-export async function etfAmount(
-    wallet: anchor.Wallet,
-    eftAddress: PublicKey,
-) &#123;
-
-    // 用户钱包ATA
-    const ata = getAssociatedTokenAddressSync(
-        eftAddress,
-        wallet.publicKey
-    );
-
-    const mintAccount = await getAccount(provider.connection, ata);
-    return mintAccount.amount;
-&#125;
-输出
-➜  anchor git:(main) ✗ anchor run example
-&#123;
-  address: PublicKey [PublicKey(2cKK6qLFkNGUxaBeLkPDyDkecroPVXYU1gAuadAD9KUx)] &#123;
-    _bn: &lt;BN: 17e7b884e0e312137f273e5411cb4e238a7ad46b7efa97e71f6d19e86774a8fd>
-  &#125;,
-  mint: PublicKey [PublicKey(6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H)] &#123;
-    _bn: &lt;BN: 508aa85ad2105c7f71d84700d877d7ae7910d5de69aa3742f381f1da8e3938e4>
-  &#125;,
-  owner: PublicKey [PublicKey(FcKkQZRxD5P6JwGv58vGRAcX3CkjbX8oqFiygz6ohceU)] &#123;
-    _bn: &lt;BN: d91024e709f54d65b29c9328658d06a488414c4cabc36522130c330322428769>
-  &#125;,
-  amount: 100000000000n,
-  delegate: null,
-  delegatedAmount: 0n,
-  isInitialized: true,
-  isFrozen: false,
-  isNative: false,
-  rentExemptReserve: null,
-  closeAuthority: null,
-  tlvData: &lt;Buffer >
-&#125;
-
-
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-        <tag>Solana</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Rust进阶[part2]_泛型</title>
-    <url>/2025/07/29/Rust%E8%BF%9B%E9%98%B6-part2-%E6%B3%9B%E5%9E%8B/</url>
-    <content><![CDATA[Rust进阶[part2]_泛型
-泛型概述
-在定义函数时运用泛型，可将原本函数签名里明确指定参数和返回值类型的部分，用泛型来替代。这种方式能增强代码的适应性，为函数调用者赋予更多功能，还能避免代码重复。
-fn add&lt;T>(a:T, b:T) -> T&#123;
-  a + b
-&#125;
-不过，并非所有的T类型都能进行相加操作，此时会提示错误：
-genertic_type.rs(5, 9): consider restricting type parameter 'T' with trait 'Add': ': std::ops::Add&lt;Output = T&gt;'
-修正后的代码如下：
-fn add&lt;T: std::ops::Add&lt;Output = T>>(a: T, b: T) -> T &#123;
-    a + b
-&#125;
-使用场景
-在函数定义中使用泛型
-fn largest&lt;T: std::cmp::PartialOrd>(list: &amp;[T]) -> &amp;T &#123;
-    let mut largest = &amp;list[0];
-    for item in list &#123;
-        if item > largest &#123;
-            largest = item;
-        &#125;
-    &#125;
-    largest
-&#125;
-在结构体中使用泛型
-struct Point&lt;T> &#123;
-    x: T,
-    y: T,
-&#125;
-
-// 实例化泛型结构体
-let integer = Point &#123; x: 5, y: 10 &#125;;
-let float = Point &#123; x: 1.0, y: 4.0 &#125;;
-在枚举里面使用泛型
-enum Result&lt;T, E> &#123;
-    Ok(T),
-    Err(E),
-&#125;
-
-// 实例化泛型枚举
-fn divide(numerator: f64, denominator: f64) -> Result&lt;f64, String> &#123;
-    if denominator == 0.0 &#123;
-        Err("Division by zero".to_string())
-    &#125; else &#123;
-        Ok(numerator / denominator)
-    &#125;
-&#125;
-impl之后声明泛型T
-泛型参数可以和结构体定义中声明的泛型参数不一样。
-struct Point&lt;T, U> &#123;
-    x: T,
-    y: U,
-&#125;
-
-impl&lt;T, U> Point&lt;T, U> &#123;
-    fn mixup&lt;V, W>(self, other: Point&lt;V, W>) -> Point&lt;T, W> &#123;
-        Point &#123;
-            x: self.x,
-            y: other.y,
-        &#125;
-    &#125;
-&#125;
-
-// 示例用法
-let p1 = Point &#123; x: 5, y: 10.4 &#125;;
-let p2 = Point &#123; x: "Hello", y: 'c' &#125;;
-let p3 = p1.mixup(p2);
-const泛型
-// 定义一个固定大小的数组类型
-struct ArrayBuffer&lt;T, const N: usize> &#123;
-    data: [T; N],
-    len: usize,
-&#125;
-
-impl&lt;T, const N: usize> ArrayBuffer&lt;T, N>
-where
-    T: Default + Copy,
-&#123;
-    fn new() -> Self &#123;
-        ArrayBuffer &#123;
-            data: [Default::default(); N],
-            len: 0,
-        &#125;
-    &#125;
-&#125;
-
-
-// 创建一个可以存储10个i32的缓冲区
-let buffer: ArrayBuffer&lt;i32, 10> = ArrayBuffer::new();
-where子句可以直接写在泛型参数后面，例如：
-// 写法1：使用where子句
-fn new_array_buffer&lt;T, const N: usize>() -> ArrayBuffer&lt;T, N>
-where
-    T: Default + Copy,
-&#123; ... &#125;
-
-// 写法2：直接在泛型参数后指定约束
-fn new_array_buffer&lt;T: Default + Copy, const N: usize>() -> ArrayBuffer&lt;T, N> &#123; ... &#125;
-泛型代码的性能
-Rust通过在编译时对泛型代码进行单态化来保证效率。
-当代码运行时，其执行效率和手写每个具体定义的重复代码一样。正是这个单态化过程，使得Rust泛型在运行时极为高效。
-// 泛型代码
-fn add&lt;T: std::ops::Add&lt;Output = T>>(a: T, b: T) -> T &#123;
-    a + b
-&#125;
-
-// 单态化后的代码示例
-fn add_i32(a: i32, b: i32) -> i32 &#123;
-    a + b
-&#125;
-
-fn add_f64(a: f64, b: f64) -> f64 &#123;
-    a + b
-&#125;
-]]></content>
-      <categories>
-        <category>Rust</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solana[part4]_Token解析&amp;创建</title>
-    <url>/2025/08/06/Solana-part4-Token%E8%A7%A3%E6%9E%90-%E5%88%9B%E5%BB%BA/</url>
-    <content><![CDATA[Solana[part4]_Token解析&amp;创建
-solana上的代币
-代币是代表对各种资产所有权的数字资产。代币化使得财产权的数字化成为可能，是管理可替代和不可替代资产的基本组成部分
-
-可替代代币代表同类型和同价值的可互换和可分割资产（例如 USDC）
-不可替代代币（NFT）代表不可分隔资产的所有权（例如艺术品）
-
-SPL(Solana Program Library)
-SPL 是 Solana 生态的核心程序库，其中 Token Program 是创建和管理代币的基础协议，主要涉及以下核心概念：
-
-Token Program：Solana 上的标准代币协议，定义了代币的创建、转账、铸币、销毁等核心逻辑
-Mint Account：代币的&quot;铸造源&quot;，存储代币的元数据（如总供应量、小数位数、是否可铸币/冻结等），每个代币类型对应唯一的 Mint 账户
-Token Account：用户持有特定代币的账户，关联到一个 Mint 账户和一个所有者钱包，用于实际存储代币余额
-Associated Token Account (ATA)：与钱包地址绑定的标准代币账户，遵循固定地址推导规则（由钱包地址和 Mint 地址计算得出），方便用户管理不同代币
-
-Token创建完整流程（基于spl-token-cli）
-前置准备
-
-
-安装工具
-# 安装Solana命令行工具
-sh -c "$(curl -sSfL https://release.solana.com/v1.18.4/install)"
-# 安装SPL Token命令行工具（锁定版本确保兼容性）
-cargo install spl-token-cli --version 2.0.0 --locked
-
-
-初始化本地环境
-# 启动本地Solana测试节点（默认端口8899）
-solana-test-validator
-# 新建终端，配置集群为本地节点
-solana config set --url http://localhost:8899
-
-
-创建测试钱包并获取空投（用于支付Gas费）
-# 创建新钱包（生成密钥对文件）
-solana-keygen new --outfile ~/my-wallet.json
-# 配置默认钱包
-solana config set --keypair ~/my-wallet.json
-# 获取测试网空投（本地节点无需真实代币）
-solana airdrop 10
-# 验证余额
-solana balance
-
-
-核心步骤：创建并管理代币
-1. 创建Mint账户（代币类型）
-Mint账户是代币的&quot;根&quot;，决定代币的基本属性：
-  # 创建默认可替代代币（可铸币、可冻结，小数位6）
-➜  ~ spl-token create-token
-Creating token 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9 under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
-
-Address:  3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
-Decimals:  9
-
-Signature: 5RHsDWPbGkFs8Cuq5G8wRGwfKhgAYqAejLc5nGwLSoDSHxWNV3CmX6wpYy5yPjYWvPuZVqUwYXEMt9M3ByJTKzqM
----------------------------------------
-
- # 自定义参数示例：
- # 创建NFT（不可分割，小数位0，不可增发）
- spl-token create-token --decimals 0 --no-mint-authority --no-freeze-authority
-
- # 命令输出解析：
- # Creating token &lt;MINT_ADDRESS>
- # Signature: &lt;TRANSACTION_SIGNATURE>
- # 其中&lt;MINT_ADDRESS>是新代币的唯一标识，需记录
- 
- ---------------------------------
- ## 查看mint account info
- ➜  ~ spl-token account-info --address 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
-
-SPL Token Mint
-  Address: 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
-  Program: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
-  Supply: 0
-  Decimals: 9
-  Mint authority: FcKkQZRxD5P6JwGv58vGRAcX3CkjbX8oqFiygz6ohceU
-  Freeze authority: (not set)
-参数说明：
-
---decimals：代币小数位数（默认6，如USDC），NFT需设为0
---mint-authority：指定铸币权限账户（默认当前钱包），--no-mint-authority表示永久不可铸币
---freeze-authority：指定冻结权限账户（默认当前钱包），--no-freeze-authority表示永久不可冻结
-
-2. 创建Token Account（代币持有账户）
-用户需要关联Mint账户的Token Account才能接收代币，推荐使用ATA（自动关联钱包）：
-  # 创建与当前钱包关联的ATA（自动推导地址）
- spl-token create-account &lt;MINT_ADDRESS>
- --------------------
- ➜  ~ spl-token create-account 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
-Creating account 7i8smGYKco3hicJThL8WYrMaGKpceeKkZRekqR4aWKFJ
-
-Signature: 5AiPVz8Kjc9RYEtMGQAgx8Mdgy8cNiAwnprAHK14JYyciNJr1ufmPu3AQAwXbr5w1hRV1tTbiDDfEQz66yKkvxVy
-----------------------
-
- # 手动指定所有者创建Token Account（非ATA）
- spl-token create-account &lt;MINT_ADDRESS> &lt;OWNER_WALLET_ADDRESS>
- 
- ---------------------
-➜  ~ spl-token create-account 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9 /Users/tinachan/.config/solana/t2.json
-Creating account 2tQibfGH1UX4PEA1dNWJ8zvnpSbKRBr5a5eVhaRxF6EX
-
-Signature: 4dvu4YNxgfbEAyGiBxYxDqGHdsEgamZ8MMEE8uNBdoGJWZg3UM4eGk3v4BsEMQADut7VeYx32Ng7p4r4zWL6CMaK
- ---------------------
-
- # 命令输出解析：
- # Creating account &lt;TOKEN_ACCOUNT_ADDRESS>
- # Signature: &lt;TRANSACTION_SIGNATURE>
- # &lt;TOKEN_ACCOUNT_ADDRESS>为新创建的代币持有账户地址
-代码中第一个创建的就是ATA，默认关联的token account； 第二个用私钥创建的是非ATA的token account ，两者区别：
-
-地址生成方式不同
-
-
-ATA（自动关联代币账户）：
-地址是通过固定算法推导出来的，公式为：
-ATA地址 = 基于钱包地址 + Mint地址 + 代币程序ID 推导的唯一地址
-这种推导规则是 Solana 的官方标准，确保一个钱包（所有者）对一个 Mint 只能有唯一对应的 ATA。
-例如：你的钱包地址为A，Mint 地址为M，那么对应的 ATA 地址是唯一确定的，任何人用A和M推导都会得到同一个地址。
-非 ATA Token Account（手动指定所有者）：
-地址是随机生成的，不遵循上述推导规则。每次执行create-account &lt;MINT&gt; &lt;OWNER&gt;命令，都会生成一个全新的随机地址，即使所有者和 Mint 相同，也会得到不同的地址。
-
-
-与所有者的关联性不同
-
-
-ATA：
-强制与「创建时的钱包地址」绑定，即 ATA 的所有者（owner）就是该钱包地址，且无法修改。
-一个钱包对一个 Mint 只能有1 个 ATA（因为地址唯一），这是钱包管理代币的「默认账户」。
-非 ATA Token Account：
-所有者可以是任意地址（可以是你的钱包、其他用户的钱包，甚至是智能合约地址），且允许一个所有者对一个 Mint 创建多个非 ATA 账户（因为地址随机）。
-例如：你可以用自己的钱包作为所有者，为同一个 Mint 创建 10 个不同的非 ATA 账户，分别持有不同数量的代币。
-
-
-钱包与 DApp 兼容性不同
-
-
-ATA：
-遵循 Solana 官方标准，所有主流钱包（如 Phantom、Solflare）和 DApp 都会自动识别并显示 ATA 中的代币，无需手动添加地址。
-例如：你在 Phantom 钱包中看到的某代币余额，实际就是你钱包对应的 ATA 中的余额。
-非 ATA Token Account：
-不被钱包自动识别，需要用户手动添加账户地址才能在钱包中显示余额。
-大多数 DApp 也不会默认与非 ATA 交互，需要手动指定账户地址才能进行转账、交易等操作。
-
-
-使用场景不同
-
-
-ATA：
-适合普通用户日常使用，用于接收、存储和管理代币，因为兼容性好、管理简单（一个 Mint 对应一个账户，不易混乱）。
-例如：别人向你转账某代币时，只需提供你的钱包地址，对方会自动向你的 ATA 转账（因为 ATA 地址可推导）。
-非 ATA Token Account：
-适合特殊场景，例如：
-
-智能合约需要控制代币（将所有者设为合约地址）；
-需将同一 Mint 的代币拆分到多个账户管理（如分账、隔离资金）；
-临时账户（用完即弃）等。
-
-
-
-总结来说，ATA 是「标准化、自动关联、易管理」的代币账户，适合大多数日常场景；非 ATA 是「灵活、自定义、需手动管理」的账户，适合特殊需求。实际开发或使用中，优先推荐使用 ATA，除非有明确的特殊场景需要非 ATA。
-3. 铸币（增加代币供应量）
-只有Mint账户的mint-authority有权限铸币：
-  # 向指定Token Account铸币100单位（注意小数位，实际金额=数量*10^decimals）
- spl-token mint &lt;MINT_ADDRESS> 100 &lt;TOKEN_ACCOUNT_ADDRESS>
-
- # 示例：向当前钱包的ATA铸币1000（假设decimals=6，实际为1000 * 10^6 最小单位）
- spl-token mint &lt;MINT_ADDRESS> 1000
- 
- --------
- ➜  ~ spl-token mint 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9 100
-Minting 100 tokens
-  Token: 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
-  Recipient: 7i8smGYKco3hicJThL8WYrMaGKpceeKkZRekqR4aWKFJ
-
-Signature: USQP7cDcCip1ePdgKDxEXobBm8ohtaVwDRmGFt2BmDyi3tRQMrxtbvMkXbrUcdkoSNuQ2X9k6u1NNbztHeYY97Y
-
- --------
-
- # 验证铸币结果
- spl-token balance &lt;MINT_ADDRESS>
-  --------
- ➜  ~ spl-token balance 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
-100
- --------
-4. 代币转账
- # 从当前钱包的ATA向目标钱包的ATA转账50单位
-spl-token transfer &lt;MINT_ADDRESS> 50 &lt;RECIPIENT_WALLET_ADDRESS> --fund-recipient
-
-# 参数说明：
-# --fund-recipient：自动为接收者创建ATA（若不存在）并支付创建费用
-5. 销毁代币（减少供应量）
-代币持有者可销毁自己持有的代币：
- # 销毁当前钱包ATA中的20单位代币
-spl-token burn &lt;TOKEN_ACCOUNT_ADDRESS> 20
-6. 查看代币信息
- # 查看Mint账户详情（总供应量、权限等）
-spl-token mint-info &lt;MINT_ADDRESS>
-
-# 查看Token Account详情（余额、所有者等）
-spl-token account-info &lt;TOKEN_ACCOUNT_ADDRESS>
-关键注意事项
-
-权限管理：Mint账户的铸币/冻结权限默认归创建者，可通过spl-token authorize转移或撤销
-NFT特殊处理：必须设置--decimals 0，且通常只铸币1个单位（spl-token mint &lt;MINT&gt; 1）
-主网操作：切换集群为https://api.mainnet-beta.solana.com时，需使用真实SOL支付Gas费
-地址记录：Mint地址是代币的唯一标识，需妥善保存（可通过solana address -k &lt;MINT_KEYPAIR_FILE&gt;查询）
-
-通过以上步骤，即可完成从代币创建到转账销毁的全流程操作。实际开发中，可通过Solana Rust SDK或Web3.js调用Token Program的指令实现相同功能。
 ]]></content>
       <categories>
         <category>Solana</category>
@@ -9349,6 +9129,226 @@ curl https://api.devnet.solana.com -s -X \
 
 
 
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Solana</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solana[part4]_Token解析&amp;创建</title>
+    <url>/2025/08/06/Solana-part4-Token%E8%A7%A3%E6%9E%90-%E5%88%9B%E5%BB%BA/</url>
+    <content><![CDATA[Solana[part4]_Token解析&amp;创建
+solana上的代币
+代币是代表对各种资产所有权的数字资产。代币化使得财产权的数字化成为可能，是管理可替代和不可替代资产的基本组成部分
+
+可替代代币代表同类型和同价值的可互换和可分割资产（例如 USDC）
+不可替代代币（NFT）代表不可分隔资产的所有权（例如艺术品）
+
+SPL(Solana Program Library)
+SPL 是 Solana 生态的核心程序库，其中 Token Program 是创建和管理代币的基础协议，主要涉及以下核心概念：
+
+Token Program：Solana 上的标准代币协议，定义了代币的创建、转账、铸币、销毁等核心逻辑
+Mint Account：代币的&quot;铸造源&quot;，存储代币的元数据（如总供应量、小数位数、是否可铸币/冻结等），每个代币类型对应唯一的 Mint 账户
+Token Account：用户持有特定代币的账户，关联到一个 Mint 账户和一个所有者钱包，用于实际存储代币余额
+Associated Token Account (ATA)：与钱包地址绑定的标准代币账户，遵循固定地址推导规则（由钱包地址和 Mint 地址计算得出），方便用户管理不同代币
+
+Token创建完整流程（基于spl-token-cli）
+前置准备
+
+
+安装工具
+# 安装Solana命令行工具
+sh -c "$(curl -sSfL https://release.solana.com/v1.18.4/install)"
+# 安装SPL Token命令行工具（锁定版本确保兼容性）
+cargo install spl-token-cli --version 2.0.0 --locked
+
+
+初始化本地环境
+# 启动本地Solana测试节点（默认端口8899）
+solana-test-validator
+# 新建终端，配置集群为本地节点
+solana config set --url http://localhost:8899
+
+
+创建测试钱包并获取空投（用于支付Gas费）
+# 创建新钱包（生成密钥对文件）
+solana-keygen new --outfile ~/my-wallet.json
+# 配置默认钱包
+solana config set --keypair ~/my-wallet.json
+# 获取测试网空投（本地节点无需真实代币）
+solana airdrop 10
+# 验证余额
+solana balance
+
+
+核心步骤：创建并管理代币
+1. 创建Mint账户（代币类型）
+Mint账户是代币的&quot;根&quot;，决定代币的基本属性：
+  # 创建默认可替代代币（可铸币、可冻结，小数位6）
+➜  ~ spl-token create-token
+Creating token 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9 under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+
+Address:  3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
+Decimals:  9
+
+Signature: 5RHsDWPbGkFs8Cuq5G8wRGwfKhgAYqAejLc5nGwLSoDSHxWNV3CmX6wpYy5yPjYWvPuZVqUwYXEMt9M3ByJTKzqM
+---------------------------------------
+
+ # 自定义参数示例：
+ # 创建NFT（不可分割，小数位0，不可增发）
+ spl-token create-token --decimals 0 --no-mint-authority --no-freeze-authority
+
+ # 命令输出解析：
+ # Creating token &lt;MINT_ADDRESS>
+ # Signature: &lt;TRANSACTION_SIGNATURE>
+ # 其中&lt;MINT_ADDRESS>是新代币的唯一标识，需记录
+ 
+ ---------------------------------
+ ## 查看mint account info
+ ➜  ~ spl-token account-info --address 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
+
+SPL Token Mint
+  Address: 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
+  Program: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+  Supply: 0
+  Decimals: 9
+  Mint authority: FcKkQZRxD5P6JwGv58vGRAcX3CkjbX8oqFiygz6ohceU
+  Freeze authority: (not set)
+参数说明：
+
+--decimals：代币小数位数（默认6，如USDC），NFT需设为0
+--mint-authority：指定铸币权限账户（默认当前钱包），--no-mint-authority表示永久不可铸币
+--freeze-authority：指定冻结权限账户（默认当前钱包），--no-freeze-authority表示永久不可冻结
+
+2. 创建Token Account（代币持有账户）
+用户需要关联Mint账户的Token Account才能接收代币，推荐使用ATA（自动关联钱包）：
+  # 创建与当前钱包关联的ATA（自动推导地址）
+ spl-token create-account &lt;MINT_ADDRESS>
+ --------------------
+ ➜  ~ spl-token create-account 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
+Creating account 7i8smGYKco3hicJThL8WYrMaGKpceeKkZRekqR4aWKFJ
+
+Signature: 5AiPVz8Kjc9RYEtMGQAgx8Mdgy8cNiAwnprAHK14JYyciNJr1ufmPu3AQAwXbr5w1hRV1tTbiDDfEQz66yKkvxVy
+----------------------
+
+ # 手动指定所有者创建Token Account（非ATA）
+ spl-token create-account &lt;MINT_ADDRESS> &lt;OWNER_WALLET_ADDRESS>
+ 
+ ---------------------
+➜  ~ spl-token create-account 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9 /Users/tinachan/.config/solana/t2.json
+Creating account 2tQibfGH1UX4PEA1dNWJ8zvnpSbKRBr5a5eVhaRxF6EX
+
+Signature: 4dvu4YNxgfbEAyGiBxYxDqGHdsEgamZ8MMEE8uNBdoGJWZg3UM4eGk3v4BsEMQADut7VeYx32Ng7p4r4zWL6CMaK
+ ---------------------
+
+ # 命令输出解析：
+ # Creating account &lt;TOKEN_ACCOUNT_ADDRESS>
+ # Signature: &lt;TRANSACTION_SIGNATURE>
+ # &lt;TOKEN_ACCOUNT_ADDRESS>为新创建的代币持有账户地址
+代码中第一个创建的就是ATA，默认关联的token account； 第二个用私钥创建的是非ATA的token account ，两者区别：
+
+地址生成方式不同
+
+
+ATA（自动关联代币账户）：
+地址是通过固定算法推导出来的，公式为：
+ATA地址 = 基于钱包地址 + Mint地址 + 代币程序ID 推导的唯一地址
+这种推导规则是 Solana 的官方标准，确保一个钱包（所有者）对一个 Mint 只能有唯一对应的 ATA。
+例如：你的钱包地址为A，Mint 地址为M，那么对应的 ATA 地址是唯一确定的，任何人用A和M推导都会得到同一个地址。
+非 ATA Token Account（手动指定所有者）：
+地址是随机生成的，不遵循上述推导规则。每次执行create-account &lt;MINT&gt; &lt;OWNER&gt;命令，都会生成一个全新的随机地址，即使所有者和 Mint 相同，也会得到不同的地址。
+
+
+与所有者的关联性不同
+
+
+ATA：
+强制与「创建时的钱包地址」绑定，即 ATA 的所有者（owner）就是该钱包地址，且无法修改。
+一个钱包对一个 Mint 只能有1 个 ATA（因为地址唯一），这是钱包管理代币的「默认账户」。
+非 ATA Token Account：
+所有者可以是任意地址（可以是你的钱包、其他用户的钱包，甚至是智能合约地址），且允许一个所有者对一个 Mint 创建多个非 ATA 账户（因为地址随机）。
+例如：你可以用自己的钱包作为所有者，为同一个 Mint 创建 10 个不同的非 ATA 账户，分别持有不同数量的代币。
+
+
+钱包与 DApp 兼容性不同
+
+
+ATA：
+遵循 Solana 官方标准，所有主流钱包（如 Phantom、Solflare）和 DApp 都会自动识别并显示 ATA 中的代币，无需手动添加地址。
+例如：你在 Phantom 钱包中看到的某代币余额，实际就是你钱包对应的 ATA 中的余额。
+非 ATA Token Account：
+不被钱包自动识别，需要用户手动添加账户地址才能在钱包中显示余额。
+大多数 DApp 也不会默认与非 ATA 交互，需要手动指定账户地址才能进行转账、交易等操作。
+
+
+使用场景不同
+
+
+ATA：
+适合普通用户日常使用，用于接收、存储和管理代币，因为兼容性好、管理简单（一个 Mint 对应一个账户，不易混乱）。
+例如：别人向你转账某代币时，只需提供你的钱包地址，对方会自动向你的 ATA 转账（因为 ATA 地址可推导）。
+非 ATA Token Account：
+适合特殊场景，例如：
+
+智能合约需要控制代币（将所有者设为合约地址）；
+需将同一 Mint 的代币拆分到多个账户管理（如分账、隔离资金）；
+临时账户（用完即弃）等。
+
+
+
+总结来说，ATA 是「标准化、自动关联、易管理」的代币账户，适合大多数日常场景；非 ATA 是「灵活、自定义、需手动管理」的账户，适合特殊需求。实际开发或使用中，优先推荐使用 ATA，除非有明确的特殊场景需要非 ATA。
+3. 铸币（增加代币供应量）
+只有Mint账户的mint-authority有权限铸币：
+  # 向指定Token Account铸币100单位（注意小数位，实际金额=数量*10^decimals）
+ spl-token mint &lt;MINT_ADDRESS> 100 &lt;TOKEN_ACCOUNT_ADDRESS>
+
+ # 示例：向当前钱包的ATA铸币1000（假设decimals=6，实际为1000 * 10^6 最小单位）
+ spl-token mint &lt;MINT_ADDRESS> 1000
+ 
+ --------
+ ➜  ~ spl-token mint 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9 100
+Minting 100 tokens
+  Token: 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
+  Recipient: 7i8smGYKco3hicJThL8WYrMaGKpceeKkZRekqR4aWKFJ
+
+Signature: USQP7cDcCip1ePdgKDxEXobBm8ohtaVwDRmGFt2BmDyi3tRQMrxtbvMkXbrUcdkoSNuQ2X9k6u1NNbztHeYY97Y
+
+ --------
+
+ # 验证铸币结果
+ spl-token balance &lt;MINT_ADDRESS>
+  --------
+ ➜  ~ spl-token balance 3F14kaMXjdC1mFx5LRdD19amiMneKhgJsmMzGQUJjTt9
+100
+ --------
+4. 代币转账
+ # 从当前钱包的ATA向目标钱包的ATA转账50单位
+spl-token transfer &lt;MINT_ADDRESS> 50 &lt;RECIPIENT_WALLET_ADDRESS> --fund-recipient
+
+# 参数说明：
+# --fund-recipient：自动为接收者创建ATA（若不存在）并支付创建费用
+5. 销毁代币（减少供应量）
+代币持有者可销毁自己持有的代币：
+ # 销毁当前钱包ATA中的20单位代币
+spl-token burn &lt;TOKEN_ACCOUNT_ADDRESS> 20
+6. 查看代币信息
+ # 查看Mint账户详情（总供应量、权限等）
+spl-token mint-info &lt;MINT_ADDRESS>
+
+# 查看Token Account详情（余额、所有者等）
+spl-token account-info &lt;TOKEN_ACCOUNT_ADDRESS>
+关键注意事项
+
+权限管理：Mint账户的铸币/冻结权限默认归创建者，可通过spl-token authorize转移或撤销
+NFT特殊处理：必须设置--decimals 0，且通常只铸币1个单位（spl-token mint &lt;MINT&gt; 1）
+主网操作：切换集群为https://api.mainnet-beta.solana.com时，需使用真实SOL支付Gas费
+地址记录：Mint地址是代币的唯一标识，需妥善保存（可通过solana address -k &lt;MINT_KEYPAIR_FILE&gt;查询）
+
+通过以上步骤，即可完成从代币创建到转账销毁的全流程操作。实际开发中，可通过Solana Rust SDK或Web3.js调用Token Program的指令实现相同功能。
 ]]></content>
       <categories>
         <category>Solana</category>
@@ -9814,256 +9814,177 @@ PDA唯一性：种子（seed）需确保唯一，避免不同类型账户地址�
       </tags>
   </entry>
   <entry>
-    <title>Solana项目实战_TypeScript测试文件语法与关键词</title>
-    <url>/2025/09/07/Solana%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98-TypeScript%E6%B5%8B%E8%AF%95%E6%96%87%E4%BB%B6%E8%AF%AD%E6%B3%95%E4%B8%8E%E5%85%B3%E9%94%AE%E8%AF%8D/</url>
-    <content><![CDATA[TypeScript测试文件语法与关键词
-实战中发现测试文件ts的语法有很多不懂，集中总结一份供学习和参考备用。。。
-1. 基础测试结构
-describe('测试组名称', () => &#123;
-    it('测试用例名称', () => &#123;
-        // 测试代码
-    &#125;)
-&#125;)
-2. 核心关键词解释
-describe - 测试组/测试套件
-describe('User Management', () => &#123;
-    // 这是一个测试组，包含多个相关的测试用例
-    // 所有用户相关的测试都可以放在这里
-&#125;)
-作用：
+    <title>Solana[part8]_Solana 生态中的协议与标准库</title>
+    <url>/2025/08/12/Solana-part8-Solana-%E7%94%9F%E6%80%81%E4%B8%AD%E7%9A%84%E5%8D%8F%E8%AE%AE%E4%B8%8E%E6%A0%87%E5%87%86%E5%BA%93/</url>
+    <content><![CDATA[Solana[part8]_Solana 生态中的协议与标准库
+一、协议基础：定义与生态差异
+1.1 区块链协议的本质
+区块链协议是定义网络交互规则、数据结构和业务逻辑的规范，是智能合约和应用的“底层规则集”。例如：
 
-组织相关的测试用例
-提供测试的上下文描述
-可以嵌套使用
+代币协议规定资产的发行（Mint）、转移（Transfer）、销毁（Burn） 逻辑；
+Swap协议定义两种资产的兑换规则（如价格算法、流动性池交互）。
+类比互联网：如同HTTP协议规定网页传输规则，区块链协议定义“价值与逻辑”的传输标准。
 
-it - 单个测试用例
-it('should validate user state structure', () => &#123;
-    // 这是一个具体的测试用例
-    // 测试用户状态结构是否正确
-&#125;)
-作用：
+1.2 不同公链协议的核心差异
+以 以太坊（ERC标准） 和 Solana（SPL标准） 对比：
 
-定义具体的测试场景
-描述测试的目的和期望结果
-每个it都是独立的测试
 
-expect - 断言（验证结果）
-expect(mockUserState.user).toBe('test-user')
-expect(mockUserState.incensePoints).toBe(0n)
-expect(mockUserState.incenseBalance).toEqual([])
-作用：
 
-验证实际结果是否符合预期
-如果断言失败，测试就会失败
+维度
+以太坊（ERC）
+Solana（SPL）
 
-3. 常用断言方法
-基本断言
-expect(value).toBe(expected)           // 严格相等
-expect(value).toEqual(expected)        // 深度相等（对象）
-expect(value).toBeTruthy()             // 真值
-expect(value).toBeFalsy()              // 假值
-数值断言
-expect(value).toBeGreaterThan(5)       // 大于
-expect(value).toBeLessThan(10)         // 小于
-expect(value).toBeGreaterThanOrEqual(0) // 大于等于
-数组/字符串断言
-expect(array).toContain(item)          // 包含
-expect(array).toHaveLength(3)          // 长度
-expect(string).toMatch(/pattern/)      // 正则匹配
-4. 测试生命周期
-beforeAll - 所有测试前执行
-describe('User Management', () => &#123;
-    let payer: any
-    let rpc: any
 
-    beforeAll(async () => &#123;
-        // 在所有测试开始前执行一次
-        const env = await setupTestEnvironment()
-        payer = env.payer
-        rpc = env.rpc
-    &#125;)
 
-    it('test 1', () => &#123; /* 使用payer和rpc */ &#125;)
-    it('test 2', () => &#123; /* 使用payer和rpc */ &#125;)
-&#125;)
-beforeEach - 每个测试前执行
-beforeEach(() => &#123;
-    // 在每个测试用例开始前执行
-    // 重置测试状态
-&#125;)
-afterAll / afterEach - 清理函数
-afterAll(() => &#123;
-    // 在所有测试结束后执行
-    // 清理资源
-&#125;)
-5. 实际测试示例解析
-import &#123; describe, it, expect &#125; from 'vitest'
 
-describe('User Management', () => &#123;           // 🔸 测试组开始
-    it('should validate user state structure', () => &#123;  // 🔸 第一个测试用例
-        // 准备测试数据
-        const mockUserState = &#123;
-            user: 'test-user',
-            incensePoints: 0n,
-            merit: 0n,
-            incenseBalance: [],
-            incenseNumber: 0,
-            updateTime: 1234567890n,
-            dailyIncenseCount: [],
-            bump: 255
-        &#125;
+底层架构
+账户模型（EOA+合约账户），单线程执行
+账户模型（可执行+数据账户，关联账户），并行执行（Sealevel）
 
-        // 验证用户地址
-        expect(mockUserState.user).toBe('test-user')    // 🔸 断言：用户地址应该等于'test-user'
-        
-        // 验证初始香火值
-        expect(mockUserState.incensePoints).toBe(0n)   // 🔸 断言：香火值应该为0
-        
-        // 验证功德值
-        expect(mockUserState.merit).toBe(0n)           // 🔸 断言：功德值应该为0
-        
-        // 验证香余额数组
-        expect(mockUserState.incenseBalance).toEqual([]) // 🔸 断言：香余额应该是空数组
-    &#125;)
 
-    it('should handle incense balance operations', () => &#123;  // 🔸 第二个测试用例
-        let balance = 100
-        
-        // 测试增加余额
-        balance += 50
-        expect(balance).toBe(150)                      // 🔸 断言：100+50=150
-        
-        // 测试减少余额
-        balance -= 30
-        expect(balance).toBe(120)                      // 🔸 断言：150-30=120
-        
-        // 测试余额不足的情况
-        const hasEnough = balance >= 200
-        expect(hasEnough).toBe(false)                  // 🔸 断言：120 >= 200 应该是false
-    &#125;)
+开发语言
+Solidity
+Rust
 
-    it('should validate daily incense limits', () => &#123;     // 🔸 第三个测试用例
-        const dailyLimit = 10
-        const currentCount = 5
-        const requestedAmount = 3
 
-        // 测试是否可以继续烧香
-        const canBurn = currentCount + requestedAmount &lt;= dailyLimit
-        expect(canBurn).toBe(true)                     // 🔸 断言：5+3 &lt;= 10 应该是true
+性能导向
+通用性优先（牺牲部分效率）
+高性能优先（高TPS、低延迟）
 
-        // 测试超出限制的情况
-        const overLimit = currentCount + 8 > dailyLimit
-        expect(overLimit).toBe(true)                   // 🔸 断言：5+8 > 10 应该是true
-    &#125;)
-&#125;)
-6. 测试命名规范
-测试组命名
-describe('User Management', () => &#123;&#125;)      // ✅ 功能模块
-describe('Incense Operations', () => &#123;&#125;)   // ✅ 操作类型
-describe('Daily Limits', () => &#123;&#125;)          // ✅ 业务规则
-测试用例命名
-it('should initialize user correctly', () => &#123;&#125;)        // ✅ 描述期望行为
-it('should handle insufficient balance', () => &#123;&#125;)      // ✅ 描述边界情况
-it('should validate daily limits', () => &#123;&#125;)            // ✅ 描述验证逻辑
-it('should update incense count', () => &#123;&#125;)             // ✅ 描述状态变化
-7. 测试运行结果
-当你运行测试时，会看到类似这样的输出：
-✓ User Management
-  ✓ should validate user state structure
-  ✓ should handle incense balance operations  
-  ✓ should validate daily incense limits
 
-Test Results: 3 passed, 0 failed
-8. 为什么使用这种语法？
+协议设计
+灵活（如ERC-721A优化NFT批量Mint）
+高效（如SPL-Token支持并行转移）
 
-结构化 - 清晰的测试组织方式
-可读性 - 英文描述容易理解
-标准化 - 行业通用的测试格式
-工具支持 - IDE和测试框架原生支持
-报告友好 - 生成美观的测试报告
 
-9. 运行测试的命令
-# 运行所有测试
-npm test
 
-# 运行单元测试
-npm run test:unit
+二、Solana核心协议解析（SPL体系）
+Solana的协议多通过 Solana Program Library（SPL，标准程序库） 实现，以下是核心协议拆解：
+2.1 代币协议：SPL-Token &amp; 扩展
+（1）SPL-Token（基础版）
 
-# 运行特定测试文件
-npx vitest anchor/tests/unit/user.test.ts
+功能：发行可替代代币（Fungible Token），支持 Mint（增发）、Transfer（转移）、Burn（销毁）、Approval（授权）等操作。
+账户模型：
 
-# 监听模式（文件变化自动运行）
-npx vitest --watch
+Mint账户：记录代币总供应量、小数位、发行方等核心信息；
+代币账户：用户持有代币的载体（默认不创建，需通过关联账户机制生成）。
+
+
+类比：类似以太坊ERC-20，但借助Solana并行处理，批量转移效率更高。
+
+（2）SPL-Associated Token Account（ATA，关联账户）
+
+作用：为 用户主账户 + 代币Mint地址 自动生成唯一关联代币账户，统一管理该代币的余额。
+优势：避免用户手动创建多个代币账户（如以太坊需为每个ERC-20代币单独授权），简化资产管理。
+
+（3）SPL-Token 2022（增强版）
+
+新增特性：可选的冻结（Freeze）和锁定（Locking）机制：
+
+冻结：管理员（如项目方）可冻结特定ATA的代币转移，用于合规管控（如防止黑钱交易）或项目治理；
+锁定：设定代币解锁条件（如 时间锁：团队代币分阶段解锁；逻辑锁：满足某条件才允许转移），适配私募、vesting计划等场景。
+
+
+
+2.2 交互协议：从Memo到Governance
+（1）Memo（交易备注）
+
+功能：在Solana交易中附加文本信息（如“订单ID#123”、“NFT购买”），虽不影响交易逻辑，但可作为链上审计或交互记录。
+应用：DEX交易记录订单信息、NFT市场记录购买备注。
+
+（2）Name Service（域名服务，如SNS）
+
+功能：将复杂的Solana地址（如 8X...yz）映射为易记域名（如 user.sol），方便转账和社交展示。
+类比：类似以太坊ENS（.eth），但Solana的SNS更轻量，结合链上存储实现。
+
+（3）Swap协议（如Serum的SPL Swap）
+
+机制：实现两种代币的兑换，支持 订单簿模式（如Serum）或 AMM模式（自动做市商，如Raydium）。
+核心：通过SPL-Token的Transfer接口，结合价格算法（如恒定乘积公式），实现去中心化交易。
+
+（4）Staking（质押协议）
+
+流程：用户将代币质押给验证者或质押池，获取质押收益（如SOL代币质押获得通胀奖励）。
+协议逻辑：涉及 委托（Delegate）、解绑（Unstake，含解锁期）、收益分发，保障Solana网络的PoS共识安全。
+
+（5）Governance（治理协议，如Realms）
+
+功能：社区投票决定协议升级、资金分配等，通常结合“治理代币”（如$SRM用于Serum治理）。
+流程：提案创建 → 代币加权投票 → 通过CPI调用执行程序（如转移社区金库资金）。
+
+（6）Flash Loans（闪电贷）
+
+原理：在同一原子交易中，用户可无抵押借出资产，前提是“借出→使用→偿还”全流程完成（否则交易回滚）。
+应用：套利（跨交易所价格差）、临时资金利用，依赖Solana高TPS和低延迟实现高效操作。
+
+三、Solana标准库（SPL）的核心价值：模块化与CPI
+3.1 模块化开发：站在巨人肩膀上
+
+SPL定位：Solana官方维护的标准程序库，提供经过审计、高性能的基础模块（如token、swap、治理）。
+开发者收益：
+
+无需从头开发代币系统，直接调用 SPL-Token 接口；
+开发DEX时，复用 SPL-Swap 的兑换逻辑，节省时间和安全成本。
+
+
+案例：NFT平台可复用SPL-Token（手续费代币）和Metaplex NFT标准（基于SPL开发，管理NFT元数据）。
+
+3.2 跨程序调用（CPI）：程序间的“协作魔法”
+
+定义：Solana允许一个智能合约（程序）调用另一个程序的指令，所有操作在同一原子交易中执行（要么全成，要么全败）。
+应用场景：
+
+DEX交易：Swap程序调用SPL-Token的Transfer指令，完成代币兑换；
+借贷协议：借贷程序调用SPL-Token转移抵押品，同时调用价格预言机程序获取资产价格；
+治理执行：Governance程序通过CPI调用SPL-Token转移社区金库资金。
+
+
+优势：实现复杂业务逻辑（如“质押+借贷+Swap”组合操作），同时通过原子性避免中间状态风险。
+
+四、总结：协议与标准库的生态意义
+
+协议是规则基石：定义资产、交互、治理的标准，让不同应用互操作（如不同DEX都用SPL-Swap，用户资产通用）。
+SPL是开发加速器：模块化设计和CPI机制，降低开发门槛，促进生态繁荣（如大量项目基于SPL快速迭代）。
+对比与展望：与以太坊ERC体系相比，Solana的SPL更注重性能和并行；随着SPL-Token 2022等升级，在合规、复杂资产管理上会更灵活。
+
+附录：关键术语速查表
+
+
+
+术语
+解释
+
+
+
+
+SPL
+Solana Program Library（Solana标准程序库）
+
+
+ATA
+Associated Token Account（关联代币账户）
+
+
+CPI
+Cross Program Invocation（跨程序调用）
+
+
+Mint Account
+代币发行账户（记录总供应量、小数位等）
+
+
+Vesting
+代币锁定计划（如团队代币分阶段解锁）
+
+
+
 ]]></content>
       <categories>
         <category>Solana</category>
       </categories>
       <tags>
+        <tag>Rust</tag>
         <tag>Solana</tag>
-        <tag>TypeScript</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>WEB3 Day1—BlockChain Basic 1</title>
-    <url>/2025/06/17/WEB3%20Day1%20%E2%80%94%E2%80%94%20BlockChain%20Basic%201/</url>
-    <content><![CDATA[WEB3 Day1—BlockChain Basic 1
-转型方向
-从 Java 开发转型至智能合约开发。
-学习资源
-学习视频
-推荐 patrick collins 【Cyfrin】的教学视频 。
-同时，Cyfrin Updraft 官网提供了文字笔记和视频课程。不过，某些翻译插件的双语字幕不支持该网站，因此我选择在 YouTube 上观看完整视频，并且将两者结合起来学习。
-翻译插件推荐
-这里推荐一款翻译插件——沉浸式翻译
-创建自己的钱包
-安装 MetaMask 插件
-首先，进入 MetaMask 官网，将其作为 Chrome 浏览器插件添加到浏览器中。
-创建钱包
-创建自己的钱包后，会得到三个关键信息：私钥（private key）、助记词（Mnemonic Key）和公钥地址（public Address）。其中，私钥和助记词极其重要，务必安全保存！因为拥有私钥就可以直接访问你的钱包账户，所以千万不能有侥幸心理。建议将助记词记录在纸上，而不是存储在电脑里，如果能记在大脑中（如使用记忆宫殿的方法）则是最安全的。三者的重要性排序为：【Mnemonic &gt; Private Key &gt; public Address】。
-相关图示如下：
-
-
-模拟交易
-创建虚拟测试网络
-登录 Tenderly 测试网站（https://tenderly.co/?mtm_campaign=partner&amp;mtm_kwd=cyfrin ），通过该链接注册并创建账户是免费的。在网站左侧点击“virtual TestNets”，创建虚拟测试网络。
-
-网络设置
-进行简单设置，无特定要求。设置完成后，会创建一个模拟区块链，接下来可以将其添加到 MetaMask 中。
-
-手动添加网络问题处理
-在连接后，可能会遇到 MetaMask 中未显示创建的虚拟网络的问题，此时需要手动添加。注意，原系统默认的 chainId（11155111）无法修改，因此需要重新创建一个链，并在创建时在“custom”处修改自己的 ID。
-
-有其他开发者也遇到了同样的问题，可参考：https://github.com/Cyfrin/foundry-full-course-cu/discussions/4066?sort=old
-注资操作
-完成上述步骤后，进行注资。
-
-查看注资结果
-注资完成后，等待几分钟，就可以在自定义虚拟网络中看到资金到账啦，仿佛瞬间“暴富”（当然这只是模拟）。
-
-账户间转账
-在模拟网络中，从一个账户向另一个账户转账非常简单，直接进行发送操作即可。
-
-
-另外，Tenderly 与 Cypher 有合作，账户可以续期。
-
-区块链数据结构
-可以通过 BlockChain Demo 网站（https://andersbrownworth.com/blockchain/block ）来帮助理解区块链的底层数据结构。
-交易费用相关概念
-交易费用（Transaction Fee）
-交易费用是支付给区块生产者处理交易的奖励金额，通常通过以太币或者 Gwei 支付。
-燃气价格（Gas Price）
-同样以以太币或者 Gwei 来定义，燃气价格是交易中指定的每单位燃气（Gas）的成本。价格越高，交易被打包进区块的机会就越大，它用于设定交易中每单位燃气的成本。
-燃气（Gas）
-不要将燃气与燃气价格混淆。燃气指的是执行交易所需要的工作量，而燃气价格则是每单位工作量的成本。
-交易费用的计算公式为：
-Transaction fee =  gasPrice * gasUsed
-简单来说，当大量用户进行交易时，特定区块的空间竞争会变得激烈，此时提高燃气价格可以在拥堵时限制交易，并优先处理部分交易。
-]]></content>
-      <categories>
-        <category>Web3</category>
-      </categories>
-      <tags>
-        <tag>BlockChain</tag>
       </tags>
   </entry>
   <entry>
@@ -10315,190 +10236,334 @@ Anchor Discord频道
       </tags>
   </entry>
   <entry>
-    <title>Solana项目实战_Sol寺项目第一阶段调试记录</title>
-    <url>/2025/09/08/Sol%E5%AF%BA%E9%A1%B9%E7%9B%AE%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/</url>
-    <content><![CDATA[Sol寺项目第一阶段调试记录
-📋 项目概述
-项目名称: Sol寺 (Solana Temple)
-技术栈: Anchor Framework + Solana + TypeScript
-业务场景: 基于Solana的虚拟寺庙系统，支持用户烧香、功德积累等功能
-🎯 第一阶段目标
-
-✅ 完成项目基础架构搭建
-✅ 实现核心业务逻辑
-✅ 建立完整的测试体系
-✅ 解决部署和运行问题
-
-
-🚨 主要问题及解决方案
-1. Anchor.toml配置错误
-问题描述: TOML解析错误，[[test]]语法不正确
-# ❌ 错误的配置
-[[test]]
-name = "temple-init"
-script = "../node_modules/.bin/tsx tests/temple-init.test.ts"
-解决方案:
-# ✅ 正确的配置
-[scripts]
-temple-init = "../node_modules/.bin/tsx tests/temple-init.test.ts"
-学习点: Anchor的测试配置应该使用[scripts]而不是[[test]]
-
-2. 测试框架导入错误
-问题描述: describe和it函数未定义，无法运行Jest测试
-// ❌ 错误：缺少测试框架
-describe("temple initialize test", () => &#123;
-    it("create temple config", async () => &#123;
+    <title>Solana项目实战_TypeScript测试文件语法与关键词</title>
+    <url>/2025/09/07/Solana%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98-TypeScript%E6%B5%8B%E8%AF%95%E6%96%87%E4%BB%B6%E8%AF%AD%E6%B3%95%E4%B8%8E%E5%85%B3%E9%94%AE%E8%AF%8D/</url>
+    <content><![CDATA[TypeScript测试文件语法与关键词
+实战中发现测试文件ts的语法有很多不懂，集中总结一份供学习和参考备用。。。
+1. 基础测试结构
+describe('测试组名称', () => &#123;
+    it('测试用例名称', () => &#123;
         // 测试代码
-    &#125;);
-&#125;);
-解决方案:
-// ✅ 方案1: 使用Vitest
-import &#123; describe, it, expect &#125; from "vitest";
+    &#125;)
+&#125;)
+2. 核心关键词解释
+describe - 测试组/测试套件
+describe('User Management', () => &#123;
+    // 这是一个测试组，包含多个相关的测试用例
+    // 所有用户相关的测试都可以放在这里
+&#125;)
+作用：
 
-// ✅ 方案2: 直接运行异步函数
-async function runTest() &#123;
-    // 测试逻辑
+组织相关的测试用例
+提供测试的上下文描述
+可以嵌套使用
+
+it - 单个测试用例
+it('should validate user state structure', () => &#123;
+    // 这是一个具体的测试用例
+    // 测试用户状态结构是否正确
+&#125;)
+作用：
+
+定义具体的测试场景
+描述测试的目的和期望结果
+每个it都是独立的测试
+
+expect - 断言（验证结果）
+expect(mockUserState.user).toBe('test-user')
+expect(mockUserState.incensePoints).toBe(0n)
+expect(mockUserState.incenseBalance).toEqual([])
+作用：
+
+验证实际结果是否符合预期
+如果断言失败，测试就会失败
+
+3. 常用断言方法
+基本断言
+expect(value).toBe(expected)           // 严格相等
+expect(value).toEqual(expected)        // 深度相等（对象）
+expect(value).toBeTruthy()             // 真值
+expect(value).toBeFalsy()              // 假值
+数值断言
+expect(value).toBeGreaterThan(5)       // 大于
+expect(value).toBeLessThan(10)         // 小于
+expect(value).toBeGreaterThanOrEqual(0) // 大于等于
+数组/字符串断言
+expect(array).toContain(item)          // 包含
+expect(array).toHaveLength(3)          // 长度
+expect(string).toMatch(/pattern/)      // 正则匹配
+4. 测试生命周期
+beforeAll - 所有测试前执行
+describe('User Management', () => &#123;
+    let payer: any
+    let rpc: any
+
+    beforeAll(async () => &#123;
+        // 在所有测试开始前执行一次
+        const env = await setupTestEnvironment()
+        payer = env.payer
+        rpc = env.rpc
+    &#125;)
+
+    it('test 1', () => &#123; /* 使用payer和rpc */ &#125;)
+    it('test 2', () => &#123; /* 使用payer和rpc */ &#125;)
+&#125;)
+beforeEach - 每个测试前执行
+beforeEach(() => &#123;
+    // 在每个测试用例开始前执行
+    // 重置测试状态
+&#125;)
+afterAll / afterEach - 清理函数
+afterAll(() => &#123;
+    // 在所有测试结束后执行
+    // 清理资源
+&#125;)
+5. 实际测试示例解析
+import &#123; describe, it, expect &#125; from 'vitest'
+
+describe('User Management', () => &#123;           // 🔸 测试组开始
+    it('should validate user state structure', () => &#123;  // 🔸 第一个测试用例
+        // 准备测试数据
+        const mockUserState = &#123;
+            user: 'test-user',
+            incensePoints: 0n,
+            merit: 0n,
+            incenseBalance: [],
+            incenseNumber: 0,
+            updateTime: 1234567890n,
+            dailyIncenseCount: [],
+            bump: 255
+        &#125;
+
+        // 验证用户地址
+        expect(mockUserState.user).toBe('test-user')    // 🔸 断言：用户地址应该等于'test-user'
+        
+        // 验证初始香火值
+        expect(mockUserState.incensePoints).toBe(0n)   // 🔸 断言：香火值应该为0
+        
+        // 验证功德值
+        expect(mockUserState.merit).toBe(0n)           // 🔸 断言：功德值应该为0
+        
+        // 验证香余额数组
+        expect(mockUserState.incenseBalance).toEqual([]) // 🔸 断言：香余额应该是空数组
+    &#125;)
+
+    it('should handle incense balance operations', () => &#123;  // 🔸 第二个测试用例
+        let balance = 100
+        
+        // 测试增加余额
+        balance += 50
+        expect(balance).toBe(150)                      // 🔸 断言：100+50=150
+        
+        // 测试减少余额
+        balance -= 30
+        expect(balance).toBe(120)                      // 🔸 断言：150-30=120
+        
+        // 测试余额不足的情况
+        const hasEnough = balance >= 200
+        expect(hasEnough).toBe(false)                  // 🔸 断言：120 >= 200 应该是false
+    &#125;)
+
+    it('should validate daily incense limits', () => &#123;     // 🔸 第三个测试用例
+        const dailyLimit = 10
+        const currentCount = 5
+        const requestedAmount = 3
+
+        // 测试是否可以继续烧香
+        const canBurn = currentCount + requestedAmount &lt;= dailyLimit
+        expect(canBurn).toBe(true)                     // 🔸 断言：5+3 &lt;= 10 应该是true
+
+        // 测试超出限制的情况
+        const overLimit = currentCount + 8 > dailyLimit
+        expect(overLimit).toBe(true)                   // 🔸 断言：5+8 > 10 应该是true
+    &#125;)
+&#125;)
+6. 测试命名规范
+测试组命名
+describe('User Management', () => &#123;&#125;)      // ✅ 功能模块
+describe('Incense Operations', () => &#123;&#125;)   // ✅ 操作类型
+describe('Daily Limits', () => &#123;&#125;)          // ✅ 业务规则
+测试用例命名
+it('should initialize user correctly', () => &#123;&#125;)        // ✅ 描述期望行为
+it('should handle insufficient balance', () => &#123;&#125;)      // ✅ 描述边界情况
+it('should validate daily limits', () => &#123;&#125;)            // ✅ 描述验证逻辑
+it('should update incense count', () => &#123;&#125;)             // ✅ 描述状态变化
+7. 测试运行结果
+当你运行测试时，会看到类似这样的输出：
+✓ User Management
+  ✓ should validate user state structure
+  ✓ should handle incense balance operations  
+  ✓ should validate daily incense limits
+
+Test Results: 3 passed, 0 failed
+8. 为什么使用这种语法？
+
+结构化 - 清晰的测试组织方式
+可读性 - 英文描述容易理解
+标准化 - 行业通用的测试格式
+工具支持 - IDE和测试框架原生支持
+报告友好 - 生成美观的测试报告
+
+9. 运行测试的命令
+# 运行所有测试
+npm test
+
+# 运行单元测试
+npm run test:unit
+
+# 运行特定测试文件
+npx vitest anchor/tests/unit/user.test.ts
+
+# 监听模式（文件变化自动运行）
+npx vitest --watch
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Solana</tag>
+        <tag>TypeScript</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solji实战记录3 —— 必要的账户验证</title>
+    <url>/2025/09/10/Solji%E5%AE%9E%E6%88%98%E8%AE%B0%E5%BD%953/</url>
+    <content><![CDATA[Solji实战记录3 —— 必要的账户验证
+关于账户验证
+账户验证的类型
+1. 所有权验证 (Ownership Validation)
+// ❌ 不安全的代码
+#[derive(Accounts)]
+pub struct TransferSol&lt;'info> &#123;
+    #[account(mut)]
+    pub from: Account&lt;'info, TokenAccount>,  // 任何人都能传入任何账户
+    
+    #[account(mut)]
+    pub to: Account&lt;'info, TokenAccount>,
 &#125;
-学习点: 需要正确配置测试运行环境，选择合适的测试框架
 
-3. 依赖包缺失
-问题描述: 缺少chai和bn.js包
-# 错误信息
-SyntaxError: The requested module '@coral-xyz/anchor' does not provide an export named 'BN'
-Cannot find name 'assert'
-解决方案:
-npm install --save-dev chai @types/chai
-npm install bn.js
-学习点: Solana开发需要特定的数学库和断言库
+// ✅ 安全的代码
+#[derive(Accounts)]
+pub struct TransferSol&lt;'info> &#123;
+    #[account(
+        mut,
+        constraint = from.owner == user.key() @ ErrorCode::InvalidOwner  // ← 验证所有权
+    )]
+    pub from: Account&lt;'info, TokenAccount>,
+    
+    #[account(mut)]
+    pub to: Account&lt;'info, TokenAccount>,
+    
+    pub user: Signer&lt;'info>,
+&#125;
+为什么需要？
 
-4. 端口占用问题
-问题描述: 本地验证器端口8899被占用
-Error: Your configured rpc port: 8899 is already in use
-解决方案:
-# 停止现有验证器
-pkill -f solana-test-validator
+防止用户传入不属于他们的账户
+确保只有账户所有者能操作该账户
 
-# 或者使用不同的端口
-solana-test-validator -r --port 8898
-学习点: Solana开发需要管理本地验证器进程
+2. 程序所有权验证 (Program Ownership)
+#[account(
+    constraint = token_account.owner == token_program.key() @ ErrorCode::InvalidTokenAccount
+)]
+pub token_account: Account&lt;'info, TokenAccount>,
+为什么需要？
 
-5. NFT铸造Master Edition错误
-问题描述: Metaplex规则要求先铸造token才能创建Master Edition
-// ❌ 错误：直接创建Master Edition
-create_master_edition_v3(ctx, None)?;
-解决方案:
-// ✅ 移除Master Edition创建，只创建基础NFT
-// 对于消耗品NFT，不需要Master Edition
-学习点: 理解NFT类型差异
+确保账户确实由指定的程序拥有
+防止传入假的或恶意的账户
 
-收藏品NFT: 需要Master Edition，支持限量发行
-消耗品NFT: 不需要Master Edition，支持无限铸造
+3. PDA验证 (PDA Validation)
+#[account(
+    seeds = [b"my_pda", user.key().as_ref()],  // ← 验证PDA种子
+    bump = my_pda.bump,
+    constraint = my_pda.owner == program_id @ ErrorCode::InvalidPDA  // ← 验证所有者
+)]
+pub my_pda: Account&lt;'info, MyPda>,
+为什么需要？
 
+确保传入的账户确实是预期的PDA
+防止用户传入错误的账户地址
 
-6. 用户账户资金不足
-问题描述: 新创建的用户账户没有SOL支付租金
-Transfer: insufficient lamports 0, need 2937120
-解决方案:
-// 在测试中为用户提供SOL
-const airdropTx = await anchor.getProvider().connection.requestAirdrop(
-    user.publicKey,
-    2 * anchor.web3.LAMPORTS_PER_SOL
-);
-await anchor.getProvider().connection.confirmTransaction(airdropTx);
-学习点: Solana账户需要租金，所有新账户都需要资金
+4. 状态验证 (State Validation)
+#[account(
+    constraint = user_state.is_initialized == true @ ErrorCode::NotInitialized
+)]
+pub user_state: Account&lt;'info, UserState>,
+为什么需要？
 
-🔧 技术要点总结
-Anchor Framework
+确保账户处于正确的状态
+防止操作未初始化的账户
 
-程序结构: 使用declare_id!宏定义程序ID
-账户管理: 使用#[account]宏定义账户结构
-指令定义: 使用#[program]宏定义程序逻辑
-PDA计算: 使用find_program_address计算程序派生地址
+项目中的账户验证例子
+1. Wish账户验证
+应该添加的验证：
+#[derive(Accounts)]
+pub struct LikeWish&lt;'info> &#123;
+    #[account(mut)]
+    pub user: Signer&lt;'info>,
+    
+    // 添加验证
+    #[account(
+        mut,
+        constraint = wish_account.owner == program_id @ ErrorCode::InvalidOwner,  // 验证程序所有权
+        constraint = wish_account.creator != user.key() @ ErrorCode::CannotLikeOwnWish  // 防止给自己点赞
+    )]
+    pub wish_account: Account&lt;'info, Wish>,
+&#125;
+2. UserState账户验证
+#[account(
+    mut,
+    seeds = [b"user_state", user.key().as_ref()], // 是种子的验证
+    bump,
+    constraint = user_state.user == user.key() @ ErrorCode::InvalidUserState  // 所有权验证
+)]
+pub user_state: Account&lt;'info, UserState>,
+验证失败的后果
+不添加验证的风险：
+// 攻击场景1：传入别人的Wish账户
+await program.methods
+  .likeWish()
+  .accounts(&#123;
+    user: attackerPublicKey,
+    wishAccount: victimWishAddress,  // ← 传入受害者的愿望账户
+  &#125;)
+  .rpc();
 
-Solana概念
+// 结果：攻击者可以操作受害者的愿望
+// 攻击场景2：传入假账户
+await program.methods
+  .likeWish()
+  .accounts(&#123;
+    user: attackerPublicKey,
+    wishAccount: fakeWishAddress,  // ← 传入假的愿望账户
+  &#125;)
+  .rpc();
 
-账户模型: 所有数据存储在账户中
-租金机制: 账户需要最小余额来存储数据
-交易原子性: 所有指令要么全部成功，要么全部失败
-程序部署: 程序部署到链上后地址固定
+// 结果：可能导致程序崩溃或意外行为
+安全最佳实践
+1. 始终验证账户所有权
+constraint = account.owner == program_id @ ErrorCode::InvalidOwner
+2. 验证账户类型
+// 对于Token账户
+constraint = token_account.owner == token_program.key() @ ErrorCode::InvalidTokenAccount
 
-测试策略
+// 对于PDA账户
+constraint = pda_account.owner == program_id @ ErrorCode::InvalidPDA
+3. 验证账户状态
+constraint = account.is_initialized == true @ ErrorCode::NotInitialized
+constraint = account.status == AccountStatus::Active @ ErrorCode::AccountInactive
+4. 验证业务逻辑
+// 防止重复操作
+constraint = !user_has_already_liked @ ErrorCode::AlreadyLiked
 
-单元测试: 测试单个函数和指令
-集成测试: 测试完整业务流程
-端到端测试: 模拟真实用户操作
+// 验证权限
+constraint = user.has_permission == true @ ErrorCode::InsufficientPermissions
+总结
 
-错误处理
+所有权验证：确保只有授权用户能操作账户
+程序验证：确保账户由正确的程序拥有
+状态验证：确保账户处于正确的状态
+业务验证：确保符合业务逻辑要求
 
-自定义错误: 使用error_code!宏定义业务错误
-验证检查: 在指令开始时验证所有前提条件
-日志记录: 使用msg!宏记录重要信息
-
-
-📊 最终测试结果
-测试覆盖
-✅ temple initialize test &gt; create temple config  646ms
-✅ temple initialize test &gt; create nft mint  483ms
-✅ temple initialize test &gt; initialize user state  1045ms
-
-Test Files  1 passed (1)
-Tests  3 passed (3)
-核心功能验证
-
-✅ 寺庙配置创建 - PDA地址计算正确
-✅ NFT铸造 - 消耗品模式，无Master Edition
-✅ 用户初始化 - 自动处理账户资金
-✅ 区块链集成 - 真实交易验证
-
-
-🎯 学习收获
-技术层面
-
-掌握Anchor开发流程 - 从项目搭建到部署测试
-理解Solana架构 - 账户模型、交易机制、程序部署
-熟悉测试方法 - 单元测试、集成测试、错误处理
-
-工程层面
-
-问题排查能力 - 系统性分析和解决技术问题
-代码质量意识 - 关注错误处理、日志记录、代码组织
-文档重要性 - 及时记录问题和解决方案
-
-业务层面
-
-需求理解 - 区分收藏品和消耗品NFT的不同需求
-用户体验 - 自动处理复杂的区块链操作
-系统设计 - 合理的账户结构和权限管理
-
-
-🚀 下一步计划
-第二阶段目标
-
-完善业务逻辑 - 实现完整的烧香流程
-优化用户体验 - 添加前端界面
-安全性审计 - 代码安全检查
-性能优化 - 交易效率和成本优化
-
-技术栈扩展
-
-前端开发 - Next.js + React + Wallet适配器
-状态管理 - 区块链状态同步
-错误处理 - 用户友好的错误提示
-测试覆盖 - 更多边界情况测试
-
-
-📝 经验教训
-
-重视配置管理 - Anchor.toml等配置文件需要仔细检查
-理解底层机制 - Solana的账户模型和租金机制很重要
-选择合适工具 - 不同场景选择合适的测试框架
-及时清理代码 - 删除不必要的文件和代码
-记录问题解决 - 建立调试记录习惯
-
-
-记录时间: 2025年9月8日
-调试阶段: 第一阶段完成
-项目状态: 核心功能实现，测试通过
 ]]></content>
       <categories>
         <category>Solana</category>
@@ -10508,6 +10573,477 @@ Tests  3 passed (3)
         <tag>Solana</tag>
         <tag>TypeScript</tag>
         <tag>项目实战</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solana实战Bug记录</title>
+    <url>/2025/08/24/Solana%E5%AE%9E%E6%88%98Bug%E8%AE%B0%E5%BD%95/</url>
+    <content><![CDATA[Solana实战Bug记录
+Cross-program invocation with unauthorized signer or writable account
+
+
+
+问题
+解决方案
+
+
+
+
+PDA 派生路径不一致
+统一 seeds 和 signer_seeds
+
+
+Mint Authority 未授权
+在 CPI 中使用 signer_seeds 显式授权
+
+
+Metadata 账户约束错误
+显式指定 Token Metadata Program 地址
+
+
+Mint Authority 设置错误
+确保 mint::authority 指向 PDA 并通过签名授权
+
+
+
+let signer_seeds: &amp;[&amp;[&amp;[u8]]] = &amp;[&amp;[
+        EtfToken::SEEDS_PREFIX.as_bytes(),
+        m.as_ref(),
+        &amp;[ctx.bumps.etf_token_info],
+    ]];
+// 	需要和创建账户的时候设置的约束一致
+-----
+ #[account(
+        init_if_needed,
+        payer = authority,
+        space = 8 + EtfToken::INIT_SPACE,
+        seeds = [
+            EtfToken::SEEDS_PREFIX.as_bytes(),
+            etf_token_mint_account.key().as_ref()
+        ],
+        bump,
+    )]
+    pub etf_token_info: Account&lt;'info, EtfToken>,
+TypeError: anchor.BN is not a constructor
+可参考：
+https://solana.stackexchange.com/questions/22096/typeerror-anchor-bn-is-not-a-constructor-due-to-tsconfig-json
+最终是手动导入
+import &#123; BN &#125; from "bn.js";
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Solana</tag>
+        <tag>Bug</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solana项目实战_Solji实战记录2</title>
+    <url>/2025/09/09/Solana%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98_Solji%E5%AE%9E%E6%88%98%E8%AE%B0%E5%BD%952/</url>
+    <content><![CDATA[Solji实战记录2
+什么时候需要 8 + INIT_SPACE？
+情况1: 使用 init (新创建账户)
+#[account(
+    init,  // ✅ 新创建账户
+    payer = user,
+    space = 8 + UserState::INIT_SPACE,  // ✅ 需要手动+8
+    seeds = [...],
+    bump
+)]
+pub user_state: Account&lt;'info, UserState>,
+情况2: 使用 init_if_needed (条件创建)
+#[account(
+    init_if_needed,  // ✅ 条件创建
+    payer = authority,
+    space = 8 + UserState::INIT_SPACE,  // ✅ 同样需要+8
+    seeds = [...],
+    bump
+)]
+pub user_state: Box&lt;Account&lt;'info, UserState>>,
+去除Temple config 的index参数
+1. 结构优化
+// 重构前
+pub struct TempleConfig &#123;
+    pub index: u16, 
+    pub treasury: Pubkey,
+    pub incense_types: Vec&lt;IncenseType>,
+    pub incense_points: u64,  
+    pub merit: u64,       
+    pub level: u8,
+&#125;
+
+// 重构后
+pub struct TempleConfig &#123;
+    pub owner: Pubkey,
+    pub treasury: Pubkey,
+    pub incense_types: Vec&lt;IncenseType>,
+    pub total_incense_points: u64,
+    pub total_merit: u64,        
+    pub level: u8,
+    pub created_at: i64,        
+&#125;
+2. PDA种子简化
+// 重构前
+seeds = [b"temple_v1", index.to_string().as_bytes()]
+
+// 重构后  
+seeds = [b"temple_v1"]  // 固定地址
+3. 函数签名优化
+// 重构前
+pub fn create_temple_config(ctx, index: u16, treasury, incense_types)
+pub fn create_nft_mint(ctx, incense_id: u8, config_id: u16)  
+pub fn buy_incense(ctx, incense_id: u8, config_id: u16, amount)
+pub fn burn_incense(ctx, incense_id: u8, config_id: u16, amount)
+
+// 重构后
+pub fn create_temple_config(ctx, treasury, incense_types)       
+pub fn create_nft_mint(ctx, incense_id: u8)                    
+pub fn buy_incense(ctx, incense_id: u8, amount)                 
+pub fn burn_incense(ctx, incense_id: u8, amount)               
+4. 测试代码更新
+// 重构前
+const [templeConfigPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("temple_v1"), Buffer.from(configIndex.toString())],
+    program.programId
+);
+
+// 重构后
+const [templeConfigPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("temple_v1")],  // 简化
+    program.programId
+);
+代码注释风格的注意点
+
+// 单行的注释用 是简单的注释使用
+/// 需要暴露给外部使用 通常pub的函数的功能注释就使用
+
+cargo doc会包含这些注释
+
+
+
+IDE会显示这些信息
+
+
+公开API - 告诉其他开发者如何使用
+
+
+Markdown支持 - 可以写格式化的文档
+
+
+
+/*/块注释是跨多行的一个测试 不会生成doc
+
+可以跨越多行
+编译时被忽略
+不生成文档
+
+
+
+wrapping_add vs checked_add 区别
+** wrapping_add 方法**
+let seed = (now as u64)
+    .wrapping_add(ctx.accounts.user.key().to_bytes()[0] as u64)
+    .wrapping_add(ctx.accounts.user.key().to_bytes()[1] as u64);
+特点：
+
+环绕运算：当数值溢出时，会从0重新开始
+不panic：永远不会导致程序崩溃
+性能高：直接硬件运算，无额外检查
+
+示例：
+let a: u8 = 255;
+let b: u8 = 1;
+let result = a.wrapping_add(b); // result = 0 (255 + 1 = 256, 溢出后环绕到0)
+** checked_add 方法**
+// 假设的用法
+let result = a.checked_add(b);
+特点：
+
+检查运算：检测是否会发生溢出
+返回Option：溢出时返回None，正常时返回Some(value)
+安全但需要处理：需要额外的错误处理逻辑
+
+示例：
+let a: u8 = 255;
+let b: u8 = 1;
+match a.checked_add(b) &#123;
+    Some(result) => println!("结果: &#123;&#125;", result),
+    None => println!("发生溢出！"),
+&#125;
+** 为什么选择 wrapping_add？**
+在抽签场景中的考虑：
+
+确定性：无论是否溢出，结果都是确定性的
+性能：链上计算资源宝贵，需要最高性能
+简化逻辑：不需要处理溢出情况
+随机性：溢出本身可以增加随机性
+
+面试回答要点：
+
+“我选择 wrapping_add 是因为在区块链环境中，我们需要保证运算的确定性和性能。checked_add 会引入额外的分支逻辑和错误处理，而 wrapping_add 提供了更简洁高效的解决方案。在随机数生成场景中，溢出本身反而可以增加随机性。”
+
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Solana</tag>
+        <tag>TypeScript</tag>
+        <tag>项目实战</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solji实战记录4</title>
+    <url>/2025/09/11/Solji%E5%AE%9E%E6%88%98%E8%AE%B0%E5%BD%954/</url>
+    <content><![CDATA[Solji实战记录4
+佛像NFT
+业务元数据账号
+#[account(
+    init,
+    payer = authority,
+    space = 8 +  BuddhaNFT::INIT_SPACE,
+    seeds = [BuddhaNFT::SEED_PREFIX.as_bytes(), temple_config.key().as_ref(), &amp;(temple_config.total_buddha_nft as u32).to_be_bytes()],
+    bump
+)]
+pub buddha_nft_account: Account&lt;'info, BuddhaNFT>,
+和metadata元数据账号的区别
+
+
+
+层次
+Metadata账户
+BuddhaNFT PDA账户
+
+
+
+
+标准
+Metaplex标准
+自定义业务逻辑
+
+
+所有者
+Metaplex程序
+你的程序
+
+
+可见性
+全链可见
+程序内可见
+
+
+更新权限
+可配置
+程序控制
+
+
+
+需要创建这个账号来记录一些NFT 信息例如
+pub struct BuddhaNFT &#123;
+    pub owner: Pubkey,
+    pub mint: Pubkey,
+    pub serial_number: u32,
+    pub minted_at: i64,
+    pub is_active: bool,
+&#125;
+佛像mint逻辑整合
+
+验证供应量限制（&lt; 10000）
+检查用户未持有NFT
+创建NFT mint账户
+调用Metaplex创建metadata
+初始化BuddhaNFT PDA
+冻结NFT 【实现灵魂SBT】
+更新用户状态和总供应量
+
+注意点
+
+
+佛像nft 需要检查用户是否有mint资格（捐助 ≥ 0.5 SOL） 然后所有的payer 都是 temple 国库
+
+
+冻结NFT来实现禁止转让的控制
+
+
+影响逻辑集成
+
+修改draw_fortune.rs：
+
+检查用户NFT状态
+NFT持有者获得更好的抽签结果概率
+
+
+修改buy_incense.rs：
+
+NFT持有者获得购买折扣
+
+
+添加空投逻辑：
+
+创建instructions/airdrop_tokens.rs
+优先分配给NFT持有者
+
+
+
+
+
+测试场景
+
+
+
+测试场景
+状态
+说明
+
+
+
+
+成功Mint
+✅
+验证完整mint流程
+
+
+重复Mint
+✅
+验证唯一性约束
+
+
+NFT冻结
+✅
+验证SBT特性
+
+
+供应量
+✅
+验证上限管理
+
+
+错误处理
+✅
+验证异常情况
+
+
+
+
+修复成果总结
+
+
+修复重复seeds问题：
+
+为buddha_nft_account添加了&quot;account&quot;区分符
+确保nft_mint_account和buddha_nft_account有不同的seeds，避免PDA冲突
+
+
+
+修复测试文件：
+
+更新了setup.ts中的PDA计算逻辑
+为buddhaNftPda添加了正确的seeds：[&quot;BuddhaNFT&quot;, &quot;account&quot;, templeConfig, user]
+
+
+
+修复authority和signer seeds问题：
+
+将mint authority从nft_mint_account改为temple_config
+修复了所有相关的signer seeds匹配问题
+更新了create_metadata_accounts_v3和mint_to函数的signer seeds
+
+
+
+修复账户权限设置：
+
+修改mint的freeze_authority为temple_config本身
+确保所有权限设置正确
+
+
+
+测试结果：
+
+成功mint Buddha NFT测试 ✅ 通过
+重复mint拒绝测试 ✅ 通过（正确处理账户已存在错误）
+资金不足处理测试 ✅ 通过
+
+核心问题解决：
+
+重复seeds冲突：完全解决，两个PDA账户现在有不同的seeds
+程序编译：成功构建，无错误
+功能完整性：NFT铸造、冻结等所有功能正常工作
+
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Solana</tag>
+        <tag>TypeScript</tag>
+        <tag>项目实战</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>WEB3 Day1—BlockChain Basic 1</title>
+    <url>/2025/06/17/WEB3%20Day1%20%E2%80%94%E2%80%94%20BlockChain%20Basic%201/</url>
+    <content><![CDATA[WEB3 Day1—BlockChain Basic 1
+转型方向
+从 Java 开发转型至智能合约开发。
+学习资源
+学习视频
+推荐 patrick collins 【Cyfrin】的教学视频 。
+同时，Cyfrin Updraft 官网提供了文字笔记和视频课程。不过，某些翻译插件的双语字幕不支持该网站，因此我选择在 YouTube 上观看完整视频，并且将两者结合起来学习。
+翻译插件推荐
+这里推荐一款翻译插件——沉浸式翻译
+创建自己的钱包
+安装 MetaMask 插件
+首先，进入 MetaMask 官网，将其作为 Chrome 浏览器插件添加到浏览器中。
+创建钱包
+创建自己的钱包后，会得到三个关键信息：私钥（private key）、助记词（Mnemonic Key）和公钥地址（public Address）。其中，私钥和助记词极其重要，务必安全保存！因为拥有私钥就可以直接访问你的钱包账户，所以千万不能有侥幸心理。建议将助记词记录在纸上，而不是存储在电脑里，如果能记在大脑中（如使用记忆宫殿的方法）则是最安全的。三者的重要性排序为：【Mnemonic &gt; Private Key &gt; public Address】。
+相关图示如下：
+
+
+模拟交易
+创建虚拟测试网络
+登录 Tenderly 测试网站（https://tenderly.co/?mtm_campaign=partner&amp;mtm_kwd=cyfrin ），通过该链接注册并创建账户是免费的。在网站左侧点击“virtual TestNets”，创建虚拟测试网络。
+
+网络设置
+进行简单设置，无特定要求。设置完成后，会创建一个模拟区块链，接下来可以将其添加到 MetaMask 中。
+
+手动添加网络问题处理
+在连接后，可能会遇到 MetaMask 中未显示创建的虚拟网络的问题，此时需要手动添加。注意，原系统默认的 chainId（11155111）无法修改，因此需要重新创建一个链，并在创建时在“custom”处修改自己的 ID。
+
+有其他开发者也遇到了同样的问题，可参考：https://github.com/Cyfrin/foundry-full-course-cu/discussions/4066?sort=old
+注资操作
+完成上述步骤后，进行注资。
+
+查看注资结果
+注资完成后，等待几分钟，就可以在自定义虚拟网络中看到资金到账啦，仿佛瞬间“暴富”（当然这只是模拟）。
+
+账户间转账
+在模拟网络中，从一个账户向另一个账户转账非常简单，直接进行发送操作即可。
+
+
+另外，Tenderly 与 Cypher 有合作，账户可以续期。
+
+区块链数据结构
+可以通过 BlockChain Demo 网站（https://andersbrownworth.com/blockchain/block ）来帮助理解区块链的底层数据结构。
+交易费用相关概念
+交易费用（Transaction Fee）
+交易费用是支付给区块生产者处理交易的奖励金额，通常通过以太币或者 Gwei 支付。
+燃气价格（Gas Price）
+同样以以太币或者 Gwei 来定义，燃气价格是交易中指定的每单位燃气（Gas）的成本。价格越高，交易被打包进区块的机会就越大，它用于设定交易中每单位燃气的成本。
+燃气（Gas）
+不要将燃气与燃气价格混淆。燃气指的是执行交易所需要的工作量，而燃气价格则是每单位工作量的成本。
+交易费用的计算公式为：
+Transaction fee =  gasPrice * gasUsed
+简单来说，当大量用户进行交易时，特定区块的空间竞争会变得激烈，此时提高燃气价格可以在拥堵时限制交易，并优先处理部分交易。
+]]></content>
+      <categories>
+        <category>Web3</category>
+      </categories>
+      <tags>
+        <tag>BlockChain</tag>
       </tags>
   </entry>
   <entry>
@@ -10564,6 +11100,593 @@ mapping (string => uint256) public nameToFavoriteNumber;
       </categories>
       <tags>
         <tag>Solidity</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>WEB3 Day2—BlockChain Basic 2 + Solidity基础[part1]</title>
+    <url>/2025/06/17/WEB3%20Day2%20%E2%80%94%E2%80%94%20BlockChain%20Basic%202+Solidity%E5%9F%BA%E7%A1%80%5Bpart1%5D/</url>
+    <content><![CDATA[WEB3 Day2—BlockChain Basic 2 + Solidity基础[part1]
+Layer1
+​	blockChain的base layer，例如bitcoin、BNB chain、Solana,and Avalanche.
+Layer2
+构建在L1区块链外部但是也与之连接的任何应用application。有各种类型，比如for example ChainLink(去中心化预言机网络) ，以及像The Graph(事件索引网络)。
+好的，我将为你优化这段区块链技术描述，提升专业性和清晰度：
+Rollup 技术：以太坊Layer2扩容的核心方案
+Rollup是Layer2（L2）扩容的主流解决方案，其核心原理是将多笔链下交易打包为一个聚合交易，仅将交易摘要（而非完整数据）提交至以太坊主链（Layer1），大幅提升交易吞吐量并降低Gas费用。根据验证机制不同，Rollup可分为两类：
+1. Optimistic Rollups（乐观汇总）
+
+工作机制：默认所有链下交易均为有效，运营商（Operator）定期向主链提交状态根（State Root）和交易哈希。若其他参与者发现欺诈交易，可在挑战期（通常7天）内提交欺诈证明（Fraud Proof）进行质疑。
+安全性：依赖经济惩罚机制（押金锁定）和链上验证合约，若运营商被证明欺诈，将损失押金并回滚状态。
+代表项目：Arbitrum、Optimism、Base。
+
+2. Zero-Knowledge Rollups（零知识汇总）
+
+工作机制：通过零知识证明（ZK Proof）技术生成有效性证明（Validity Proof），证明交易批次的合法性。验证者只需检查证明，无需重放所有交易。
+核心优势：
+
+即时确定性：无需挑战期，交易确认后不可逆转。
+更高安全性：数学证明保证状态正确性，无需依赖信任假设。
+更低Gas成本：数据压缩率可达1000:1，验证成本显著低于Optimistic方案。
+
+
+代表项目：zkSync、StarkNet、Polygon zkEVM。
+
+3. 见证（Witness）与零知识证明
+
+见证（Witness）：是证明者（Prover）生成的一组中间值，用于证明输入数据满足特定数学关系（如哈希函数、椭圆曲线方程）。在ZK Rollups中，Witness包含交易数据、状态转换逻辑等信息，但不泄露具体内容。
+验证流程：
+
+证明者收集交易并生成状态转换。
+基于Witness生成零知识证明（如SNARK或STARK）。
+验证者（Verifier）通过智能合约检查证明，确认输出状态与预期一致。
+
+
+技术特性：
+
+简洁性：证明大小通常仅几十KB，验证时间极短（毫秒级）。
+非交互性：单个证明可独立验证，无需与证明者交互。
+
+
+
+对比与应用场景
+
+
+
+特性
+Optimistic Rollups
+ZK Rollups
+
+
+
+
+验证机制
+欺诈证明（默认有效，需挑战）
+有效性证明（数学证明）
+
+
+最终确认时间
+7天挑战期后
+几秒至几分钟（证明生成后）
+
+
+兼容性
+完全兼容EVM（支持所有Solidity合约）
+部分兼容（需适配ZK-EVM）
+
+
+适用场景
+DeFi协议、复杂智能合约
+NFT铸造、高频交易、隐私保护
+
+
+
+Rollup技术通过链下计算+链上验证的模式，将以太坊的理论TPS从15提升至2000+，Gas成本降低90%以上。Optimistic方案侧重兼容性，ZK方案侧重安全性与效率，两者共同推动区块链应用进入规模化阶段。随着ZK-EVM（如zkSync 2.0）的成熟，未来大多数应用可能转向零知识Rollup架构。
+RollUp stage (Rollup 发展阶段)
+Stage 0
+在这个初始的阶段，RollUp的治理主要由运营方和安全委员会掌控，确保关键决策并且有可信的团体去专门监督（中心化的），此阶段的用户拥有退出机制，可以在七天内离开rollup，但是通常需要实体和运营方的操作进行结合。
+Stage 1
+中心化的治理演化为智能合约管理，当然安全委员会同时发挥作用。
+证明系统完全开始运作，支持去中心化的有效证明。
+退出机制也得到改进，用户可独立退出而无需运营方协调。
+Stage 2
+通过完全由智能合约管理的治理机制实现完全去中心化。
+无需运营方和安全委员会干预。
+证明系统是无许可的，退出机制也完全去中心化。
+ZKSync Risk Analysis[风险分析]
+https://l2beat.com/scaling/summary  L2Beat摘要中可以查看各Rollup所处的stage
+Risks那一列的饼图可以体现当前阶段的一些风险，例如ZkSync Era专属页面中：
+
+
+
+Data Availability: refers to the ability to reconstruct the L2 state from L1 data, ensuring that anyone can verify and rebuild the L2 state if necessary.
+能够从L1的数据中重建L2状态
+
+
+State Validation: involves verifying the legitimacy of a set of bundled transactions. For ZK Sync, this is done using zero-knowledge proofs through an algorithm known as PLONK (Permutations over Lagrange-bases for Oecumenical Noninteractive arguments of Knowledge).
+涉及验证一组打包交易的合法性。
+
+
+Sequencer Failure: describes the ability to process transactions even if the sequencer is down. In ZK Sync, transactions can still be submitted to L1, though not necessarily enforced immediately.
+排序器故障，描述了即使排序器宕机还能够处理交易的能力，这里黄色区块表示，在ZKsync中，交易仍然可以提交到L1，但不一定能够强制执行。
+
+排序器：是负责对打包的用户交易进行排序的操作方（运营商）
+The sequencer is the operator responsible for ordering user transactions and often batching them before committing them to Layer 1.
+
+
+
+Proposer Failure: describes the ability to process transactions even if the proposer is down. In this case, ZK Sync will halt all withdrawals and transactions executions.
+提议者宕机但是可以处理交易的能力。在Zksync中回暂停所有的提款和交易执行。
+
+
+Exit Window: In the current ZK Sync stage, there is no window for exit during unwanted upgrades.
+红色区块表示Zksync在非预期的升级时不存在退出窗口期。
+
+
+First Transaction On ZKSync
+chainList 官网搜索ZKsync sepolia
+https://chainlist.org/?search=zksync+sepolia&amp;testnets=true
+
+进行connect
+
+
+在zkSync官网的block explorer 中，可搜索到自己的账户，查看交易详情
+如何获取测试网络的基金？
+
+📒 NOTE
+Network Fauncets
+
+这里可以通过brige桥接源链和目标链来进行，也有两种方式，一种是lock和unlock 另一种是烧毁和铸造；
+可能会有安全问题，但是基于ZkSync使用过程的经验来说，是比较安全的。
+
+了解原理之后，我们在推荐的fauncet里获取我们的fund
+
+这里我recive失败了，重新找了其他funsets ，可以用回tenderly试试看
+Solidity 基础[part1]
+Remix IDE
+
+函数
+无返回体函数示例：
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.19; // chose our solidity version 
+
+contract SimpleStorage &#123;
+    uint256 public myFavoriteNumber; // 初始值就是0 而且是internal 也就是内部不可见的
+
+    function store(uint256 favoriteNumber) public &#123;
+        myFavoriteNumber = favoriteNumber;
+    &#125;
+
+&#125;
+有返回体示例：
+function recive() public view returns (uint256) &#123;
+       return myFavoriteNumber;
+   &#125;
+数组
+// 数组
+uint256[] public myFavoriteNumbers;
+
+
+Person public newPerson = Person(1, 'jack');
+
+Person public myPerson;
+
+
+function setPerson(string memory name, uint256 person_number) public &#123;
+    myPersonArray.push(Person(person_number,name));
+&#125;
+
+结构
+// 结构
+    struct Person &#123;
+        uint256 personNumber;
+        string name;
+    &#125;
+
+数组加结构
+// 数组加结构
+ Person[] public myPersonArray;
+可见性
+函数和变量有四种可见性修饰符：
+
+public：可从合约内部和外部合约访问
+private：仅限当前合约内部访问。不会隐藏值，仅限制其访问权限。
+external：仅适用于外部的合约访问。⚠️
+internal： 当前合约和派生的合约可以访问。
+
+如果没有指定，默认是internal
+view 、pure
+函数操作权限修饰符
+1. view 关键字
+
+
+功能：使用view关键字修饰的函数，承诺不会对区块链的状态进行修改。
+
+
+可执行操作
+
+能够读取区块链上的数据（也就是状态变量）。
+可以访问 msg.sender、block.number 等全局变量。
+支持调用其他同样被标记为view或者pure的函数。
+
+
+
+不可执行操作：禁止对状态变量进行写入操作。
+
+
+示例：
+
+
+contract ViewExample &#123;
+    uint public balance;
+
+    // 此函数仅读取状态变量，不会对其进行修改
+    function getBalance() public view returns (uint) &#123;
+        return balance;
+    &#125;
+&#125;
+2. pure 关键字
+
+
+功能：被pure关键字修饰的函数，既不会读取也不会修改区块链的状态。
+
+
+可执行操作
+
+可以使用函数内部定义的局部变量。
+能够操作传入函数的参数。
+支持进行数学运算。
+可以调用其他pure函数。
+
+
+
+不可执行操作
+
+禁止访问状态变量。
+不允许调用非view或pure的函数。
+
+
+
+示例：
+
+
+contract PureExample &#123;
+    // 该函数不依赖任何状态变量，仅对输入参数进行计算
+    function add(uint a, uint b) public pure returns (uint) &#123;
+        return a + b;
+    &#125;
+&#125;
+3. 关键区别
+
+
+
+特性
+view 函数
+pure 函数
+
+
+
+
+能否读取状态变量
+可以
+不可以
+
+
+能否修改状态变量
+不可以
+不可以
+
+
+是否消耗 Gas（外部调用时）
+不消耗
+不消耗
+
+
+是否消耗 Gas（内部调用时）
+消耗
+消耗
+
+
+
+
+⚠️ 一般调用这两个关键字都不会消耗gas费， 但是如果是内部调用，例如下面这个例子, store里面调用recive就会导致gas费产生。
+
+function store(uint256 favoriteNumber) public &#123;// 存储
+       myFavoriteNumber = favoriteNumber;
+       recive(favoriteNumber);
+   &#125;
+
+ function recive() public view returns (uint256) &#123;
+     return myFavoriteNumber;
+ &#125;
+完整代码：
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.19; // stating our version 
+
+contract SimpleStorage &#123;
+    uint256 public myFavoriteNumber; // 初始值就是0 而且是internal 也就是内部不可见的
+
+
+
+    // 数组
+    uint256[] public myFavoriteNumbers;
+
+    // 结构
+    struct Person &#123;
+        uint256 personNumber;
+        string name;
+    &#125;
+
+    Person public newPerson = Person(1, 'jack');
+
+    Person public myPerson;
+
+    Person[] public myPersonArray;
+
+    function setPerson(string memory name, uint256 person_number) public &#123;
+        myPerson = Person(person_number, name);
+        myPersonArray.push(myPerson);
+    &#125;
+
+    function store(uint256 favoriteNumber) public &#123;// 存储
+        myFavoriteNumber = favoriteNumber;
+    &#125;
+
+    // view 可读不可写 pure 不可读不可写
+    function recive() public view returns (uint256) &#123;
+        return myFavoriteNumber;
+    &#125;
+
+
+
+&#125;
+]]></content>
+      <categories>
+        <category>Web3</category>
+      </categories>
+      <tags>
+        <tag>BlockChain</tag>
+        <tag>Solidity</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>WEB3 Day4—Solidity基础[part3]</title>
+    <url>/2025/07/01/WEB3%20Day4%20%E2%80%94%20Solidity%E5%9F%BA%E7%A1%80%5Bpart3%5D/</url>
+    <content><![CDATA[WEB3 Day4—Solidity基础[part3]
+智能合约部署 Smart Contracts Deploying
+Sepolia TestNet deploying
+我们可以通过进入部署选项卡，从本地虚拟环境（Remix VM）切换到注入的提供者 - MetaMask 来开始部署过程。这一操作将允许Remix发送请求并与您的MetaMask账户进行交互。
+
+随后系统会提示你去选择一个账号。 在你成功连接到remix之后，你会看到账号已经成功链接到并且正在使用sepolia网络的信息。
+
+注意，需要你的测试网络里面必须有足够的 sepolia ETH，如果没有需要从水龙头获取，免费的水龙头我这边会集中收集一次，后续可点击这篇文章：【TODO 挖个坑】；
+暂时可以去这里faucet， 但是还是需要主账户里面要有ether。
+随后，MetaMask就会要求你在测试网站上签署发送：
+
+交易执行之后，合约地址会将交易详情一同显示在已部署的合约列表下面。这就是Eherscan上部署交易的显示方式。
+
+合约交互 Contract interaction
+合约部署完成以后，我们可以与之交互并更新区块链。例如，如果想存储一个数字，可以通过点击store按钮实现；MetaMask会要求再次确认交易。然后更行您设置的数字。这些交易都可以通过部署地址在etherscan上面查询查看。
+Zksync部署
+由于以太坊主网合约部署成本比较高昂，所以RollUp和Layer2网络等扩容解决方案更佳，需要掌握部署在Zksync的流程。
+首先需要Zksync的测试网基金以及zkSync的跨链桥
+可参照之前的笔记 WEB3 Day2 —— BlockChain Basic 2
+然后步骤和上面主网的测试网络部署相似，只不过需要跨链
+
+连接钱包
+需要将Sepolia ETH跨链到zkSync，Zksync Bridge地址
+
+连接钱包，保证网络在sepolia
+从sepolia测试网发送eth到zksync
+
+
+
+
+​	
+
+
+有测试基金以后，需要将remixIDE 下载zksync的插件
+
+
+
+⚠️ zkSync部署版本要求 ‘0.8.24’，并且合约*.sol文件必须放在一个contracts文件夹中，不然Zksyn插件的deploy标签页可能会显示空白
+
+
+编译——&gt;连接钱包——&gt; 部署
+
+
+
+合约之间如何相互部署以及交互
+通过import进行导入另一个合约
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.18;
+
+import "./SimpleStorage.sol";
+
+contract StorageFacotory &#123;
+
+    SimpleStorage public simpleStorage;
+
+
+    function createSimpleStorageContract() public  &#123;
+        simpleStorage = new SimpleStorage();
+    &#125;
+&#125;
+如果导入文件有多个合约，一般import最好声明具体的名称，可以不用导入该文件的所有合约
+import &#123;SimpleStorage, SimpleStorage2&#125; from "./SimpleStorage.sol";
+调用另外一个合约的ABI[application binary interface]
+可以创造一个SimpleStorage的数组来存储所有创建的simpleStorage的地址，然后通过地址去调用特定的simplestorage的函数
+
+pragma solidity ^0.8.19;
+
+import &#123;SimpleStorage&#125; from "./SimpleStorage.sol";
+contract StorageFacotory &#123;
+
+    SimpleStorage[] public listOfSimpleStorage;
+
+
+    // 创建需要的SimpleStorage
+    function createSimpleStorageContract() public  &#123;
+        SimpleStorage simpleStorage = new SimpleStorage();
+        listOfSimpleStorage.push(simpleStorage);
+    &#125;
+
+    // 调用simpleStorage的store函数
+    function sfStore(uint256 _index, uint256 myFavoriteNumber) public&#123;
+        listOfSimpleStorage[_index].store(myFavoriteNumber);
+    &#125;
+
+    // 调用simpleStorage里面的recive函数
+    function sfRecive(uint256 _index) public view returns (uint256) &#123;
+        return listOfSimpleStorage[_index].recive();
+    &#125;
+
+&#125;
+
+继承和重写
+创建继承自 SimpleStorage.sol 的新合约 AddFiveStorage.sol，并通过重写函数实现功能扩展。
+SimpleStorage.sol代码
+
+virtual 表示原函数可以被继承
+
+function store(uint256 favoriteNumber) public virtual  &#123;// 存储
+     myFavoriteNumber = favoriteNumber;
+ &#125;
+AddFiveStorage.sol代码
+// SPDX-License-Identifier:MIT
+
+pragma solidity ^0.8.18;
+
+import &#123;SimpleStorage&#125; from "./SimpleStorage.sol";
+
+contract AddFiveStorage is SimpleStorage &#123;
+
+
+    // 需要override关键字 原函数需要加上virtual函数
+   function store(uint256 favoriteNumber) public override &#123;// 存储
+        myFavoriteNumber = favoriteNumber + 5;
+    &#125;
+&#125;
+
+is 表示继承
+override 关键字表示重写
+
+]]></content>
+      <categories>
+        <category>Web3</category>
+      </categories>
+      <tags>
+        <tag>Solidity</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>WEB3-Day5—Solidity基础[part4]</title>
+    <url>/2025/07/01/WEB3-Day5%E2%80%94Solidity%E5%9F%BA%E7%A1%80-part4/</url>
+    <content><![CDATA[WEB3-Day5—Solidity基础[part4]
+通过函数发送ETH
+新建合约 FundMe.sol，在本合约中会通过fund()函数向智能合约转移以太币。该函数将要求最低数量的ETH确保交易正常。
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+contract FundMe&#123;
+
+
+    function fund() public &#123;
+        
+    &#125;
+&#125;
+我们还需要一个Withdraw函数，这样合约的owner(拥有者)可以提取不同的funder 发送的资金。
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+contract FundMe&#123;
+
+
+    function fund() public &#123;
+        
+    &#125;
+
+    function withDraw() public &#123;
+        
+    &#125;
+&#125;
+当交易被发送到区块链时，交易数据中始终包含一个value字段。该字段表示该交易中转账的原生加密货币数量。
+要使fund函数可以接受ether，必须将其声明为payable。同时在remix界面中部署了可以看到，这个关键字会使函数显示为红色，表示它可以接受加密货币。
+function fund() public payable &#123;
+        
+    &#125;
+msy.value 属性
+在solidity中，交易的数值可以通过这个属性进行访问，是全局对象msg的一部分，表示当前交易中传输的Wei的数量。【Wei是ETH的最小单位】
+function fund() public payable &#123;
+    
+    msg.value;
+&#125;
+交易字段
+以太坊上发送的每笔交易都包含一些必要字段，这些字段包括：
+
+Nonce：这是发送地址的交易计数器。它确保交易按顺序执行，并防止重播攻击。
+Gas Price：这是发送者愿意支付的 gas 单价，以太坊网络会根据 gas price 和 gas limit 来计算手续费。
+Gas Limit：这是交易执行所需的最大 gas 数量。它决定了交易的复杂程度和成本。
+To：这是接收以太币或者调用智能合约的目标地址。
+Value：这是发送的以太币数量。
+Data：这是可选字段，用于向智能合约发送数据。
+v、r、s：这些字段用于交易的签名验证，确保交易的安全性和完整性。
+
+在转账的时候，我们可以填充其中一些字段，例如，gas limit中填充的21,000，data是空的，然后to是我们想要将交易发送到的地址，在函数调用的交易中，仍然可以以这种方式填写to，我们可以调用一个函数，并同时进行转账。
+Value
+每当我们在任何一个兼容EVM的区块链上创建一笔交易时，这个value的值，代表我们将通过这笔交易发送多少ETH，当我们在不同账户间转移ETH时，实际上就是在value中填充不同的ETH数量。
+
+撤销交易[Reverting Transactions]
+我们可以使用requires关键字作为检查器，强制要求函数接收至少value个完整的以太币, 不满足就会回滚。
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+contract FundMe&#123;
+
+
+    function fund() public payable &#123;
+        require(msg.value > 1 ether, "Didn't send enough ETH"); //if the condition is false, revert with the error message    &#125;
+    &#125;
+    function withDraw() public &#123;
+        
+    &#125;
+&#125;
+msg.value &gt; 1 ether等同于 msg.value &gt; 1e18
+
+👀❗提示
+1 Ether = 1e9 Gwei = 1e18 Wei
+Gwei是Gas费用的单位。
+
+在线转换单位的工具 ：Ethconverter
+回滚操作会撤销之前的所有操作，并将剩余gas费返还给交易者，我们在fund函数中添加一些逻辑：
+myvalue  += 2;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+contract FundMe&#123;
+
+
+    uint256 public  myvalue = 1;
+    function fund() public payable &#123;
+        myvalue  += 2;
+        require(msg.value > 1 ether, "Didn't send enough ETH"); //if the condition is false, revert with the error message    &#125;
+    &#125;
+
+    function withDraw() public &#123;
+
+    &#125;
+&#125;
+部署合约，点击fund函数，报错信息成功返回：
+
+
+⚠️ 回滚以后交易消耗的gas费不会返回的
+
+]]></content>
+      <categories>
+        <category>Web3</category>
+      </categories>
+      <tags>
+        <tag>BlockChain</tag>
       </tags>
   </entry>
   <entry>
@@ -10878,180 +12001,6 @@ contract FundMe&#123;
       </categories>
       <tags>
         <tag>BlockChain</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solana[part8]_Solana 生态中的协议与标准库</title>
-    <url>/2025/08/12/Solana-part8-Solana-%E7%94%9F%E6%80%81%E4%B8%AD%E7%9A%84%E5%8D%8F%E8%AE%AE%E4%B8%8E%E6%A0%87%E5%87%86%E5%BA%93/</url>
-    <content><![CDATA[Solana[part8]_Solana 生态中的协议与标准库
-一、协议基础：定义与生态差异
-1.1 区块链协议的本质
-区块链协议是定义网络交互规则、数据结构和业务逻辑的规范，是智能合约和应用的“底层规则集”。例如：
-
-代币协议规定资产的发行（Mint）、转移（Transfer）、销毁（Burn） 逻辑；
-Swap协议定义两种资产的兑换规则（如价格算法、流动性池交互）。
-类比互联网：如同HTTP协议规定网页传输规则，区块链协议定义“价值与逻辑”的传输标准。
-
-1.2 不同公链协议的核心差异
-以 以太坊（ERC标准） 和 Solana（SPL标准） 对比：
-
-
-
-维度
-以太坊（ERC）
-Solana（SPL）
-
-
-
-
-底层架构
-账户模型（EOA+合约账户），单线程执行
-账户模型（可执行+数据账户，关联账户），并行执行（Sealevel）
-
-
-开发语言
-Solidity
-Rust
-
-
-性能导向
-通用性优先（牺牲部分效率）
-高性能优先（高TPS、低延迟）
-
-
-协议设计
-灵活（如ERC-721A优化NFT批量Mint）
-高效（如SPL-Token支持并行转移）
-
-
-
-二、Solana核心协议解析（SPL体系）
-Solana的协议多通过 Solana Program Library（SPL，标准程序库） 实现，以下是核心协议拆解：
-2.1 代币协议：SPL-Token &amp; 扩展
-（1）SPL-Token（基础版）
-
-功能：发行可替代代币（Fungible Token），支持 Mint（增发）、Transfer（转移）、Burn（销毁）、Approval（授权）等操作。
-账户模型：
-
-Mint账户：记录代币总供应量、小数位、发行方等核心信息；
-代币账户：用户持有代币的载体（默认不创建，需通过关联账户机制生成）。
-
-
-类比：类似以太坊ERC-20，但借助Solana并行处理，批量转移效率更高。
-
-（2）SPL-Associated Token Account（ATA，关联账户）
-
-作用：为 用户主账户 + 代币Mint地址 自动生成唯一关联代币账户，统一管理该代币的余额。
-优势：避免用户手动创建多个代币账户（如以太坊需为每个ERC-20代币单独授权），简化资产管理。
-
-（3）SPL-Token 2022（增强版）
-
-新增特性：可选的冻结（Freeze）和锁定（Locking）机制：
-
-冻结：管理员（如项目方）可冻结特定ATA的代币转移，用于合规管控（如防止黑钱交易）或项目治理；
-锁定：设定代币解锁条件（如 时间锁：团队代币分阶段解锁；逻辑锁：满足某条件才允许转移），适配私募、vesting计划等场景。
-
-
-
-2.2 交互协议：从Memo到Governance
-（1）Memo（交易备注）
-
-功能：在Solana交易中附加文本信息（如“订单ID#123”、“NFT购买”），虽不影响交易逻辑，但可作为链上审计或交互记录。
-应用：DEX交易记录订单信息、NFT市场记录购买备注。
-
-（2）Name Service（域名服务，如SNS）
-
-功能：将复杂的Solana地址（如 8X...yz）映射为易记域名（如 user.sol），方便转账和社交展示。
-类比：类似以太坊ENS（.eth），但Solana的SNS更轻量，结合链上存储实现。
-
-（3）Swap协议（如Serum的SPL Swap）
-
-机制：实现两种代币的兑换，支持 订单簿模式（如Serum）或 AMM模式（自动做市商，如Raydium）。
-核心：通过SPL-Token的Transfer接口，结合价格算法（如恒定乘积公式），实现去中心化交易。
-
-（4）Staking（质押协议）
-
-流程：用户将代币质押给验证者或质押池，获取质押收益（如SOL代币质押获得通胀奖励）。
-协议逻辑：涉及 委托（Delegate）、解绑（Unstake，含解锁期）、收益分发，保障Solana网络的PoS共识安全。
-
-（5）Governance（治理协议，如Realms）
-
-功能：社区投票决定协议升级、资金分配等，通常结合“治理代币”（如$SRM用于Serum治理）。
-流程：提案创建 → 代币加权投票 → 通过CPI调用执行程序（如转移社区金库资金）。
-
-（6）Flash Loans（闪电贷）
-
-原理：在同一原子交易中，用户可无抵押借出资产，前提是“借出→使用→偿还”全流程完成（否则交易回滚）。
-应用：套利（跨交易所价格差）、临时资金利用，依赖Solana高TPS和低延迟实现高效操作。
-
-三、Solana标准库（SPL）的核心价值：模块化与CPI
-3.1 模块化开发：站在巨人肩膀上
-
-SPL定位：Solana官方维护的标准程序库，提供经过审计、高性能的基础模块（如token、swap、治理）。
-开发者收益：
-
-无需从头开发代币系统，直接调用 SPL-Token 接口；
-开发DEX时，复用 SPL-Swap 的兑换逻辑，节省时间和安全成本。
-
-
-案例：NFT平台可复用SPL-Token（手续费代币）和Metaplex NFT标准（基于SPL开发，管理NFT元数据）。
-
-3.2 跨程序调用（CPI）：程序间的“协作魔法”
-
-定义：Solana允许一个智能合约（程序）调用另一个程序的指令，所有操作在同一原子交易中执行（要么全成，要么全败）。
-应用场景：
-
-DEX交易：Swap程序调用SPL-Token的Transfer指令，完成代币兑换；
-借贷协议：借贷程序调用SPL-Token转移抵押品，同时调用价格预言机程序获取资产价格；
-治理执行：Governance程序通过CPI调用SPL-Token转移社区金库资金。
-
-
-优势：实现复杂业务逻辑（如“质押+借贷+Swap”组合操作），同时通过原子性避免中间状态风险。
-
-四、总结：协议与标准库的生态意义
-
-协议是规则基石：定义资产、交互、治理的标准，让不同应用互操作（如不同DEX都用SPL-Swap，用户资产通用）。
-SPL是开发加速器：模块化设计和CPI机制，降低开发门槛，促进生态繁荣（如大量项目基于SPL快速迭代）。
-对比与展望：与以太坊ERC体系相比，Solana的SPL更注重性能和并行；随着SPL-Token 2022等升级，在合规、复杂资产管理上会更灵活。
-
-附录：关键术语速查表
-
-
-
-术语
-解释
-
-
-
-
-SPL
-Solana Program Library（Solana标准程序库）
-
-
-ATA
-Associated Token Account（关联代币账户）
-
-
-CPI
-Cross Program Invocation（跨程序调用）
-
-
-Mint Account
-代币发行账户（记录总供应量、小数位等）
-
-
-Vesting
-代币锁定计划（如团队代币分阶段解锁）
-
-
-
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-        <tag>Solana</tag>
       </tags>
   </entry>
   <entry>
@@ -11430,6 +12379,290 @@ Gas used: 357088
       </tags>
   </entry>
   <entry>
+    <title>Solana[part5]_SPLToken合约简单实现</title>
+    <url>/2025/08/07/Solana-part5-SPLToken%E5%90%88%E7%BA%A6%E7%AE%80%E5%8D%95%E5%AE%9E%E7%8E%B0/</url>
+    <content><![CDATA[Solana[part5]_SPLToken合约简单实现
+
+实现Token项目
+
+
+创建一个token项目
+
+
+token 项目依赖：
+[dependencies]
+borsh = "1.5.7"
+solana-program = "2.3.0"
+spl-associated-token-account = &#123; version = "7.0.0", features = [
+    "no-entrypoint",
+] &#125;
+spl-token = &#123; version = "8.0.0", features = ["no-entrypoint"] &#125;
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+
+
+编写合约,具体代码见: https://github.com/SoniaChan33/token
+
+
+起本地环境：➜  ~ solana-test-validator
+
+
+打开log
+➜  ~ solana logs
+
+
+编译合约：
+➜  token git:(master) ✗ cargo build-sbf
+
+
+部署合约, 获取programID
+➜  token git:(master) ✗ solana program deploy target/deploy/token.so
+Program Id: 5DPHC1PjRftRHJLKD4WSSXt83h1AChJy2pHXUqGdKD9X
+
+Signature: 29PquhXv5Jw9c8p6k3jGK9UoLATg5rUpk3Mx8BBiJK8vxNEcLru4t7xYn6EdxXVeivUP7urczzoQY3KSvgGbEdhR
+
+
+核心文件
+具体实现文档见仓库readme文档：https://github.com/SoniaChan33/token?tab=readme-ov-file#spl-token合约项目实现文档
+processor.rs：核心业务逻辑，处理指令
+state.rs：定义账户的状态和扩展字段
+instruction.rs：定义各种代币操作的指令
+oerror.rs：定义了程序可能抛出的错误
+olib.rs：程序入口点，汇总各个模块。
+
+实现调用方Cli
+
+
+创建项目
+
+
+编写：具体代码见：https://github.com/SoniaChan33/solana-cli
+
+
+测试结果：
+running 1 test
+test test_fn ... ok
+
+successes:
+
+---- test_fn stdout ----
+Mint Account: 54b3u3wmAzM7LdPpERfa3iZGjkbafaD5FQ3aXV8iRaQk
+Transaction result: zaWCinW8Kmjh6sQ3jRPcrntZ5yFWhuQM6GwWuGBJxCPPRJUiEcVRC1hKtaw1TSGZ5QB3nnEqBPieG3HzCvuEv5A
+Token created successfully with mint account: 54b3u3wmAzM7LdPpERfa3iZGjkbafaD5FQ3aXV8iRaQk
+
+
+successes:
+    test_fn
+
+
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Solana</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solana项目实战_Solji实战记录1</title>
+    <url>/2025/09/08/Solana%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98_Solji%E5%AE%9E%E6%88%98%E8%AE%B0%E5%BD%951/</url>
+    <content><![CDATA[Solji实战记录1
+📋 项目概述
+项目名称: Sol寺 (Solana Temple)
+技术栈: Anchor Framework + Solana + TypeScript
+业务场景: 基于Solana的虚拟寺庙系统，支持用户烧香、功德积累等功能
+🎯 第一阶段目标
+
+✅ 完成项目基础架构搭建
+✅ 实现核心业务逻辑
+✅ 建立完整的测试体系
+✅ 解决部署和运行问题
+
+
+🚨 主要问题及解决方案
+1. Anchor.toml配置错误
+问题描述: TOML解析错误，[[test]]语法不正确
+# ❌ 错误的配置
+[[test]]
+name = "temple-init"
+script = "../node_modules/.bin/tsx tests/temple-init.test.ts"
+解决方案:
+# ✅ 正确的配置
+[scripts]
+temple-init = "../node_modules/.bin/tsx tests/temple-init.test.ts"
+学习点: Anchor的测试配置应该使用[scripts]而不是[[test]]
+
+2. 测试框架导入错误
+问题描述: describe和it函数未定义，无法运行Jest测试
+// ❌ 错误：缺少测试框架
+describe("temple initialize test", () => &#123;
+    it("create temple config", async () => &#123;
+        // 测试代码
+    &#125;);
+&#125;);
+解决方案:
+// ✅ 方案1: 使用Vitest
+import &#123; describe, it, expect &#125; from "vitest";
+
+// ✅ 方案2: 直接运行异步函数
+async function runTest() &#123;
+    // 测试逻辑
+&#125;
+学习点: 需要正确配置测试运行环境，选择合适的测试框架
+
+3. 依赖包缺失
+问题描述: 缺少chai和bn.js包
+# 错误信息
+SyntaxError: The requested module '@coral-xyz/anchor' does not provide an export named 'BN'
+Cannot find name 'assert'
+解决方案:
+npm install --save-dev chai @types/chai
+npm install bn.js
+学习点: Solana开发需要特定的数学库和断言库
+
+4. 端口占用问题
+问题描述: 本地验证器端口8899被占用
+Error: Your configured rpc port: 8899 is already in use
+解决方案:
+# 停止现有验证器
+pkill -f solana-test-validator
+
+# 或者使用不同的端口
+solana-test-validator -r --port 8898
+学习点: Solana开发需要管理本地验证器进程
+
+5. NFT铸造Master Edition错误
+问题描述: Metaplex规则要求先铸造token才能创建Master Edition
+// ❌ 错误：直接创建Master Edition
+create_master_edition_v3(ctx, None)?;
+解决方案:
+// ✅ 移除Master Edition创建，只创建基础NFT
+// 对于消耗品NFT，不需要Master Edition
+学习点: 理解NFT类型差异
+
+收藏品NFT: 需要Master Edition，支持限量发行
+消耗品NFT: 不需要Master Edition，支持无限铸造
+
+
+6. 用户账户资金不足
+问题描述: 新创建的用户账户没有SOL支付租金
+Transfer: insufficient lamports 0, need 2937120
+解决方案:
+// 在测试中为用户提供SOL
+const airdropTx = await anchor.getProvider().connection.requestAirdrop(
+    user.publicKey,
+    2 * anchor.web3.LAMPORTS_PER_SOL
+);
+await anchor.getProvider().connection.confirmTransaction(airdropTx);
+学习点: Solana账户需要租金，所有新账户都需要资金
+
+🔧 技术要点总结
+Anchor Framework
+
+程序结构: 使用declare_id!宏定义程序ID
+账户管理: 使用#[account]宏定义账户结构
+指令定义: 使用#[program]宏定义程序逻辑
+PDA计算: 使用find_program_address计算程序派生地址
+
+Solana概念
+
+账户模型: 所有数据存储在账户中
+租金机制: 账户需要最小余额来存储数据
+交易原子性: 所有指令要么全部成功，要么全部失败
+程序部署: 程序部署到链上后地址固定
+
+测试策略
+
+单元测试: 测试单个函数和指令
+集成测试: 测试完整业务流程
+端到端测试: 模拟真实用户操作
+
+错误处理
+
+自定义错误: 使用error_code!宏定义业务错误
+验证检查: 在指令开始时验证所有前提条件
+日志记录: 使用msg!宏记录重要信息
+
+
+📊 最终测试结果
+测试覆盖
+✅ temple initialize test &gt; create temple config  646ms
+✅ temple initialize test &gt; create nft mint  483ms
+✅ temple initialize test &gt; initialize user state  1045ms
+
+Test Files  1 passed (1)
+Tests  3 passed (3)
+核心功能验证
+
+✅ 寺庙配置创建 - PDA地址计算正确
+✅ NFT铸造 - 消耗品模式，无Master Edition
+✅ 用户初始化 - 自动处理账户资金
+✅ 区块链集成 - 真实交易验证
+
+
+🎯 学习收获
+技术层面
+
+掌握Anchor开发流程 - 从项目搭建到部署测试
+理解Solana架构 - 账户模型、交易机制、程序部署
+熟悉测试方法 - 单元测试、集成测试、错误处理
+
+工程层面
+
+问题排查能力 - 系统性分析和解决技术问题
+代码质量意识 - 关注错误处理、日志记录、代码组织
+文档重要性 - 及时记录问题和解决方案
+
+业务层面
+
+需求理解 - 区分收藏品和消耗品NFT的不同需求
+用户体验 - 自动处理复杂的区块链操作
+系统设计 - 合理的账户结构和权限管理
+
+
+🚀 下一步计划
+第二阶段目标
+
+完善业务逻辑 - 实现完整的烧香流程
+优化用户体验 - 添加前端界面
+安全性审计 - 代码安全检查
+性能优化 - 交易效率和成本优化
+
+技术栈扩展
+
+前端开发 - Next.js + React + Wallet适配器
+状态管理 - 区块链状态同步
+错误处理 - 用户友好的错误提示
+测试覆盖 - 更多边界情况测试
+
+
+📝 经验教训
+
+重视配置管理 - Anchor.toml等配置文件需要仔细检查
+理解底层机制 - Solana的账户模型和租金机制很重要
+选择合适工具 - 不同场景选择合适的测试框架
+及时清理代码 - 删除不必要的文件和代码
+记录问题解决 - 建立调试记录习惯
+
+
+记录时间: 2025年9月8日
+调试阶段: 第一阶段完成
+项目状态: 核心功能实现，测试通过
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Solana</tag>
+        <tag>TypeScript</tag>
+        <tag>项目实战</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>从0到1:用Git+CloudFlare+PicGo+Typora+Hexo搭建个人博客全流程</title>
     <url>/2025/06/17/%E4%BB%8E0%E5%88%B01-%E7%94%A8Git-CloudFlare-PicGo-Typora-Hexo%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2%E5%85%A8%E6%B5%81%E7%A8%8B/</url>
     <content><![CDATA[从 0 到 1：用 Git、CloudFlare、PicGo、Typora、Hexo 搭建个人博客全流程
@@ -11736,137 +12969,6 @@ PicGo + Typora 图床写作：Typora 上传图片设置、PicGo 图床配置。
       </tags>
   </entry>
   <entry>
-    <title>WEB3 Day4—Solidity基础[part3]</title>
-    <url>/2025/07/01/WEB3%20Day4%20%E2%80%94%20Solidity%E5%9F%BA%E7%A1%80%5Bpart3%5D/</url>
-    <content><![CDATA[WEB3 Day4—Solidity基础[part3]
-智能合约部署 Smart Contracts Deploying
-Sepolia TestNet deploying
-我们可以通过进入部署选项卡，从本地虚拟环境（Remix VM）切换到注入的提供者 - MetaMask 来开始部署过程。这一操作将允许Remix发送请求并与您的MetaMask账户进行交互。
-
-随后系统会提示你去选择一个账号。 在你成功连接到remix之后，你会看到账号已经成功链接到并且正在使用sepolia网络的信息。
-
-注意，需要你的测试网络里面必须有足够的 sepolia ETH，如果没有需要从水龙头获取，免费的水龙头我这边会集中收集一次，后续可点击这篇文章：【TODO 挖个坑】；
-暂时可以去这里faucet， 但是还是需要主账户里面要有ether。
-随后，MetaMask就会要求你在测试网站上签署发送：
-
-交易执行之后，合约地址会将交易详情一同显示在已部署的合约列表下面。这就是Eherscan上部署交易的显示方式。
-
-合约交互 Contract interaction
-合约部署完成以后，我们可以与之交互并更新区块链。例如，如果想存储一个数字，可以通过点击store按钮实现；MetaMask会要求再次确认交易。然后更行您设置的数字。这些交易都可以通过部署地址在etherscan上面查询查看。
-Zksync部署
-由于以太坊主网合约部署成本比较高昂，所以RollUp和Layer2网络等扩容解决方案更佳，需要掌握部署在Zksync的流程。
-首先需要Zksync的测试网基金以及zkSync的跨链桥
-可参照之前的笔记 WEB3 Day2 —— BlockChain Basic 2
-然后步骤和上面主网的测试网络部署相似，只不过需要跨链
-
-连接钱包
-需要将Sepolia ETH跨链到zkSync，Zksync Bridge地址
-
-连接钱包，保证网络在sepolia
-从sepolia测试网发送eth到zksync
-
-
-
-
-​	
-
-
-有测试基金以后，需要将remixIDE 下载zksync的插件
-
-
-
-⚠️ zkSync部署版本要求 ‘0.8.24’，并且合约*.sol文件必须放在一个contracts文件夹中，不然Zksyn插件的deploy标签页可能会显示空白
-
-
-编译——&gt;连接钱包——&gt; 部署
-
-
-
-合约之间如何相互部署以及交互
-通过import进行导入另一个合约
-// SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.18;
-
-import "./SimpleStorage.sol";
-
-contract StorageFacotory &#123;
-
-    SimpleStorage public simpleStorage;
-
-
-    function createSimpleStorageContract() public  &#123;
-        simpleStorage = new SimpleStorage();
-    &#125;
-&#125;
-如果导入文件有多个合约，一般import最好声明具体的名称，可以不用导入该文件的所有合约
-import &#123;SimpleStorage, SimpleStorage2&#125; from "./SimpleStorage.sol";
-调用另外一个合约的ABI[application binary interface]
-可以创造一个SimpleStorage的数组来存储所有创建的simpleStorage的地址，然后通过地址去调用特定的simplestorage的函数
-
-pragma solidity ^0.8.19;
-
-import &#123;SimpleStorage&#125; from "./SimpleStorage.sol";
-contract StorageFacotory &#123;
-
-    SimpleStorage[] public listOfSimpleStorage;
-
-
-    // 创建需要的SimpleStorage
-    function createSimpleStorageContract() public  &#123;
-        SimpleStorage simpleStorage = new SimpleStorage();
-        listOfSimpleStorage.push(simpleStorage);
-    &#125;
-
-    // 调用simpleStorage的store函数
-    function sfStore(uint256 _index, uint256 myFavoriteNumber) public&#123;
-        listOfSimpleStorage[_index].store(myFavoriteNumber);
-    &#125;
-
-    // 调用simpleStorage里面的recive函数
-    function sfRecive(uint256 _index) public view returns (uint256) &#123;
-        return listOfSimpleStorage[_index].recive();
-    &#125;
-
-&#125;
-
-继承和重写
-创建继承自 SimpleStorage.sol 的新合约 AddFiveStorage.sol，并通过重写函数实现功能扩展。
-SimpleStorage.sol代码
-
-virtual 表示原函数可以被继承
-
-function store(uint256 favoriteNumber) public virtual  &#123;// 存储
-     myFavoriteNumber = favoriteNumber;
- &#125;
-AddFiveStorage.sol代码
-// SPDX-License-Identifier:MIT
-
-pragma solidity ^0.8.18;
-
-import &#123;SimpleStorage&#125; from "./SimpleStorage.sol";
-
-contract AddFiveStorage is SimpleStorage &#123;
-
-
-    // 需要override关键字 原函数需要加上virtual函数
-   function store(uint256 favoriteNumber) public override &#123;// 存储
-        myFavoriteNumber = favoriteNumber + 5;
-    &#125;
-&#125;
-
-is 表示继承
-override 关键字表示重写
-
-]]></content>
-      <categories>
-        <category>Web3</category>
-      </categories>
-      <tags>
-        <tag>Solidity</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Twikoo评论系统的Cloudflare部署方案</title>
     <url>/2025/06/17/Twikoo%E8%AF%84%E8%AE%BA%E7%B3%BB%E7%BB%9F%E7%9A%84Cloudflare%E9%83%A8%E7%BD%B2%E6%96%B9%E6%A1%88/</url>
     <content><![CDATA[Twikoo评论系统的Cloudflare部署方案
@@ -11972,614 +13074,6 @@ smtp_pass: "之前创建的SendGrid API Key",
       <tags>
         <tag>CloudFlare</tag>
         <tag>hexo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>WEB3 Day2—BlockChain Basic 2 + Solidity基础[part1]</title>
-    <url>/2025/06/17/WEB3%20Day2%20%E2%80%94%E2%80%94%20BlockChain%20Basic%202+Solidity%E5%9F%BA%E7%A1%80%5Bpart1%5D/</url>
-    <content><![CDATA[WEB3 Day2—BlockChain Basic 2 + Solidity基础[part1]
-Layer1
-​	blockChain的base layer，例如bitcoin、BNB chain、Solana,and Avalanche.
-Layer2
-构建在L1区块链外部但是也与之连接的任何应用application。有各种类型，比如for example ChainLink(去中心化预言机网络) ，以及像The Graph(事件索引网络)。
-好的，我将为你优化这段区块链技术描述，提升专业性和清晰度：
-Rollup 技术：以太坊Layer2扩容的核心方案
-Rollup是Layer2（L2）扩容的主流解决方案，其核心原理是将多笔链下交易打包为一个聚合交易，仅将交易摘要（而非完整数据）提交至以太坊主链（Layer1），大幅提升交易吞吐量并降低Gas费用。根据验证机制不同，Rollup可分为两类：
-1. Optimistic Rollups（乐观汇总）
-
-工作机制：默认所有链下交易均为有效，运营商（Operator）定期向主链提交状态根（State Root）和交易哈希。若其他参与者发现欺诈交易，可在挑战期（通常7天）内提交欺诈证明（Fraud Proof）进行质疑。
-安全性：依赖经济惩罚机制（押金锁定）和链上验证合约，若运营商被证明欺诈，将损失押金并回滚状态。
-代表项目：Arbitrum、Optimism、Base。
-
-2. Zero-Knowledge Rollups（零知识汇总）
-
-工作机制：通过零知识证明（ZK Proof）技术生成有效性证明（Validity Proof），证明交易批次的合法性。验证者只需检查证明，无需重放所有交易。
-核心优势：
-
-即时确定性：无需挑战期，交易确认后不可逆转。
-更高安全性：数学证明保证状态正确性，无需依赖信任假设。
-更低Gas成本：数据压缩率可达1000:1，验证成本显著低于Optimistic方案。
-
-
-代表项目：zkSync、StarkNet、Polygon zkEVM。
-
-3. 见证（Witness）与零知识证明
-
-见证（Witness）：是证明者（Prover）生成的一组中间值，用于证明输入数据满足特定数学关系（如哈希函数、椭圆曲线方程）。在ZK Rollups中，Witness包含交易数据、状态转换逻辑等信息，但不泄露具体内容。
-验证流程：
-
-证明者收集交易并生成状态转换。
-基于Witness生成零知识证明（如SNARK或STARK）。
-验证者（Verifier）通过智能合约检查证明，确认输出状态与预期一致。
-
-
-技术特性：
-
-简洁性：证明大小通常仅几十KB，验证时间极短（毫秒级）。
-非交互性：单个证明可独立验证，无需与证明者交互。
-
-
-
-对比与应用场景
-
-
-
-特性
-Optimistic Rollups
-ZK Rollups
-
-
-
-
-验证机制
-欺诈证明（默认有效，需挑战）
-有效性证明（数学证明）
-
-
-最终确认时间
-7天挑战期后
-几秒至几分钟（证明生成后）
-
-
-兼容性
-完全兼容EVM（支持所有Solidity合约）
-部分兼容（需适配ZK-EVM）
-
-
-适用场景
-DeFi协议、复杂智能合约
-NFT铸造、高频交易、隐私保护
-
-
-
-Rollup技术通过链下计算+链上验证的模式，将以太坊的理论TPS从15提升至2000+，Gas成本降低90%以上。Optimistic方案侧重兼容性，ZK方案侧重安全性与效率，两者共同推动区块链应用进入规模化阶段。随着ZK-EVM（如zkSync 2.0）的成熟，未来大多数应用可能转向零知识Rollup架构。
-RollUp stage (Rollup 发展阶段)
-Stage 0
-在这个初始的阶段，RollUp的治理主要由运营方和安全委员会掌控，确保关键决策并且有可信的团体去专门监督（中心化的），此阶段的用户拥有退出机制，可以在七天内离开rollup，但是通常需要实体和运营方的操作进行结合。
-Stage 1
-中心化的治理演化为智能合约管理，当然安全委员会同时发挥作用。
-证明系统完全开始运作，支持去中心化的有效证明。
-退出机制也得到改进，用户可独立退出而无需运营方协调。
-Stage 2
-通过完全由智能合约管理的治理机制实现完全去中心化。
-无需运营方和安全委员会干预。
-证明系统是无许可的，退出机制也完全去中心化。
-ZKSync Risk Analysis[风险分析]
-https://l2beat.com/scaling/summary  L2Beat摘要中可以查看各Rollup所处的stage
-Risks那一列的饼图可以体现当前阶段的一些风险，例如ZkSync Era专属页面中：
-
-
-
-Data Availability: refers to the ability to reconstruct the L2 state from L1 data, ensuring that anyone can verify and rebuild the L2 state if necessary.
-能够从L1的数据中重建L2状态
-
-
-State Validation: involves verifying the legitimacy of a set of bundled transactions. For ZK Sync, this is done using zero-knowledge proofs through an algorithm known as PLONK (Permutations over Lagrange-bases for Oecumenical Noninteractive arguments of Knowledge).
-涉及验证一组打包交易的合法性。
-
-
-Sequencer Failure: describes the ability to process transactions even if the sequencer is down. In ZK Sync, transactions can still be submitted to L1, though not necessarily enforced immediately.
-排序器故障，描述了即使排序器宕机还能够处理交易的能力，这里黄色区块表示，在ZKsync中，交易仍然可以提交到L1，但不一定能够强制执行。
-
-排序器：是负责对打包的用户交易进行排序的操作方（运营商）
-The sequencer is the operator responsible for ordering user transactions and often batching them before committing them to Layer 1.
-
-
-
-Proposer Failure: describes the ability to process transactions even if the proposer is down. In this case, ZK Sync will halt all withdrawals and transactions executions.
-提议者宕机但是可以处理交易的能力。在Zksync中回暂停所有的提款和交易执行。
-
-
-Exit Window: In the current ZK Sync stage, there is no window for exit during unwanted upgrades.
-红色区块表示Zksync在非预期的升级时不存在退出窗口期。
-
-
-First Transaction On ZKSync
-chainList 官网搜索ZKsync sepolia
-https://chainlist.org/?search=zksync+sepolia&amp;testnets=true
-
-进行connect
-
-
-在zkSync官网的block explorer 中，可搜索到自己的账户，查看交易详情
-如何获取测试网络的基金？
-
-📒 NOTE
-Network Fauncets
-
-这里可以通过brige桥接源链和目标链来进行，也有两种方式，一种是lock和unlock 另一种是烧毁和铸造；
-可能会有安全问题，但是基于ZkSync使用过程的经验来说，是比较安全的。
-
-了解原理之后，我们在推荐的fauncet里获取我们的fund
-
-这里我recive失败了，重新找了其他funsets ，可以用回tenderly试试看
-Solidity 基础[part1]
-Remix IDE
-
-函数
-无返回体函数示例：
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.19; // chose our solidity version 
-
-contract SimpleStorage &#123;
-    uint256 public myFavoriteNumber; // 初始值就是0 而且是internal 也就是内部不可见的
-
-    function store(uint256 favoriteNumber) public &#123;
-        myFavoriteNumber = favoriteNumber;
-    &#125;
-
-&#125;
-有返回体示例：
-function recive() public view returns (uint256) &#123;
-       return myFavoriteNumber;
-   &#125;
-数组
-// 数组
-uint256[] public myFavoriteNumbers;
-
-
-Person public newPerson = Person(1, 'jack');
-
-Person public myPerson;
-
-
-function setPerson(string memory name, uint256 person_number) public &#123;
-    myPersonArray.push(Person(person_number,name));
-&#125;
-
-结构
-// 结构
-    struct Person &#123;
-        uint256 personNumber;
-        string name;
-    &#125;
-
-数组加结构
-// 数组加结构
- Person[] public myPersonArray;
-可见性
-函数和变量有四种可见性修饰符：
-
-public：可从合约内部和外部合约访问
-private：仅限当前合约内部访问。不会隐藏值，仅限制其访问权限。
-external：仅适用于外部的合约访问。⚠️
-internal： 当前合约和派生的合约可以访问。
-
-如果没有指定，默认是internal
-view 、pure
-函数操作权限修饰符
-1. view 关键字
-
-
-功能：使用view关键字修饰的函数，承诺不会对区块链的状态进行修改。
-
-
-可执行操作
-
-能够读取区块链上的数据（也就是状态变量）。
-可以访问 msg.sender、block.number 等全局变量。
-支持调用其他同样被标记为view或者pure的函数。
-
-
-
-不可执行操作：禁止对状态变量进行写入操作。
-
-
-示例：
-
-
-contract ViewExample &#123;
-    uint public balance;
-
-    // 此函数仅读取状态变量，不会对其进行修改
-    function getBalance() public view returns (uint) &#123;
-        return balance;
-    &#125;
-&#125;
-2. pure 关键字
-
-
-功能：被pure关键字修饰的函数，既不会读取也不会修改区块链的状态。
-
-
-可执行操作
-
-可以使用函数内部定义的局部变量。
-能够操作传入函数的参数。
-支持进行数学运算。
-可以调用其他pure函数。
-
-
-
-不可执行操作
-
-禁止访问状态变量。
-不允许调用非view或pure的函数。
-
-
-
-示例：
-
-
-contract PureExample &#123;
-    // 该函数不依赖任何状态变量，仅对输入参数进行计算
-    function add(uint a, uint b) public pure returns (uint) &#123;
-        return a + b;
-    &#125;
-&#125;
-3. 关键区别
-
-
-
-特性
-view 函数
-pure 函数
-
-
-
-
-能否读取状态变量
-可以
-不可以
-
-
-能否修改状态变量
-不可以
-不可以
-
-
-是否消耗 Gas（外部调用时）
-不消耗
-不消耗
-
-
-是否消耗 Gas（内部调用时）
-消耗
-消耗
-
-
-
-
-⚠️ 一般调用这两个关键字都不会消耗gas费， 但是如果是内部调用，例如下面这个例子, store里面调用recive就会导致gas费产生。
-
-function store(uint256 favoriteNumber) public &#123;// 存储
-       myFavoriteNumber = favoriteNumber;
-       recive(favoriteNumber);
-   &#125;
-
- function recive() public view returns (uint256) &#123;
-     return myFavoriteNumber;
- &#125;
-完整代码：
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.19; // stating our version 
-
-contract SimpleStorage &#123;
-    uint256 public myFavoriteNumber; // 初始值就是0 而且是internal 也就是内部不可见的
-
-
-
-    // 数组
-    uint256[] public myFavoriteNumbers;
-
-    // 结构
-    struct Person &#123;
-        uint256 personNumber;
-        string name;
-    &#125;
-
-    Person public newPerson = Person(1, 'jack');
-
-    Person public myPerson;
-
-    Person[] public myPersonArray;
-
-    function setPerson(string memory name, uint256 person_number) public &#123;
-        myPerson = Person(person_number, name);
-        myPersonArray.push(myPerson);
-    &#125;
-
-    function store(uint256 favoriteNumber) public &#123;// 存储
-        myFavoriteNumber = favoriteNumber;
-    &#125;
-
-    // view 可读不可写 pure 不可读不可写
-    function recive() public view returns (uint256) &#123;
-        return myFavoriteNumber;
-    &#125;
-
-
-
-&#125;
-]]></content>
-      <categories>
-        <category>Web3</category>
-      </categories>
-      <tags>
-        <tag>BlockChain</tag>
-        <tag>Solidity</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solana[part5]_SPLToken合约简单实现</title>
-    <url>/2025/08/07/Solana-part5-SPLToken%E5%90%88%E7%BA%A6%E7%AE%80%E5%8D%95%E5%AE%9E%E7%8E%B0/</url>
-    <content><![CDATA[Solana[part5]_SPLToken合约简单实现
-
-实现Token项目
-
-
-创建一个token项目
-
-
-token 项目依赖：
-[dependencies]
-borsh = "1.5.7"
-solana-program = "2.3.0"
-spl-associated-token-account = &#123; version = "7.0.0", features = [
-    "no-entrypoint",
-] &#125;
-spl-token = &#123; version = "8.0.0", features = ["no-entrypoint"] &#125;
-
-[lib]
-crate-type = ["cdylib", "lib"]
-
-
-
-编写合约,具体代码见: https://github.com/SoniaChan33/token
-
-
-起本地环境：➜  ~ solana-test-validator
-
-
-打开log
-➜  ~ solana logs
-
-
-编译合约：
-➜  token git:(master) ✗ cargo build-sbf
-
-
-部署合约, 获取programID
-➜  token git:(master) ✗ solana program deploy target/deploy/token.so
-Program Id: 5DPHC1PjRftRHJLKD4WSSXt83h1AChJy2pHXUqGdKD9X
-
-Signature: 29PquhXv5Jw9c8p6k3jGK9UoLATg5rUpk3Mx8BBiJK8vxNEcLru4t7xYn6EdxXVeivUP7urczzoQY3KSvgGbEdhR
-
-
-核心文件
-具体实现文档见仓库readme文档：https://github.com/SoniaChan33/token?tab=readme-ov-file#spl-token合约项目实现文档
-processor.rs：核心业务逻辑，处理指令
-state.rs：定义账户的状态和扩展字段
-instruction.rs：定义各种代币操作的指令
-oerror.rs：定义了程序可能抛出的错误
-olib.rs：程序入口点，汇总各个模块。
-
-实现调用方Cli
-
-
-创建项目
-
-
-编写：具体代码见：https://github.com/SoniaChan33/solana-cli
-
-
-测试结果：
-running 1 test
-test test_fn ... ok
-
-successes:
-
----- test_fn stdout ----
-Mint Account: 54b3u3wmAzM7LdPpERfa3iZGjkbafaD5FQ3aXV8iRaQk
-Transaction result: zaWCinW8Kmjh6sQ3jRPcrntZ5yFWhuQM6GwWuGBJxCPPRJUiEcVRC1hKtaw1TSGZ5QB3nnEqBPieG3HzCvuEv5A
-Token created successfully with mint account: 54b3u3wmAzM7LdPpERfa3iZGjkbafaD5FQ3aXV8iRaQk
-
-
-successes:
-    test_fn
-
-
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-        <tag>Solana</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solana实战Bug记录</title>
-    <url>/2025/08/24/Solana%E5%AE%9E%E6%88%98Bug%E8%AE%B0%E5%BD%95/</url>
-    <content><![CDATA[Solana实战Bug记录
-Cross-program invocation with unauthorized signer or writable account
-
-
-
-问题
-解决方案
-
-
-
-
-PDA 派生路径不一致
-统一 seeds 和 signer_seeds
-
-
-Mint Authority 未授权
-在 CPI 中使用 signer_seeds 显式授权
-
-
-Metadata 账户约束错误
-显式指定 Token Metadata Program 地址
-
-
-Mint Authority 设置错误
-确保 mint::authority 指向 PDA 并通过签名授权
-
-
-
-let signer_seeds: &amp;[&amp;[&amp;[u8]]] = &amp;[&amp;[
-        EtfToken::SEEDS_PREFIX.as_bytes(),
-        m.as_ref(),
-        &amp;[ctx.bumps.etf_token_info],
-    ]];
-// 	需要和创建账户的时候设置的约束一致
------
- #[account(
-        init_if_needed,
-        payer = authority,
-        space = 8 + EtfToken::INIT_SPACE,
-        seeds = [
-            EtfToken::SEEDS_PREFIX.as_bytes(),
-            etf_token_mint_account.key().as_ref()
-        ],
-        bump,
-    )]
-    pub etf_token_info: Account&lt;'info, EtfToken>,
-TypeError: anchor.BN is not a constructor
-可参考：
-https://solana.stackexchange.com/questions/22096/typeerror-anchor-bn-is-not-a-constructor-due-to-tsconfig-json
-最终是手动导入
-import &#123; BN &#125; from "bn.js";
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-        <tag>Solana</tag>
-        <tag>Bug</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>WEB3-Day5—Solidity基础[part4]</title>
-    <url>/2025/07/01/WEB3-Day5%E2%80%94Solidity%E5%9F%BA%E7%A1%80-part4/</url>
-    <content><![CDATA[WEB3-Day5—Solidity基础[part4]
-通过函数发送ETH
-新建合约 FundMe.sol，在本合约中会通过fund()函数向智能合约转移以太币。该函数将要求最低数量的ETH确保交易正常。
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
-
-contract FundMe&#123;
-
-
-    function fund() public &#123;
-        
-    &#125;
-&#125;
-我们还需要一个Withdraw函数，这样合约的owner(拥有者)可以提取不同的funder 发送的资金。
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
-
-contract FundMe&#123;
-
-
-    function fund() public &#123;
-        
-    &#125;
-
-    function withDraw() public &#123;
-        
-    &#125;
-&#125;
-当交易被发送到区块链时，交易数据中始终包含一个value字段。该字段表示该交易中转账的原生加密货币数量。
-要使fund函数可以接受ether，必须将其声明为payable。同时在remix界面中部署了可以看到，这个关键字会使函数显示为红色，表示它可以接受加密货币。
-function fund() public payable &#123;
-        
-    &#125;
-msy.value 属性
-在solidity中，交易的数值可以通过这个属性进行访问，是全局对象msg的一部分，表示当前交易中传输的Wei的数量。【Wei是ETH的最小单位】
-function fund() public payable &#123;
-    
-    msg.value;
-&#125;
-交易字段
-以太坊上发送的每笔交易都包含一些必要字段，这些字段包括：
-
-Nonce：这是发送地址的交易计数器。它确保交易按顺序执行，并防止重播攻击。
-Gas Price：这是发送者愿意支付的 gas 单价，以太坊网络会根据 gas price 和 gas limit 来计算手续费。
-Gas Limit：这是交易执行所需的最大 gas 数量。它决定了交易的复杂程度和成本。
-To：这是接收以太币或者调用智能合约的目标地址。
-Value：这是发送的以太币数量。
-Data：这是可选字段，用于向智能合约发送数据。
-v、r、s：这些字段用于交易的签名验证，确保交易的安全性和完整性。
-
-在转账的时候，我们可以填充其中一些字段，例如，gas limit中填充的21,000，data是空的，然后to是我们想要将交易发送到的地址，在函数调用的交易中，仍然可以以这种方式填写to，我们可以调用一个函数，并同时进行转账。
-Value
-每当我们在任何一个兼容EVM的区块链上创建一笔交易时，这个value的值，代表我们将通过这笔交易发送多少ETH，当我们在不同账户间转移ETH时，实际上就是在value中填充不同的ETH数量。
-
-撤销交易[Reverting Transactions]
-我们可以使用requires关键字作为检查器，强制要求函数接收至少value个完整的以太币, 不满足就会回滚。
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
-
-contract FundMe&#123;
-
-
-    function fund() public payable &#123;
-        require(msg.value > 1 ether, "Didn't send enough ETH"); //if the condition is false, revert with the error message    &#125;
-    &#125;
-    function withDraw() public &#123;
-        
-    &#125;
-&#125;
-msg.value &gt; 1 ether等同于 msg.value &gt; 1e18
-
-👀❗提示
-1 Ether = 1e9 Gwei = 1e18 Wei
-Gwei是Gas费用的单位。
-
-在线转换单位的工具 ：Ethconverter
-回滚操作会撤销之前的所有操作，并将剩余gas费返还给交易者，我们在fund函数中添加一些逻辑：
-myvalue  += 2;
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
-
-contract FundMe&#123;
-
-
-    uint256 public  myvalue = 1;
-    function fund() public payable &#123;
-        myvalue  += 2;
-        require(msg.value > 1 ether, "Didn't send enough ETH"); //if the condition is false, revert with the error message    &#125;
-    &#125;
-
-    function withDraw() public &#123;
-
-    &#125;
-&#125;
-部署合约，点击fund函数，报错信息成功返回：
-
-
-⚠️ 回滚以后交易消耗的gas费不会返回的
-
-]]></content>
-      <categories>
-        <category>Web3</category>
-      </categories>
-      <tags>
-        <tag>BlockChain</tag>
       </tags>
   </entry>
   <entry>
