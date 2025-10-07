@@ -1,0 +1,700 @@
+<!DOCTYPE html><html lang="[&quot;zh-CN&quot;,&quot;en&quot;,&quot;default&quot;]" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>Orca技术内幕：多链时代的DEX新范式 | Sonia33</title><meta name="keywords" content="Solana, DeFi, DEX, Orca, AMM, Whirlpool, Rust, 自动化做市商"><meta name="author" content="SoniaChen"><meta name="copyright" content="SoniaChen"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="Orca技术内幕：多链时代的DEX新范式"><meta name="application-name" content="Orca技术内幕：多链时代的DEX新范式"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="Orca技术内幕：多链时代的DEX新范式"><meta property="og:url" content="https://blog.soniachen.com/2025/10/07/Orca-Solana%E4%B8%8A%E7%9A%84%E5%8E%BB%E4%B8%AD%E5%BF%83%E5%8C%96%E4%BA%A4%E6%98%93%E6%89%80/index.html"><meta property="og:site_name" content="Sonia33"><meta property="og:description" content="深度解析Orca协议的Rust实现、技术架构和核心机制，探讨Solana生态中AMM DEX的技术创新"><meta property="og:locale" content="[&quot;zh-CN&quot;,&quot;en&quot;,&quot;default&quot;]"><meta property="og:image" content="https://img.soniachen.com/blog/posts/2025/10/image-20251007221550399.png"><meta property="article:author" content="SoniaChen"><meta property="article:tag"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img.soniachen.com/blog/posts/2025/10/image-20251007221550399.png"><meta name="description" content="深度解析Orca协议的Rust实现、技术架构和核心机制，探讨Solana生态中AMM DEX的技术创新"><link rel="shortcut icon" href="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png"><link rel="canonical" href="https://blog.soniachen.com/2025/10/07/Orca-Solana%E4%B8%8A%E7%9A%84%E5%8E%BB%E4%B8%AD%E5%BF%83%E5%8C%96%E4%BA%A4%E6%98%93%E6%89%80/"><link rel="preconnect" href="//cdn.cbd.int"/><meta name="google-site-verification" content="xxx"/><meta name="baidu-site-verification" content="code-xxx"/><meta name="msvalidate.01" content="xxx"/><link rel="manifest" href="/manifest.json"/><meta name="msapplication-TileColor" content="var(--anzhiyu-main)"/><link rel="mask-icon" href="/img/siteicon/apple-icon-180.png" color="#5bbad5"/><link rel="apple-touch-icon" sizes="180x180" href="/img/siteicon/apple-icon-180.png"/><link rel="apple-touch-icon-precomposed" sizes="180x180" href="/img/siteicon/apple-icon-180.png"/><link rel="icon" type="image/png" sizes="32x32" href="/img/siteicon/32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/img/siteicon/16.png"/><link rel="bookmark" href="/img/siteicon/apple-icon-180.png"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2048-2732.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2732-2048.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1668-2388.jpg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2388-1668.jpg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1536-2048.jpg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2048-1536.jpg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1668-2224.jpg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2224-1668.jpg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1620-2160.jpg" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2160-1620.jpg" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1290-2796.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2796-1290.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1179-2556.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2556-1179.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1284-2778.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2778-1284.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1170-2532.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2532-1170.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1125-2436.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2436-1125.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1242-2688.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2688-1242.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-828-1792.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1792-828.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1242-2208.jpg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2208-1242.jpg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-750-1334.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1334-750.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-640-1136.jpg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1136-640.jpg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@5.0.28/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: undefined,
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"sonia33","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: undefined,
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":6,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://twikoo-cloudflare.soniachan0831.workers.dev',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: undefined,
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","📖 读万卷书","🧗 徒步爱好者","🏀 篮球狂热爱好者","🚴 公路车爱好者","🏃 跑步爱好者"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":true,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"prismjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: SoniaChen","link":"链接: ","source":"来源: Sonia33","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"bottom-right"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.1.2/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.1.2/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: true
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Sonia33',
+  title: 'Orca技术内幕：多链时代的DEX新范式',
+  postAI: '',
+  pageFillDescription: 'Orca：Solana上的高性能AMM DEX深度解析, 引言, DEX行业最新动态, 2025年DEX发展趋势, Orca的市场地位, Orca核心技术架构, Whirlpool机制详解, 核心数据结构, Tick系统实现, 数学计算优化, 价格计算公式, Rust实现深度解析, 内存管理优化, 零拷贝设计, 栈上内存分配, 错误处理模式, 自定义错误类型, 高级特性实现, 协议费用机制, 跨指令优化, 技术要点总结, 核心机制对比, 零拷贝技术的优势, 价格操纵防护, 未来发展方向, 2025年技术演进, 生态合作与扩张, 结论上的高性能深度解析引言在年赛道竞争白热化的背景下作为生态的领导者协议凭借其独特的机制和优秀的实现已成为全球最大的本文将从技术实现角度深度解析协议的设计理念和代码结构探讨其在多链时代的创新发展英文版本行业最新动态年发展趋势驱动交易集成机器学习算法的智能做市商兴起开始探索辅助的价格发现机制意图驱动交易等意图导向的聚合器获得市场认可集成意图路由多链聚合跨链桥接技术成熟通过和扩展到多链生态专业化针对特定资产类型的快速发展推出专注稳定币和的池子防护增强等解决方案被更多集成采用网络零知识证明集成隐私保护交易成为趋势开始测试隐私池资产代币化现实世界资产上链为资产提供流动性的市场地位在生态中占据领导地位排名第一超越成为最大超过亿美元日交易量突破日均交易量超过亿美元创历史新高生态主导地位与等协议深度合作形成流动性联盟多链扩张通过桥接扩展到以太坊等链机构采用多家传统金融机构集成进行加密资产交易核心技术架构机制详解的是其核心创新借鉴了的集中流动性概念但针对进行了深度优化核心数据结构核心结构体基于框架交易对信息费率和相关流动性状态系统实现数组管理每个数组包含个单个结构其他字段数学计算优化价格计算公式使用定点数进行价格计算确保精度和效率价格计算核心逻辑价格计算实现深度解析内存管理优化零拷贝设计大量使用零拷贝技术减少内存分配零拷贝账户定义账户约束优化栈上内存分配使用数组而非减少堆分配关键计算函数栈上计算避免动态分配主循环逻辑错误处理模式自定义错误类型错误定义错误处理函数高级特性实现协议费用机制协议费用收集转移协议费用跨指令优化使用跨指令优化的设计模式复合指令定义复合指令处理第一阶段标准交换第二阶段伙伴程序处理技术要点总结核心机制对比传统的区别流动性管理集中流动性全范围流动性价格发现系统管理简单恒定乘积资本效率更高的资金利用率更简单的实现零拷贝技术的优势零拷贝技术在中的应用带来了显著的性能提升减少序列化开销直接内存访问避免不必要的拷贝操作栈上内存分配使用固定大小数组而非动态分配更好的效率降低交易成本提升用户体验价格操纵防护通过多层机制防止价格操纵间距控制限制流动性位置的粒度预言机价格验证集成链上价格预言机滑点保护机制最大滑点限制和交易失败保护未来发展方向年技术演进智能做市集成机器学习算法实现动态费率调整和智能价格发现多链聚合扩张通过和实现真正的跨链零知识隐私池集成证明技术为机构用户提供隐私保护交易意图驱动集成与等意图协议深度合作提供更智能的交易路由资产支持推出专为现实世界资产代币化设计的池防护升级采用网络和的最新防护机制量子安全加密为后量子时代做准备研究抗量子计算的加密算法生态合作与扩张在年深化生态合作流动性联盟与形成流动性联盟跨链桥接深度集成实现多链资产的无缝流动机构级集成与传统金融机构合作提供托管和清算服务扩张支持等以太坊网络新兴生态扩展到等高性能区块链网络结论作为生态的核心基础设施不仅展示了在高性能应用中的强大能力也引领着年技术创新的浪潮通过深入理解其技术实现开发者可以在多链时代更好地应用这些先进的设计模式和跨链技术理念为下一代去中心化交易所的发展贡献力量本文内容基于公开技术文档和技术分析仅供学习参考加密货币投资具有高风险请谨慎决策',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2025-10-07 22:30:49',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+          const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+          const isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+          const hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+          if (t === undefined) {
+            if (isLightMode) activateLightMode()
+            else if (isDarkMode) activateDarkMode()
+            else if (isNotSpecified || hasNoSupport) {
+              const now = new Date()
+              const hour = now.getHours()
+              const isNight = hour <= 6 || hour >= 18
+              isNight ? activateDarkMode() : activateLightMode()
+            }
+            window.matchMedia('(prefers-color-scheme: dark)').addListener(e => {
+              if (saveToLocal.get('theme') === undefined) {
+                e.matches ? activateDarkMode() : activateLightMode()
+              }
+            })
+          } else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><meta name="generator" content="Hexo 7.3.0"></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img.soniachen.com/cover2.gif"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><div class="back-home-button"><i class="anzhiyufont anzhiyu-icon-grip-vertical"></i><div class="back-menu-list-groups"><div class="back-menu-list-group"><div class="back-menu-list-title">网页</div><div class="back-menu-list"><a class="back-menu-item" href="https://blog.soniachen.com/" title="博客"><img class="back-menu-item-icon" src="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png" alt="博客"/><span class="back-menu-item-text">博客</span></a></div></div></div></div><a id="site-name" href="/" accesskey="h"><div class="title">Sonia33</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a><div id="he-plugin-simple"></div><script>var WIDGET = {
+  "CONFIG": {
+    "modules": "0124",
+    "background": "2",
+    "tmpColor": "FFFFFF",
+    "tmpSize": "16",
+    "cityColor": "FFFFFF",
+    "citySize": "16",
+    "aqiColor": "E8D87B",
+    "aqiSize": "16",
+    "weatherIconSize": "24",
+    "alertIconSize": "18",
+    "padding": "10px 10px 10px 10px",
+    "shadow": "0",
+    "language": "auto",
+    "borderRadius": "20",
+    "fixed": "true",
+    "vertical": "top",
+    "horizontal": "left",
+    "left": "20",
+    "top": "7.1",
+    "key": "df245676fb434a0691ead1c63341cd94"
+  }
+}
+</script><link rel="stylesheet" href="https://widget.qweather.net/simple/static/css/he-simple.css?v=1.4.0"/><script src="https://widget.qweather.net/simple/static/js/he-simple.js?v=1.4.0"></script></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/?id=447363601&amp;server=netease"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/bangumis/"><i class="anzhiyufont anzhiyu-icon-bilibili faa-tada" style="font-size: 0.9em;"></i><span> 追番页</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5543.JPG" target="_blank"><img class="post-qr-code-img" alt="微信" src="https://img.soniachen.com/blog/IMG_5543.JPG"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5544.JPG" target="_blank"><img class="post-qr-code-img" alt="支付宝" src="https://img.soniachen.com/blog/IMG_5544.JPG"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AMM/" style="font-size: 1.05rem;">AMM<sup>1</sup></a><a href="/tags/BlockChain/" style="font-size: 1.05rem;">BlockChain<sup>4</sup></a><a href="/tags/Bug/" style="font-size: 1.05rem;">Bug<sup>2</sup></a><a href="/tags/CloudFlare/" style="font-size: 1.05rem;">CloudFlare<sup>2</sup></a><a href="/tags/DEX/" style="font-size: 1.05rem;">DEX<sup>1</sup></a><a href="/tags/DeFi/" style="font-size: 1.05rem;">DeFi<sup>2</sup></a><a href="/tags/Foundry/" style="font-size: 1.05rem;">Foundry<sup>1</sup></a><a href="/tags/Git/" style="font-size: 1.05rem;">Git<sup>1</sup></a><a href="/tags/JUP/" style="font-size: 1.05rem;">JUP<sup>1</sup></a><a href="/tags/Java/" style="font-size: 1.05rem; font-weight: 500; color: var(--anzhiyu-lighttext)">Java<sup>1</sup></a><a href="/tags/Orca/" style="font-size: 1.05rem;">Orca<sup>1</sup></a><a href="/tags/PicGo/" style="font-size: 1.05rem;">PicGo<sup>1</sup></a><a href="/tags/Rust/" style="font-size: 1.05rem;">Rust<sup>43</sup></a><a href="/tags/Solana/" style="font-size: 1.05rem;">Solana<sup>26</sup></a><a href="/tags/Solidity/" style="font-size: 1.05rem;">Solidity<sup>4</sup></a><a href="/tags/TypeScript/" style="font-size: 1.05rem;">TypeScript<sup>2</sup></a><a href="/tags/Typora/" style="font-size: 1.05rem;">Typora<sup>1</sup></a><a href="/tags/Whirlpool/" style="font-size: 1.05rem;">Whirlpool<sup>1</sup></a><a href="/tags/hexo/" style="font-size: 1.05rem;">hexo<sup>2</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/10/"><span class="card-archive-list-date">十月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">2</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">九月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/08/"><span class="card-archive-list-date">八月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">24</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/07/"><span class="card-archive-list-date">七月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">23</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/06/"><span class="card-archive-list-date">六月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">5</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2022/02/"><span class="card-archive-list-date">二月 2022</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">转载</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/Eco-Insights/" itemprop="url">Eco Insights</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Solana/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Solana</span></a><a class="article-meta__tags" href="/tags/DeFi/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>DeFi</span></a><a class="article-meta__tags" href="/tags/DEX/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>DEX</span></a><a class="article-meta__tags" href="/tags/Orca/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Orca</span></a><a class="article-meta__tags" href="/tags/AMM/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AMM</span></a><a class="article-meta__tags" href="/tags/Whirlpool/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Whirlpool</span></a><a class="article-meta__tags" href="/tags/Rust/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Rust</span></a></span></div></div><h1 class="post-title" itemprop="name headline">Orca技术内幕：多链时代的DEX新范式</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2025-10-07T14:00:00.000Z" title="发表于 2025-10-07 22:00:00">2025-10-07</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2025-10-07T14:30:49.351Z" title="更新于 2025-10-07 22:30:49">2025-10-07</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">1.9k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>7分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为四川"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>四川</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img.soniachen.com/blog/posts/2025/10/image-20251007221550399.png"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://soniachan33.github.io"><header><a class="post-meta-categories" href="/categories/Eco-Insights/" itemprop="url">Eco Insights</a><a href="/tags/Solana/" tabindex="-1" itemprop="url">Solana</a><a href="/tags/DeFi/" tabindex="-1" itemprop="url">DeFi</a><a href="/tags/DEX/" tabindex="-1" itemprop="url">DEX</a><a href="/tags/Orca/" tabindex="-1" itemprop="url">Orca</a><a href="/tags/AMM/" tabindex="-1" itemprop="url">AMM</a><a href="/tags/Whirlpool/" tabindex="-1" itemprop="url">Whirlpool</a><a href="/tags/Rust/" tabindex="-1" itemprop="url">Rust</a><h1 id="CrawlerTitle" itemprop="name headline">Orca技术内幕：多链时代的DEX新范式</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">tinachan</span><time itemprop="dateCreated datePublished" datetime="2025-10-07T14:00:00.000Z" title="发表于 2025-10-07 22:00:00">2025-10-07</time><time itemprop="dateCreated datePublished" datetime="2025-10-07T14:30:49.351Z" title="更新于 2025-10-07 22:30:49">2025-10-07</time></header><h1>Orca：Solana上的高性能AMM DEX深度解析</h1>
+<h2 id="引言">引言</h2>
+<p>在2025年DEX赛道竞争白热化的背景下，Orca作为Solana生态的领导者AMM协议，凭借其独特的Whirlpool机制和优秀的Rust实现，已成为全球最大的Solana DEX。本文将从技术实现角度深度解析Orca协议的设计理念和Rust代码结构，探讨其在多链时代的创新发展。</p>
+<blockquote>
+<p><strong>📖 英文版本</strong>: <a target="_blank" rel="noopener" href="https://paragraph.com/@soniachain/orca-high-performance-amm-dex-deep-analysis-on-solana">Orca Deep Dive: The New Paradigm of DEX in the Multi-Chain Era</a></p>
+</blockquote>
+<h2 id="DEX行业最新动态">DEX行业最新动态</h2>
+<h3 id="2025年DEX发展趋势">2025年DEX发展趋势</h3>
+<ol>
+<li><strong>AI驱动交易</strong>：集成机器学习算法的智能做市商兴起，Orca开始探索AI辅助的价格发现机制</li>
+<li><strong>意图驱动交易</strong>：CowSwap、1inch Fusion等意图导向的聚合器获得市场认可，Orca集成意图路由</li>
+<li><strong>多链聚合DEX</strong>：跨链桥接技术成熟，Orca通过Wormhole和LayerZero扩展到多链生态</li>
+<li><strong>专业化AMM</strong>：针对特定资产类型的AMM快速发展，Orca推出专注稳定币和LST的池子</li>
+<li><strong>MEV防护增强</strong>：Flashbots Protect等MEV解决方案被更多DEX集成，Orca采用SUAVE网络</li>
+<li><strong>零知识证明集成</strong>：隐私保护交易成为趋势，Orca开始测试ZK隐私池</li>
+<li><strong>RWA资产代币化</strong>：现实世界资产上链，Orca为RWA资产提供流动性</li>
+</ol>
+<h3 id="Orca的市场地位">Orca的市场地位</h3>
+<p>Orca在Solana生态中占据领导地位：</p>
+<ul>
+<li><strong>TVL排名第一</strong>：超越Raydium成为Solana最大DEX，TVL超过50亿美元</li>
+<li><strong>日交易量突破</strong>：日均交易量超过10亿美元，创历史新高</li>
+<li><strong>生态主导地位</strong>：与Jupiter、Raydium、Meteora等协议深度合作，形成流动性联盟</li>
+<li><strong>多链扩张</strong>：通过Wormhole桥接扩展到以太坊、Arbitrum、Optimism等链</li>
+<li><strong>机构采用</strong>：多家传统金融机构集成Orca进行加密资产交易</li>
+</ul>
+<h2 id="Orca核心技术架构">Orca核心技术架构</h2>
+<h3 id="Whirlpool机制详解">Whirlpool机制详解</h3>
+<p>Orca的Whirlpool是其核心创新，借鉴了Uniswap V3的集中流动性概念，但针对Solana进行了深度优化。</p>
+<h4 id="核心数据结构">核心数据结构</h4>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// Whirlpool核心结构体（基于Anchor框架）</span>
+<span class="token attribute attr-name">#[account]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">Whirlpool</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">pub</span> whirlpools_config<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> whirlpool_bump<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token keyword">u8</span><span class="token punctuation">;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+
+    <span class="token comment">// 交易对信息</span>
+    <span class="token keyword">pub</span> token_mint_a<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> token_mint_b<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> token_vault_a<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> token_vault_b<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+
+    <span class="token comment">// 费率和tick相关</span>
+    <span class="token keyword">pub</span> fee_rate<span class="token punctuation">:</span> <span class="token keyword">u16</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> protocol_fee_rate<span class="token punctuation">:</span> <span class="token keyword">u16</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> tick_spacing<span class="token punctuation">:</span> <span class="token keyword">u16</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> tick_spacing_seed<span class="token punctuation">:</span> <span class="token keyword">u8</span><span class="token punctuation">,</span>
+
+    <span class="token comment">// 流动性状态</span>
+    <span class="token keyword">pub</span> current_tick_index<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> sqrt_price<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> liquidity<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> fee_growth_global_a<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> fee_growth_global_b<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h4 id="Tick系统实现">Tick系统实现</h4>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// Tick数组管理</span>
+<span class="token attribute attr-name">#[account(zero_copy)]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">TickArray</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">pub</span> whirlpool<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> start_tick_index<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> ticks<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token class-name">Tick</span><span class="token punctuation">;</span> <span class="token number">88</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token comment">// 每个数组包含88个ticks</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// 单个Tick结构</span>
+<span class="token attribute attr-name">#[zero_copy]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">Tick</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">pub</span> initialized<span class="token punctuation">:</span> <span class="token keyword">bool</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> liquidity_net<span class="token punctuation">:</span> <span class="token keyword">i128</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> fee_growth_outside_a<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> fee_growth_outside_b<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>
+    <span class="token comment">// ... 其他字段</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h3 id="数学计算优化">数学计算优化</h3>
+<h4 id="价格计算公式">价格计算公式</h4>
+<p>Orca使用Q64.64定点数进行价格计算，确保精度和gas效率：</p>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// 价格计算核心逻辑</span>
+<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">calculate_price_from_sqrt_price</span><span class="token punctuation">(</span>sqrt_price<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">f64</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> price <span class="token operator">=</span> <span class="token punctuation">(</span>sqrt_price <span class="token keyword">as</span> <span class="token keyword">f64</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">powi</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">/</span> <span class="token punctuation">(</span><span class="token number">2.0_f64</span><span class="token punctuation">.</span><span class="token function">powi</span><span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    price
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// Tick价格计算</span>
+<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">tick_index_to_sqrt_price</span><span class="token punctuation">(</span>tick_index<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">u128</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> tick <span class="token operator">=</span> tick_index <span class="token keyword">as</span> <span class="token keyword">f64</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> sqrt_price <span class="token operator">=</span> <span class="token number">1.0001_f64</span><span class="token punctuation">.</span><span class="token function">powf</span><span class="token punctuation">(</span>tick <span class="token operator">/</span> <span class="token number">2.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">(</span>sqrt_price <span class="token operator">*</span> <span class="token number">2.0_f64</span><span class="token punctuation">.</span><span class="token function">powi</span><span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token keyword">u128</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h2 id="Rust实现深度解析">Rust实现深度解析</h2>
+<h3 id="内存管理优化">内存管理优化</h3>
+<h4 id="零拷贝设计">零拷贝设计</h4>
+<p>Orca大量使用零拷贝（zero-copy）技术减少内存分配：</p>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// 零拷贝账户定义</span>
+<span class="token attribute attr-name">#[zero_copy]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">Position</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">pub</span> whirlpool<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> position_mint<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> liquidity<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> tick_lower_index<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> tick_upper_index<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> fee_growth_inside_a<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> fee_growth_inside_b<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// 账户约束优化</span>
+<span class="token attribute attr-name">#[derive(Accounts)]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">ModifyLiquidity</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+    #<span class="token punctuation">[</span><span class="token function">account</span><span class="token punctuation">(</span>
+        constraint <span class="token operator">=</span> whirlpool<span class="token punctuation">.</span>whirlpool_bump <span class="token operator">==</span> <span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token operator">@</span> <span class="token class-name">WhirlpoolError</span><span class="token punctuation">::</span><span class="token class-name">InvalidWhirlpoolBump</span>
+    <span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">pub</span> whirlpool<span class="token punctuation">:</span> <span class="token class-name">Box</span><span class="token operator">&lt;</span><span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">Whirlpool</span><span class="token operator">>></span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h4 id="栈上内存分配">栈上内存分配</h4>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// 使用数组而非Vec减少堆分配</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">SwapCalculation</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">pub</span> amount_a<span class="token punctuation">:</span> <span class="token keyword">u64</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> amount_b<span class="token punctuation">:</span> <span class="token keyword">u64</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> sqrt_price_limit<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> amount_specified_is_input<span class="token punctuation">:</span> <span class="token keyword">bool</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> a_to_b<span class="token punctuation">:</span> <span class="token keyword">bool</span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// 关键计算函数</span>
+<span class="token keyword">impl</span> <span class="token class-name">SwapCalculation</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">calculate_swap</span><span class="token punctuation">(</span>
+        <span class="token operator">&amp;</span><span class="token keyword">self</span><span class="token punctuation">,</span>
+        whirlpool<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token class-name">Whirlpool</span><span class="token punctuation">,</span>
+        tick_arrays<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token punctuation">[</span><span class="token class-name">TickArray</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token class-name">SwapResult</span> <span class="token punctuation">&#123;</span>
+        <span class="token comment">// 栈上计算，避免动态分配</span>
+        <span class="token keyword">let</span> <span class="token keyword">mut</span> current_tick <span class="token operator">=</span> whirlpool<span class="token punctuation">.</span>current_tick_index<span class="token punctuation">;</span>
+        <span class="token keyword">let</span> <span class="token keyword">mut</span> current_sqrt_price <span class="token operator">=</span> whirlpool<span class="token punctuation">.</span>sqrt_price<span class="token punctuation">;</span>
+        <span class="token keyword">let</span> <span class="token keyword">mut</span> amount_remaining <span class="token operator">=</span> <span class="token keyword">if</span> <span class="token keyword">self</span><span class="token punctuation">.</span>amount_specified_is_input <span class="token punctuation">&#123;</span>
+            <span class="token keyword">self</span><span class="token punctuation">.</span>amount_a
+        <span class="token punctuation">&#125;</span> <span class="token keyword">else</span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">self</span><span class="token punctuation">.</span>amount_b
+        <span class="token punctuation">&#125;</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 主循环逻辑...</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h3 id="错误处理模式">错误处理模式</h3>
+<h4 id="自定义错误类型">自定义错误类型</h4>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// 错误定义</span>
+<span class="token attribute attr-name">#[error_code]</span>
+<span class="token keyword">pub</span> <span class="token keyword">enum</span> <span class="token type-definition class-name">WhirlpoolError</span> <span class="token punctuation">&#123;</span>
+    <span class="token attribute attr-name">#[msg(<span class="token string">"Invalid tick index"</span>)]</span>
+    <span class="token class-name">InvalidTickIndex</span><span class="token punctuation">,</span>
+    <span class="token attribute attr-name">#[msg(<span class="token string">"Insufficient liquidity"</span>)]</span>
+    <span class="token class-name">InsufficientLiquidity</span><span class="token punctuation">,</span>
+    <span class="token attribute attr-name">#[msg(<span class="token string">"Price limit reached"</span>)]</span>
+    <span class="token class-name">PriceLimitReached</span><span class="token punctuation">,</span>
+    <span class="token attribute attr-name">#[msg(<span class="token string">"Zero amount specified"</span>)]</span>
+    <span class="token class-name">ZeroAmountSpecified</span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// 错误处理函数</span>
+<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">validate_tick_range</span><span class="token punctuation">(</span>
+    tick_lower<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">,</span>
+    tick_upper<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">,</span>
+    tick_spacing<span class="token punctuation">:</span> <span class="token keyword">u16</span><span class="token punctuation">,</span>
+<span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token class-name">Result</span><span class="token operator">&lt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">if</span> tick_lower <span class="token operator">>=</span> tick_upper <span class="token punctuation">&#123;</span>
+        <span class="token keyword">return</span> <span class="token class-name">Err</span><span class="token punctuation">(</span><span class="token class-name">WhirlpoolError</span><span class="token punctuation">::</span><span class="token class-name">InvalidTickIndex</span><span class="token punctuation">.</span><span class="token function">into</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+    <span class="token keyword">if</span> tick_lower <span class="token operator">%</span> tick_spacing <span class="token keyword">as</span> <span class="token keyword">i32</span> <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">return</span> <span class="token class-name">Err</span><span class="token punctuation">(</span><span class="token class-name">WhirlpoolError</span><span class="token punctuation">::</span><span class="token class-name">InvalidTickIndex</span><span class="token punctuation">.</span><span class="token function">into</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+    <span class="token class-name">Ok</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h2 id="高级特性实现">高级特性实现</h2>
+<h3 id="协议费用机制">协议费用机制</h3>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// 协议费用收集</span>
+<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">collect_protocol_fee</span><span class="token punctuation">(</span>
+    whirlpool<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token class-name">Whirlpool</span><span class="token operator">></span><span class="token punctuation">,</span>
+    fee_authority<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token class-name">Signer</span><span class="token punctuation">,</span>
+    token_owner_account_a<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token class-name">TokenAccount</span><span class="token operator">></span><span class="token punctuation">,</span>
+    token_owner_account_b<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token class-name">TokenAccount</span><span class="token operator">></span><span class="token punctuation">,</span>
+<span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token class-name">Result</span><span class="token operator">&lt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> fee_amount_a <span class="token operator">=</span> whirlpool<span class="token punctuation">.</span>fee_growth_global_a
+        <span class="token punctuation">.</span><span class="token function">checked_sub</span><span class="token punctuation">(</span>protocol_fee_owed_a<span class="token punctuation">)</span>
+        <span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> fee_amount_b <span class="token operator">=</span> whirlpool<span class="token punctuation">.</span>fee_growth_global_b
+        <span class="token punctuation">.</span><span class="token function">checked_sub</span><span class="token punctuation">(</span>protocol_fee_owed_b<span class="token punctuation">)</span>
+        <span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 转移协议费用...</span>
+    <span class="token class-name">Ok</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h3 id="跨指令优化">跨指令优化</h3>
+<p>Orca使用跨指令优化的设计模式：</p>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// 复合指令定义</span>
+<span class="token attribute attr-name">#[derive(Accounts)]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">SwapWithPartner</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">pub</span> whirlpool<span class="token punctuation">:</span> <span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">Whirlpool</span><span class="token operator">></span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> partner<span class="token punctuation">:</span> <span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">Partner</span><span class="token operator">></span><span class="token punctuation">,</span>
+    <span class="token comment">/// CHECK: Partner program will validate this</span>
+    <span class="token keyword">pub</span> partner_authority<span class="token punctuation">:</span> <span class="token class-name">UncheckedAccount</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token operator">></span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> partner_token_account<span class="token punctuation">:</span> <span class="token class-name">Account</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'info</span><span class="token punctuation">,</span> <span class="token class-name">TokenAccount</span><span class="token operator">></span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// 复合指令处理</span>
+<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">swap_with_partner</span><span class="token punctuation">(</span>ctx<span class="token punctuation">:</span> <span class="token class-name">Context</span><span class="token operator">&lt;</span><span class="token class-name">SwapWithPartner</span><span class="token operator">></span><span class="token punctuation">,</span> data<span class="token punctuation">:</span> <span class="token class-name">SwapData</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token class-name">Result</span><span class="token operator">&lt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+    <span class="token comment">// 第一阶段：标准交换</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> swap_result <span class="token operator">=</span> <span class="token function">perform_swap</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>ctx<span class="token punctuation">.</span>accounts<span class="token punctuation">.</span>whirlpool<span class="token punctuation">,</span> <span class="token operator">&amp;</span>data<span class="token punctuation">)</span><span class="token operator">?</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 第二阶段：伙伴程序处理</span>
+    <span class="token keyword">let</span> partner_ix <span class="token operator">=</span> <span class="token class-name">Instruction</span> <span class="token punctuation">&#123;</span>
+        program_id<span class="token punctuation">:</span> ctx<span class="token punctuation">.</span>accounts<span class="token punctuation">.</span>partner<span class="token punctuation">.</span><span class="token function">key</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        accounts<span class="token punctuation">:</span> <span class="token macro property">vec!</span><span class="token punctuation">[</span>
+            <span class="token class-name">AccountMeta</span><span class="token punctuation">::</span><span class="token function">new_readonly</span><span class="token punctuation">(</span>ctx<span class="token punctuation">.</span>accounts<span class="token punctuation">.</span>partner_authority<span class="token punctuation">.</span><span class="token function">key</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            <span class="token class-name">AccountMeta</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span>ctx<span class="token punctuation">.</span>accounts<span class="token punctuation">.</span>partner_token_account<span class="token punctuation">.</span><span class="token function">key</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token punctuation">]</span><span class="token punctuation">,</span>
+        data<span class="token punctuation">:</span> partner_data<span class="token punctuation">,</span>
+    <span class="token punctuation">&#125;</span><span class="token punctuation">;</span>
+
+    <span class="token function">invoke</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>partner_ix<span class="token punctuation">,</span> <span class="token operator">&amp;</span><span class="token punctuation">[</span>ctx<span class="token punctuation">.</span>accounts<span class="token punctuation">.</span>partner_authority<span class="token punctuation">.</span><span class="token function">to_account_info</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token operator">?</span><span class="token punctuation">;</span>
+    <span class="token class-name">Ok</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h2 id="技术要点总结">技术要点总结</h2>
+<h3 id="核心机制对比">核心机制对比</h3>
+<p><strong>Whirlpool vs 传统AMM的区别：</strong></p>
+<ul>
+<li><strong>流动性管理</strong>：集中流动性 vs 全范围流动性</li>
+<li><strong>价格发现</strong>：Tick系统管理 vs 简单恒定乘积</li>
+<li><strong>资本效率</strong>：更高的资金利用率 vs 更简单的实现</li>
+</ul>
+<h3 id="零拷贝技术的优势">零拷贝技术的优势</h3>
+<p>零拷贝技术在Orca中的应用带来了显著的性能提升：</p>
+<ul>
+<li><strong>减少序列化开销</strong>：直接内存访问，避免不必要的拷贝操作</li>
+<li><strong>栈上内存分配</strong>：使用固定大小数组而非动态分配</li>
+<li><strong>更好的gas效率</strong>：降低交易成本，提升用户体验</li>
+</ul>
+<h3 id="价格操纵防护">价格操纵防护</h3>
+<p>Orca通过多层机制防止价格操纵：</p>
+<ul>
+<li><strong>Tick间距控制</strong>：限制流动性位置的粒度</li>
+<li><strong>预言机价格验证</strong>：集成链上价格预言机</li>
+<li><strong>滑点保护机制</strong>：最大滑点限制和交易失败保护</li>
+</ul>
+<h2 id="未来发展方向">未来发展方向</h2>
+<h3 id="2025年技术演进">2025年技术演进</h3>
+<ol>
+<li><strong>AI智能做市</strong>：集成机器学习算法，实现动态费率调整和智能价格发现</li>
+<li><strong>多链聚合扩张</strong>：通过LayerZero和Wormhole实现真正的跨链AMM</li>
+<li><strong>零知识隐私池</strong>：集成ZK证明技术，为机构用户提供隐私保护交易</li>
+<li><strong>意图驱动集成</strong>：与CowSwap等意图协议深度合作，提供更智能的交易路由</li>
+<li><strong>RWA资产支持</strong>：推出专为现实世界资产代币化设计的AMM池</li>
+<li><strong>MEV防护升级</strong>：采用SUAVE网络和Flashbots Protect的最新防护机制</li>
+<li><strong>量子安全加密</strong>：为后量子时代做准备，研究抗量子计算的加密算法</li>
+</ol>
+<h3 id="生态合作与扩张">生态合作与扩张</h3>
+<p>Orca在2025年深化生态合作：</p>
+<ul>
+<li><strong>流动性联盟</strong>：与Jupiter、Raydium、Meteora形成Solana流动性联盟</li>
+<li><strong>跨链桥接</strong>：深度集成Wormhole，实现多链资产的无缝流动</li>
+<li><strong>机构级集成</strong>：与传统金融机构合作，提供托管和清算服务</li>
+<li><strong>Layer2扩张</strong>：支持Arbitrum、Optimism、Base等以太坊Layer2网络</li>
+<li><strong>新兴生态</strong>：扩展到TON、SUI、Aptos等高性能区块链网络</li>
+</ul>
+<h2 id="结论">结论</h2>
+<p>Orca作为Solana生态的核心基础设施，不仅展示了Rust在高性能DeFi应用中的强大能力，也引领着2025年DEX技术创新的浪潮。通过深入理解其技术实现，开发者可以在多链时代更好地应用这些先进的AMM设计模式和跨链技术理念，为下一代去中心化交易所的发展贡献力量。</p>
+<hr>
+<p><em>本文内容基于公开技术文档和技术分析，仅供学习参考。加密货币投资具有高风险，请谨慎决策。</em></p>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src="https://img.soniachen.com/IMG_0151.JPG" title="头像" alt="头像"><img class="post-copyright__author_img_front" src="https://img.soniachen.com/IMG_0151.JPG" title="头像" alt="头像"></a><div class="post-copyright__author_name">tinachan</div><div class="post-copyright__author_desc"></div></div><div class="post-copyright__post__info"><a class="post-copyright__reprint" title="该文章为转载文章，注意版权协议" target="_blank" rel="noopener" href="https://soniachan33.github.io">转载</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://soniachan33.github.io')">Orca技术内幕：多链时代的DEX新范式</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"><div class="post-reward" onclick="anzhiyu.addRewardMask()"><div class="reward-button button--animated" title="赞赏作者"><i class="anzhiyufont anzhiyu-icon-hand-heart-fill"></i>打赏作者</div><div class="reward-main"><div class="reward-all"><span class="reward-title">感谢你赐予我前进的力量</span><ul class="reward-group"><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5543.JPG" target="_blank"><img class="post-qr-code-img" src="https://img.soniachen.com/blog/IMG_5543.JPG" alt="微信"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5544.JPG" target="_blank"><img class="post-qr-code-img" src="https://img.soniachen.com/blog/IMG_5544.JPG" alt="支付宝"/></a><div class="post-qr-code-desc">支付宝</div></li></ul><a class="reward-main-btn" href="/about/#about-reward" target="_blank"><div class="reward-text">赞赏者名单</div><div class="reward-dec">因为你们的支持让我意识到写文章的价值🙏</div></a></div></div></div><div id="quit-box" onclick="anzhiyu.removeRewardMask()" style="display: none"></div></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://soniachan33.github.io"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><div class="share-link weibo"><a class="share-button" target="_blank" href="https://service.weibo.com/share/share.php?title=Orca技术内幕：多链时代的DEX新范式&amp;url=https://soniachan33.github.io&amp;pic=https://img.soniachen.com/blog/posts/2025/10/image-20251007221550399.png" rel="external nofollow noreferrer noopener"><i class="anzhiyufont anzhiyu-icon-weibo"></i></a></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本文版权归作者所有，转载请注明出处</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Solana/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Solana<span class="tagsPageCount">26</span></a><a class="post-meta__box__tags" href="/tags/DeFi/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>DeFi<span class="tagsPageCount">2</span></a><a class="post-meta__box__tags" href="/tags/DEX/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>DEX<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/Orca/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Orca<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/AMM/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AMM<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/Whirlpool/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Whirlpool<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/Rust/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Rust<span class="tagsPageCount">43</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img.soniachen.com/blog/posts/2025/10/image-20251007221550399.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-full"><a href="/2025/10/06/Solana-DeFi-%E4%BA%A4%E6%98%93%E7%9A%84%E2%80%9C%E5%A4%A7%E8%84%91%E2%80%9D%EF%BC%9AJupiter-JUP-%E5%A6%82%E4%BD%95%E9%80%9A%E8%BF%87%E8%81%9A%E5%90%88%E5%99%A8%E9%87%8D%E5%A1%91%E7%94%A8%E6%88%B7%E4%BD%93%E9%AA%8C%EF%BC%9F/"><img class="prev-cover" src="https://img.soniachen.com/blog/posts/2025/10/image-20251006205331573.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Solana DeFi 交易的“大脑”：Jupiter (JUP) 如何通过聚合器重塑用户体验？</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/2025/10/06/Solana-DeFi-%E4%BA%A4%E6%98%93%E7%9A%84%E2%80%9C%E5%A4%A7%E8%84%91%E2%80%9D%EF%BC%9AJupiter-JUP-%E5%A6%82%E4%BD%95%E9%80%9A%E8%BF%87%E8%81%9A%E5%90%88%E5%99%A8%E9%87%8D%E5%A1%91%E7%94%A8%E6%88%B7%E4%BD%93%E9%AA%8C%EF%BC%9F/" title="Solana DeFi 交易的“大脑”：Jupiter (JUP) 如何通过聚合器重塑用户体验？"><img class="cover" src="https://img.soniachen.com/blog/posts/2025/10/image-20251006205331573.png" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-10-06</div><div class="title">Solana DeFi 交易的“大脑”：Jupiter (JUP) 如何通过聚合器重塑用户体验？</div></div></a></div><div><a href="/2025/08/26/Solana-part22-DeFi%E9%A1%B9%E7%9B%AE%E6%8B%86%E8%A7%A3/" title="Solana[part22]_DeFi项目拆解"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=f59ca88a-ed91-d507-5dac-99d22ed515e5" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-26</div><div class="title">Solana[part22]_DeFi项目拆解</div></div></a></div><div><a href="/2025/08/26/Solana-part21-ETF%E7%9A%84%E8%B5%8E%E5%9B%9E/" title="Solana[part21]_ETF的赎回"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=6b00b4f5-8508-20c5-8e4e-e84ef69ce2e0" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-26</div><div class="title">Solana[part21]_ETF的赎回</div></div></a></div><div><a href="/2025/08/25/Solana-part20-ETF%E7%9A%84%E8%B4%AD%E4%B9%B0/" title="Solana[part20]_ETF的购买"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=04dd256f-1349-295e-9f79-60faa2847763" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-25</div><div class="title">Solana[part20]_ETF的购买</div></div></a></div><div><a href="/2025/08/24/Solana%E5%AE%9E%E6%88%98Bug%E8%AE%B0%E5%BD%95/" title="Solana实战Bug记录"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=db3a0f04-755e-9275-b17f-00e3ec9f2184" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-24</div><div class="title">Solana实战Bug记录</div></div></a></div><div><a href="/2025/08/24/Solana-part19-ETF%E7%9A%84%E4%BB%8B%E7%BB%8D%E5%92%8C%E5%88%9B%E5%BB%BA%E6%8C%87%E4%BB%A4%E5%AE%9E%E7%8E%B0/" title="Solana[part19]_ETF的介绍和创建指令实现"><img class="cover" src="https://img.soniachen.com/blog/posts/2025/08/image-20250825111246391.png" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-24</div><div class="title">Solana[part19]_ETF的介绍和创建指令实现</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content is-expand"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link"><span class="toc-number">1.</span> <span class="toc-text">Orca：Solana上的高性能AMM DEX深度解析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%95%E8%A8%80"><span class="toc-number">1.1.</span> <span class="toc-text">引言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DEX%E8%A1%8C%E4%B8%9A%E6%9C%80%E6%96%B0%E5%8A%A8%E6%80%81"><span class="toc-number">1.2.</span> <span class="toc-text">DEX行业最新动态</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2025%E5%B9%B4DEX%E5%8F%91%E5%B1%95%E8%B6%8B%E5%8A%BF"><span class="toc-number">1.2.1.</span> <span class="toc-text">2025年DEX发展趋势</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Orca%E7%9A%84%E5%B8%82%E5%9C%BA%E5%9C%B0%E4%BD%8D"><span class="toc-number">1.2.2.</span> <span class="toc-text">Orca的市场地位</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Orca%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84"><span class="toc-number">1.3.</span> <span class="toc-text">Orca核心技术架构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Whirlpool%E6%9C%BA%E5%88%B6%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.3.1.</span> <span class="toc-text">Whirlpool机制详解</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.3.1.1.</span> <span class="toc-text">核心数据结构</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Tick%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.3.1.2.</span> <span class="toc-text">Tick系统实现</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E5%AD%A6%E8%AE%A1%E7%AE%97%E4%BC%98%E5%8C%96"><span class="toc-number">1.3.2.</span> <span class="toc-text">数学计算优化</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%B7%E6%A0%BC%E8%AE%A1%E7%AE%97%E5%85%AC%E5%BC%8F"><span class="toc-number">1.3.2.1.</span> <span class="toc-text">价格计算公式</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Rust%E5%AE%9E%E7%8E%B0%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90"><span class="toc-number">1.4.</span> <span class="toc-text">Rust实现深度解析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%BC%98%E5%8C%96"><span class="toc-number">1.4.1.</span> <span class="toc-text">内存管理优化</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%9B%B6%E6%8B%B7%E8%B4%9D%E8%AE%BE%E8%AE%A1"><span class="toc-number">1.4.1.1.</span> <span class="toc-text">零拷贝设计</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A0%88%E4%B8%8A%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D"><span class="toc-number">1.4.1.2.</span> <span class="toc-text">栈上内存分配</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86%E6%A8%A1%E5%BC%8F"><span class="toc-number">1.4.2.</span> <span class="toc-text">错误处理模式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E9%94%99%E8%AF%AF%E7%B1%BB%E5%9E%8B"><span class="toc-number">1.4.2.1.</span> <span class="toc-text">自定义错误类型</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%AB%98%E7%BA%A7%E7%89%B9%E6%80%A7%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.5.</span> <span class="toc-text">高级特性实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8D%8F%E8%AE%AE%E8%B4%B9%E7%94%A8%E6%9C%BA%E5%88%B6"><span class="toc-number">1.5.1.</span> <span class="toc-text">协议费用机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B7%A8%E6%8C%87%E4%BB%A4%E4%BC%98%E5%8C%96"><span class="toc-number">1.5.2.</span> <span class="toc-text">跨指令优化</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8A%80%E6%9C%AF%E8%A6%81%E7%82%B9%E6%80%BB%E7%BB%93"><span class="toc-number">1.6.</span> <span class="toc-text">技术要点总结</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%9C%BA%E5%88%B6%E5%AF%B9%E6%AF%94"><span class="toc-number">1.6.1.</span> <span class="toc-text">核心机制对比</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9B%B6%E6%8B%B7%E8%B4%9D%E6%8A%80%E6%9C%AF%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="toc-number">1.6.2.</span> <span class="toc-text">零拷贝技术的优势</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%B7%E6%A0%BC%E6%93%8D%E7%BA%B5%E9%98%B2%E6%8A%A4"><span class="toc-number">1.6.3.</span> <span class="toc-text">价格操纵防护</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AA%E6%9D%A5%E5%8F%91%E5%B1%95%E6%96%B9%E5%90%91"><span class="toc-number">1.7.</span> <span class="toc-text">未来发展方向</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2025%E5%B9%B4%E6%8A%80%E6%9C%AF%E6%BC%94%E8%BF%9B"><span class="toc-number">1.7.1.</span> <span class="toc-text">2025年技术演进</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%9F%E6%80%81%E5%90%88%E4%BD%9C%E4%B8%8E%E6%89%A9%E5%BC%A0"><span class="toc-number">1.7.2.</span> <span class="toc-text">生态合作与扩张</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E8%AE%BA"><span class="toc-number">1.8.</span> <span class="toc-text">结论</span></a></li></ol></li></ol></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div id="footer_deal"><a class="deal_link" href="/soniachan0831@gmail.com" title="email"><i class="anzhiyufont anzhiyu-icon-envelope"></i></a><img class="footer_mini_logo" title="返回顶部" alt="返回顶部" onclick="anzhiyu.scrollToDest(0, 500)" src="https://img.soniachen.com/IMG_0151.JPG" size="50px"/><a class="deal_link" target="_blank" rel="noopener" href="https://github.com/SoniaChan33" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://space.bilibili.com/360939620" title="Bilibili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="deal_link" href="/copyright" title="CC"><i class="anzhiyufont anzhiyu-icon-copyright-line"></i></a></div><div class="copyright">&copy;2021 - 2025 By SoniaChen</div><div id="workboard"><div id="runtimeTextTip"></div></div><p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo_v5.4.0" title="博客框架为Hexo_v5.4.0"><img src="https://npm.elemecdn.com/anzhiyu-blog@2.1.5/img/badge/Frame-Hexo.svg" alt="博客框架为Hexo_v5.4.0"/></a></p></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">58</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">6</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="back-menu-list-groups"><div class="back-menu-list-group"><div class="back-menu-list-title">网页</div><div class="back-menu-list"><a class="back-menu-item" href="https://blog.soniachen.com/" title="博客"><img class="back-menu-item-icon" src="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png" alt="博客"/><span class="back-menu-item-text">博客</span></a></div></div></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/?id=447363601&amp;server=netease"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/bangumis/"><i class="anzhiyufont anzhiyu-icon-bilibili faa-tada" style="font-size: 0.9em;"></i><span> 追番页</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AMM/" style="font-size: 0.88rem;">AMM<sup>1</sup></a><a href="/tags/BlockChain/" style="font-size: 0.88rem;">BlockChain<sup>4</sup></a><a href="/tags/Bug/" style="font-size: 0.88rem;">Bug<sup>2</sup></a><a href="/tags/CloudFlare/" style="font-size: 0.88rem;">CloudFlare<sup>2</sup></a><a href="/tags/DEX/" style="font-size: 0.88rem;">DEX<sup>1</sup></a><a href="/tags/DeFi/" style="font-size: 0.88rem;">DeFi<sup>2</sup></a><a href="/tags/Foundry/" style="font-size: 0.88rem;">Foundry<sup>1</sup></a><a href="/tags/Git/" style="font-size: 0.88rem;">Git<sup>1</sup></a><a href="/tags/JUP/" style="font-size: 0.88rem;">JUP<sup>1</sup></a><a href="/tags/Java/" style="font-size: 0.88rem;">Java<sup>1</sup></a><a href="/tags/Orca/" style="font-size: 0.88rem;">Orca<sup>1</sup></a><a href="/tags/PicGo/" style="font-size: 0.88rem;">PicGo<sup>1</sup></a><a href="/tags/Rust/" style="font-size: 0.88rem;">Rust<sup>43</sup></a><a href="/tags/Solana/" style="font-size: 0.88rem;">Solana<sup>26</sup></a><a href="/tags/Solidity/" style="font-size: 0.88rem;">Solidity<sup>4</sup></a><a href="/tags/TypeScript/" style="font-size: 0.88rem;">TypeScript<sup>2</sup></a><a href="/tags/Typora/" style="font-size: 0.88rem;">Typora<sup>1</sup></a><a href="/tags/Whirlpool/" style="font-size: 0.88rem;">Whirlpool<sup>1</sup></a><a href="/tags/hexo/" style="font-size: 0.88rem;">hexo<sup>2</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="447363601" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=447363601&amp;userid=321481294&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@5.0.28/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><canvas id="universe"></canvas><script async src="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/dark/dark.js"></script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("04/01/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎使用安知鱼!`,
+    `生活明朗, 万物可爱`,
+    `
+        
+       █████╗ ███╗   ██╗███████╗██╗  ██╗██╗██╗   ██╗██╗   ██╗
+      ██╔══██╗████╗  ██║╚══███╔╝██║  ██║██║╚██╗ ██╔╝██║   ██║
+      ███████║██╔██╗ ██║  ███╔╝ ███████║██║ ╚████╔╝ ██║   ██║
+      ██╔══██║██║╚██╗██║ ███╔╝  ██╔══██║██║  ╚██╔╝  ██║   ██║
+      ██║  ██║██║ ╚████║███████╗██║  ██║██║   ██║   ╚██████╔╝
+      ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝╚═╝   ╚═╝    ╚═════╝
+        
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By 安知鱼 V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by 安知鱼 %c 你正在访问 SoniaChen 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script async="async">(function () {
+  var grt = new Date("04/01/2021 00:00:00"); //设置网站上线时间
+  var now = new Date();
+  var dnum;
+  var hnum;
+  var mnum;
+  var snum;
+  var nowHour;
+
+  // 计算并更新天数、小时数、分钟数和秒数
+  function updateTime() {
+    now = new Date(); // 更新 now 的值
+    nowHour = now.getHours(); // 更新 nowHour 的值
+    var days = (now - grt) / 1000 / 60 / 60 / 24;
+    dnum = Math.floor(days);
+    var hours = (now - grt) / 1000 / 60 / 60 - 24 * dnum;
+    hnum = Math.floor(hours);
+    if (String(hnum).length == 1) {
+      hnum = "0" + hnum;
+    }
+    var minutes = (now - grt) / 1000 / 60 - 24 * 60 * dnum - 60 * hnum;
+    mnum = Math.floor(minutes);
+    if (String(mnum).length == 1) {
+      mnum = "0" + mnum;
+    }
+    var seconds = (now - grt) / 1000 - 24 * 60 * 60 * dnum - 60 * 60 * hnum - 60 * mnum;
+    snum = Math.round(seconds);
+    if (String(snum).length == 1) {
+      snum = "0" + snum;
+    }
+  }
+
+  // 更新网页中显示的网站运行时间
+  function updateHtml() {
+    const footer = document.getElementById("footer");
+    if (!footer) return
+    let currentTimeHtml = "";
+    if (nowHour < 18 && nowHour >= 9) {
+      // 如果是上班时间，默认就是"安知鱼-上班摸鱼中.svg"图片，不需要更改
+      currentTimeHtml = `本站居然运行了 ${dnum} 天<span id='runtime'> ${hnum} 小时 ${mnum} 分 ${snum} 秒 </span><i class='anzhiyufont anzhiyu-icon-heartbeat' style='color:red'></i>`;
+    } else {
+      // 如果是下班时间，插入"安知鱼-下班啦.svg"图片
+      let img = document.querySelector("#workboard .workSituationImg");
+      if (img != null) {
+        img.src = "";
+        img.title = "";
+        img.alt = "";
+      }
+
+      currentTimeHtml = `本站居然运行了 ${dnum} 天<span id='runtime'> ${hnum} 小时 ${mnum} 分 ${snum} 秒 </span><i class='anzhiyufont anzhiyu-icon-heartbeat' style='color:red'></i>`;
+    }
+
+    if (document.getElementById("runtimeTextTip")) {
+      document.getElementById("runtimeTextTip").innerHTML = currentTimeHtml;
+    }
+  }
+
+  setInterval(() => {
+    updateTime();
+    updateHtml();
+  }, 1000);
+})();</script><script src="/js/search/local-search.js"></script><div class="js-pjax"><input type="hidden" name="page-type" id="page-type" value="post"></div><script>var visitorMail = "visitor@soniachen.com";
+</script><script async data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><script src="/js/anzhiyu/right_click_menu.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="true" src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/dist/click-show-text.min.js" data-mobile="false" data-text="Don't,Click,Me" data-fontsize="15px" data-random="false" async="async"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404.html')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div><script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"left","width":150,"height":300},"mobile":{"show":true},"log":false});</script></body></html>
