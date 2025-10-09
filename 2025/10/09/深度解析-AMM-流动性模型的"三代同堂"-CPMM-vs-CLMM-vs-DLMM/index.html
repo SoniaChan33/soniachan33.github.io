@@ -1,0 +1,702 @@
+<!DOCTYPE html><html lang="[&quot;zh-CN&quot;,&quot;en&quot;,&quot;default&quot;]" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>深度解析：AMM 流动性模型的&quot;三代同堂&quot; (CPMM vs CLMM vs DLMM) | Sonia33</title><meta name="keywords" content="AMM, DeFi, CPMM, CLMM, DLMM, 流动性模型, 自动化做市商, 资本效率"><meta name="author" content="SoniaChen"><meta name="copyright" content="SoniaChen"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="深度解析：AMM 流动性模型的&quot;三代同堂&quot; (CPMM vs CLMM vs DLMM)"><meta name="application-name" content="深度解析：AMM 流动性模型的&quot;三代同堂&quot; (CPMM vs CLMM vs DLMM)"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="深度解析：AMM 流动性模型的&quot;三代同堂&quot; (CPMM vs CLMM vs DLMM)"><meta property="og:url" content="https://blog.soniachen.com/2025/10/09/%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-AMM-%E6%B5%81%E5%8A%A8%E6%80%A7%E6%A8%A1%E5%9E%8B%E7%9A%84%22%E4%B8%89%E4%BB%A3%E5%90%8C%E5%A0%82%22-CPMM-vs-CLMM-vs-DLMM/index.html"><meta property="og:site_name" content="Sonia33"><meta property="og:description" content="深度对比分析AMM流动性模型的三代演进：CPMM、CLMM、DLMM，全面理解不同模型的资本效率和风险特征"><meta property="og:locale" content="[&quot;zh-CN&quot;,&quot;en&quot;,&quot;default&quot;]"><meta property="og:image" content="https://img.soniachen.com/blog/posts/2025/10/amm-liquidity-models.png"><meta property="article:author" content="SoniaChen"><meta property="article:tag"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img.soniachen.com/blog/posts/2025/10/amm-liquidity-models.png"><meta name="description" content="深度对比分析AMM流动性模型的三代演进：CPMM、CLMM、DLMM，全面理解不同模型的资本效率和风险特征"><link rel="shortcut icon" href="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png"><link rel="canonical" href="https://blog.soniachen.com/2025/10/09/%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90-AMM-%E6%B5%81%E5%8A%A8%E6%80%A7%E6%A8%A1%E5%9E%8B%E7%9A%84%22%E4%B8%89%E4%BB%A3%E5%90%8C%E5%A0%82%22-CPMM-vs-CLMM-vs-DLMM/"><link rel="preconnect" href="//cdn.cbd.int"/><meta name="google-site-verification" content="xxx"/><meta name="baidu-site-verification" content="code-xxx"/><meta name="msvalidate.01" content="xxx"/><link rel="manifest" href="/manifest.json"/><meta name="msapplication-TileColor" content="var(--anzhiyu-main)"/><link rel="mask-icon" href="/img/siteicon/apple-icon-180.png" color="#5bbad5"/><link rel="apple-touch-icon" sizes="180x180" href="/img/siteicon/apple-icon-180.png"/><link rel="apple-touch-icon-precomposed" sizes="180x180" href="/img/siteicon/apple-icon-180.png"/><link rel="icon" type="image/png" sizes="32x32" href="/img/siteicon/32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/img/siteicon/16.png"/><link rel="bookmark" href="/img/siteicon/apple-icon-180.png"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2048-2732.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2732-2048.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1668-2388.jpg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2388-1668.jpg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1536-2048.jpg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2048-1536.jpg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1668-2224.jpg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2224-1668.jpg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1620-2160.jpg" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2160-1620.jpg" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1290-2796.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2796-1290.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1179-2556.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2556-1179.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1284-2778.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2778-1284.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1170-2532.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2532-1170.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1125-2436.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2436-1125.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1242-2688.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2688-1242.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-828-1792.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1792-828.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1242-2208.jpg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2208-1242.jpg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-750-1334.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1334-750.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-640-1136.jpg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1136-640.jpg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@5.0.28/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: undefined,
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"sonia33","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: undefined,
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":6,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://twikoo-cloudflare.soniachan0831.workers.dev',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: undefined,
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","📖 读万卷书","🧗 徒步爱好者","🏀 篮球狂热爱好者","🚴 公路车爱好者","🏃 跑步爱好者"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":true,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"prismjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: SoniaChen","link":"链接: ","source":"来源: Sonia33","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"bottom-right"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.1.2/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.1.2/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: true
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Sonia33',
+  title: '深度解析：AMM 流动性模型的"三代同堂" (CPMM vs CLMM vs DLMM)',
+  postAI: '',
+  pageFillDescription: '深度解析：AMM 流动性模型的三代同堂, 引言, CPMM：常数乘积市场做市商, 核心机制, 交易机制, 优缺点分析, CLMM：集中流动性市场做市商, 创新突破, Tick系统, 数学优化, 资本效率提升, DLMM：动态流动性市场做市商, 创新理念, 动态调整机制, 智能策略, Raydium与融合创新, Raydium CLMM实现, 融合创新方向, 全面对比分析, 资本效率对比, 风险评估, 无常损失（IL）, 滑点风险, 操纵风险, 适用场景分析, CPMM适用场景, CLMM适用场景, DLMM适用场景, 未来发展趋势, 技术演进方向, 生态融合趋势, 结论深度解析流动性模型的三代同堂引言在生态中自动化做市商是核心基础设施而流动性模型的演进直接决定了资本效率和用户体验从最初的常数乘积模型到集中流动性模型再到新兴的动态流动性模型技术经历了三代革新本文将深入对比这三种模型的设计理念技术实现和实际应用常数乘积市场做市商核心机制是最经典的模型以为代表其核心思想是通过数学公式维持交易对的乘积恒定其中和分别代表两种代币的储备量是恒定值交易机制当用户进行代币交换时系统会根据以下公式计算输出量示例代码逻辑手续费优缺点分析优势实现简单易于理解抗操纵性强流动性分布均匀劣势资本效率低下大量资金闲置无常损失严重滑点随交易量增大而增加集中流动性市场做市商创新突破是引入的革命性创新将流动性集中在特定价格区间内大幅提升资本效率系统的核心是系统将价格范围离散化为可管理的区间价格计算公式流动性集中区间下界上界流动性数量数学优化价格使用定点数表示确保计算精度资本效率提升相比在相同价格区间内的资本效率可提升数百倍价格范围资金利用率资金利用率效率提升倍倍倍动态流动性市场做市商创新理念代表了的第三代进化通过智能合约自动调整流动性分布结合了的简单性和的效率优势动态调整机制的核心特点是流动性头寸能够根据市场条件自动调整动态重新平衡自动化做市策略智能策略集成了多种自动化策略均值回归策略在价格偏离均值时自动调整头寸波动率适应策略根据市场波动率动态调整价格区间收益优化策略自动将赚取的手续费进行复投与融合创新实现作为生态的重要率先实现了核心结构体融合创新方向现代开始融合多种模型的优势混合流动性模型结合集中和全范围流动性跨链多链部署和桥接整合意图驱动集成用户交易意图优化全面对比分析资本效率对比指标相同区间资本效率低高极高资金利用率流动性碎片化无中等低维护复杂度低高中等风险评估无常损失无常损失是面临的主要风险全价格范围暴露风险最高区间集中风险可控但需精确预测动态调整风险最低滑点风险滑点随交易规模和流动性分布变化滑点交易量流动性深度价格区间操纵风险不同模型面对操纵攻击的脆弱性三明治攻击最易受影响预言机操纵相对安全流动性操纵通过动态调整缓解适用场景分析适用场景新兴交易对需要广泛流动性小额交易用户体验优先稳定币交易对价格稳定适用场景高频交易对需要极高资本效率成熟交易对有明确价格区间专业做市商和机构适用场景波动率较高的交易对需要自动化管理的流动性池寻求最佳风险收益比的未来发展趋势技术演进方向驱动机器学习优化价格区间和流动性分布零知识证明集成隐私保护的交易意图导向设计用户意图驱动的流动性配置多链原生跨链原生流动性协议生态融合趋势现代生态中三种模型将长期共存并相互融合协议层融合单一协议支持多种流动性模型跨协议协作不同协议间的流动性共享生态级创新协议栈的整体流动性优化结论流动性模型的三代演进代表了基础设施的成熟过程奠定了的基础证明了去中心化交易的可能性大幅提升了资本效率推动了机构采用通过自动化和智能化降低了用户使用门槛每种模型都有其独特的价值主张选择合适的模型需要综合考虑资本效率风险偏好和使用场景随着技术的不断进步将继续演化为生态提供更高效更智能的流动性解决方案本文基于公开技术文档和协议分析旨在提供教育性内容投资风险高请谨慎决策',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2025-10-09 21:21:24',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+          const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+          const isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+          const hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+          if (t === undefined) {
+            if (isLightMode) activateLightMode()
+            else if (isDarkMode) activateDarkMode()
+            else if (isNotSpecified || hasNoSupport) {
+              const now = new Date()
+              const hour = now.getHours()
+              const isNight = hour <= 6 || hour >= 18
+              isNight ? activateDarkMode() : activateLightMode()
+            }
+            window.matchMedia('(prefers-color-scheme: dark)').addListener(e => {
+              if (saveToLocal.get('theme') === undefined) {
+                e.matches ? activateDarkMode() : activateLightMode()
+              }
+            })
+          } else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><meta name="generator" content="Hexo 7.3.0"></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img.soniachen.com/cover2.gif"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><div class="back-home-button"><i class="anzhiyufont anzhiyu-icon-grip-vertical"></i><div class="back-menu-list-groups"><div class="back-menu-list-group"><div class="back-menu-list-title">网页</div><div class="back-menu-list"><a class="back-menu-item" href="https://blog.soniachen.com/" title="博客"><img class="back-menu-item-icon" src="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png" alt="博客"/><span class="back-menu-item-text">博客</span></a></div></div></div></div><a id="site-name" href="/" accesskey="h"><div class="title">Sonia33</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a><div id="he-plugin-simple"></div><script>var WIDGET = {
+  "CONFIG": {
+    "modules": "0124",
+    "background": "2",
+    "tmpColor": "FFFFFF",
+    "tmpSize": "16",
+    "cityColor": "FFFFFF",
+    "citySize": "16",
+    "aqiColor": "E8D87B",
+    "aqiSize": "16",
+    "weatherIconSize": "24",
+    "alertIconSize": "18",
+    "padding": "10px 10px 10px 10px",
+    "shadow": "0",
+    "language": "auto",
+    "borderRadius": "20",
+    "fixed": "true",
+    "vertical": "top",
+    "horizontal": "left",
+    "left": "20",
+    "top": "7.1",
+    "key": "df245676fb434a0691ead1c63341cd94"
+  }
+}
+</script><link rel="stylesheet" href="https://widget.qweather.net/simple/static/css/he-simple.css?v=1.4.0"/><script src="https://widget.qweather.net/simple/static/js/he-simple.js?v=1.4.0"></script></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/?id=447363601&amp;server=netease"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/bangumis/"><i class="anzhiyufont anzhiyu-icon-bilibili faa-tada" style="font-size: 0.9em;"></i><span> 追番页</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5543.JPG" target="_blank"><img class="post-qr-code-img" alt="微信" src="https://img.soniachen.com/blog/IMG_5543.JPG"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5544.JPG" target="_blank"><img class="post-qr-code-img" alt="支付宝" src="https://img.soniachen.com/blog/IMG_5544.JPG"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AMM/" style="font-size: 1.05rem;">AMM<sup>2</sup></a><a href="/tags/BlockChain/" style="font-size: 1.05rem;">BlockChain<sup>4</sup></a><a href="/tags/Bug/" style="font-size: 1.05rem;">Bug<sup>2</sup></a><a href="/tags/CLMM/" style="font-size: 1.05rem;">CLMM<sup>1</sup></a><a href="/tags/CPMM/" style="font-size: 1.05rem;">CPMM<sup>1</sup></a><a href="/tags/CloudFlare/" style="font-size: 1.05rem;">CloudFlare<sup>2</sup></a><a href="/tags/DEX/" style="font-size: 1.05rem;">DEX<sup>1</sup></a><a href="/tags/DLMM/" style="font-size: 1.05rem;">DLMM<sup>1</sup></a><a href="/tags/DeFi/" style="font-size: 1.05rem;">DeFi<sup>3</sup></a><a href="/tags/Foundry/" style="font-size: 1.05rem;">Foundry<sup>1</sup></a><a href="/tags/Git/" style="font-size: 1.05rem;">Git<sup>1</sup></a><a href="/tags/JUP/" style="font-size: 1.05rem;">JUP<sup>1</sup></a><a href="/tags/Java/" style="font-size: 1.05rem; font-weight: 500; color: var(--anzhiyu-lighttext)">Java<sup>1</sup></a><a href="/tags/Meteora/" style="font-size: 1.05rem;">Meteora<sup>1</sup></a><a href="/tags/Orca/" style="font-size: 1.05rem;">Orca<sup>1</sup></a><a href="/tags/PicGo/" style="font-size: 1.05rem;">PicGo<sup>1</sup></a><a href="/tags/Raydium/" style="font-size: 1.05rem;">Raydium<sup>1</sup></a><a href="/tags/Rust/" style="font-size: 1.05rem;">Rust<sup>43</sup></a><a href="/tags/Solana/" style="font-size: 1.05rem;">Solana<sup>27</sup></a><a href="/tags/Solidity/" style="font-size: 1.05rem;">Solidity<sup>4</sup></a><a href="/tags/TypeScript/" style="font-size: 1.05rem;">TypeScript<sup>2</sup></a><a href="/tags/Typora/" style="font-size: 1.05rem;">Typora<sup>1</sup></a><a href="/tags/Uniswap/" style="font-size: 1.05rem;">Uniswap<sup>1</sup></a><a href="/tags/Whirlpool/" style="font-size: 1.05rem;">Whirlpool<sup>1</sup></a><a href="/tags/hexo/" style="font-size: 1.05rem;">hexo<sup>2</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/10/"><span class="card-archive-list-date">十月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">九月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/08/"><span class="card-archive-list-date">八月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">24</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/07/"><span class="card-archive-list-date">七月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">23</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/06/"><span class="card-archive-list-date">六月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">5</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2022/02/"><span class="card-archive-list-date">二月 2022</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">转载</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/DeFi-%E6%A0%B8%E5%BF%83%E6%9C%BA%E5%88%B6/" itemprop="url">DeFi 核心机制</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Solana/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Solana</span></a><a class="article-meta__tags" href="/tags/DeFi/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>DeFi</span></a><a class="article-meta__tags" href="/tags/AMM/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AMM</span></a><a class="article-meta__tags" href="/tags/CPMM/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>CPMM</span></a><a class="article-meta__tags" href="/tags/CLMM/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>CLMM</span></a><a class="article-meta__tags" href="/tags/DLMM/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>DLMM</span></a><a class="article-meta__tags" href="/tags/Uniswap/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Uniswap</span></a><a class="article-meta__tags" href="/tags/Raydium/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Raydium</span></a><a class="article-meta__tags" href="/tags/Meteora/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Meteora</span></a></span></div></div><h1 class="post-title" itemprop="name headline">深度解析：AMM 流动性模型的&quot;三代同堂&quot; (CPMM vs CLMM vs DLMM)</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2025-10-09T14:00:00.000Z" title="发表于 2025-10-09 22:00:00">2025-10-09</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2025-10-09T13:21:24.282Z" title="更新于 2025-10-09 21:21:24">2025-10-09</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">1.6k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>5分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为四川"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>四川</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img.soniachen.com/blog/posts/2025/10/amm-liquidity-models.png"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://soniachan33.github.io"><header><a class="post-meta-categories" href="/categories/DeFi-%E6%A0%B8%E5%BF%83%E6%9C%BA%E5%88%B6/" itemprop="url">DeFi 核心机制</a><a href="/tags/Solana/" tabindex="-1" itemprop="url">Solana</a><a href="/tags/DeFi/" tabindex="-1" itemprop="url">DeFi</a><a href="/tags/AMM/" tabindex="-1" itemprop="url">AMM</a><a href="/tags/CPMM/" tabindex="-1" itemprop="url">CPMM</a><a href="/tags/CLMM/" tabindex="-1" itemprop="url">CLMM</a><a href="/tags/DLMM/" tabindex="-1" itemprop="url">DLMM</a><a href="/tags/Uniswap/" tabindex="-1" itemprop="url">Uniswap</a><a href="/tags/Raydium/" tabindex="-1" itemprop="url">Raydium</a><a href="/tags/Meteora/" tabindex="-1" itemprop="url">Meteora</a><h1 id="CrawlerTitle" itemprop="name headline">深度解析：AMM 流动性模型的&quot;三代同堂&quot; (CPMM vs CLMM vs DLMM)</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">tinachan</span><time itemprop="dateCreated datePublished" datetime="2025-10-09T14:00:00.000Z" title="发表于 2025-10-09 22:00:00">2025-10-09</time><time itemprop="dateCreated datePublished" datetime="2025-10-09T13:21:24.282Z" title="更新于 2025-10-09 21:21:24">2025-10-09</time></header><h1>深度解析：AMM 流动性模型的&quot;三代同堂&quot;</h1>
+<h2 id="引言">引言</h2>
+<p>在DeFi生态中，自动化做市商（AMM）是核心基础设施，而流动性模型的演进直接决定了资本效率和用户体验。从最初的常数乘积模型（CPMM）到集中流动性模型（CLMM），再到新兴的动态流动性模型（DLMM），AMM技术经历了三代革新。本文将深入对比这三种模型的设计理念、技术实现和实际应用。</p>
+<h2 id="CPMM：常数乘积市场做市商">CPMM：常数乘积市场做市商</h2>
+<h3 id="核心机制">核心机制</h3>
+<p>CPMM（Constant Product Market Maker）是最经典的AMM模型，以Uniswap V2为代表。其核心思想是通过数学公式维持交易对的乘积恒定：</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><mo>×</mo><mi>y</mi><mo>=</mo><mi>k</mi></mrow><annotation encoding="application/x-tex">x \times y = k
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.03148em;">k</span></span></span></span></span></p>
+<p>其中：</p>
+<ul>
+<li><code>x</code> 和 <code>y</code> 分别代表两种代币的储备量</li>
+<li><code>k</code> 是恒定值</li>
+</ul>
+<h3 id="交易机制">交易机制</h3>
+<p>当用户进行代币交换时，系统会根据以下公式计算输出量：</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>y</mi><mo>=</mo><mfrac><mrow><mi>y</mi><mo>×</mo><mi mathvariant="normal">Δ</mi><mi>x</mi></mrow><mrow><mi>x</mi><mo>+</mo><mi mathvariant="normal">Δ</mi><mi>x</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\Delta y = \frac{y \times \Delta x}{x + \Delta x}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.1297em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">Δ</span><span class="mord mathnormal">x</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">Δ</span><span class="mord mathnormal">x</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
+<p><strong>示例代码逻辑：</strong></p>
+<pre class="language-solidity" data-language="solidity"><code class="language-solidity"><span class="token keyword">function</span> <span class="token function">getAmountOut</span><span class="token punctuation">(</span>
+    <span class="token builtin">uint</span> amountIn<span class="token punctuation">,</span>
+    <span class="token builtin">uint</span> reserveIn<span class="token punctuation">,</span>
+    <span class="token builtin">uint</span> reserveOut
+<span class="token punctuation">)</span> <span class="token keyword">public</span> <span class="token keyword">pure</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span> amountOut<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token builtin">uint</span> amountInWithFee <span class="token operator">=</span> amountIn <span class="token operator">*</span> <span class="token number">997</span><span class="token punctuation">;</span> <span class="token comment">// 0.3%手续费</span>
+    <span class="token builtin">uint</span> numerator <span class="token operator">=</span> amountInWithFee <span class="token operator">*</span> reserveOut<span class="token punctuation">;</span>
+    <span class="token builtin">uint</span> denominator <span class="token operator">=</span> <span class="token punctuation">(</span>reserveIn <span class="token operator">*</span> <span class="token number">1000</span><span class="token punctuation">)</span> <span class="token operator">+</span> amountInWithFee<span class="token punctuation">;</span>
+    amountOut <span class="token operator">=</span> numerator <span class="token operator">/</span> denominator<span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h3 id="优缺点分析">优缺点分析</h3>
+<p><strong>优势：</strong></p>
+<ul>
+<li>实现简单，易于理解</li>
+<li>抗操纵性强</li>
+<li>流动性分布均匀</li>
+</ul>
+<p><strong>劣势：</strong></p>
+<ul>
+<li>资本效率低下，大量资金闲置</li>
+<li>无常损失严重</li>
+<li>滑点随交易量增大而增加</li>
+</ul>
+<h2 id="CLMM：集中流动性市场做市商">CLMM：集中流动性市场做市商</h2>
+<h3 id="创新突破">创新突破</h3>
+<p>CLMM（Concentrated Liquidity Market Maker）是Uniswap V3引入的革命性创新，将流动性集中在特定价格区间内，大幅提升资本效率。</p>
+<h3 id="Tick系统">Tick系统</h3>
+<p>CLMM的核心是Tick系统，将价格范围离散化为可管理的区间：</p>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// 价格计算公式</span>
+<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">tick_to_price</span><span class="token punctuation">(</span>tick<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">f64</span> <span class="token punctuation">&#123;</span>
+    <span class="token number">1.0001_f64</span><span class="token punctuation">.</span><span class="token function">powf</span><span class="token punctuation">(</span>tick <span class="token keyword">as</span> <span class="token keyword">f64</span> <span class="token operator">/</span> <span class="token number">2.0</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// 流动性集中区间</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">Position</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">pub</span> tick_lower<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">,</span>  <span class="token comment">// 下界tick</span>
+    <span class="token keyword">pub</span> tick_upper<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">,</span>  <span class="token comment">// 上界tick</span>
+    <span class="token keyword">pub</span> liquidity<span class="token punctuation">:</span> <span class="token keyword">u128</span><span class="token punctuation">,</span>  <span class="token comment">// 流动性数量</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h3 id="数学优化">数学优化</h3>
+<p>价格使用Q64.64定点数表示，确保计算精度：</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msqrt><mi>P</mi></msqrt><mo>=</mo><msqrt><mfrac><mi>y</mi><mi>x</mi></mfrac></msqrt><mo>×</mo><msup><mn>2</mn><mn>64</mn></msup></mrow><annotation encoding="application/x-tex">\sqrt{P} = \sqrt{\frac{y}{x}} \times 2^{64}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.04em;vertical-align:-0.0645em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9755em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord" style="padding-left:0.833em;"><span class="mord mathnormal" style="margin-right:0.13889em;">P</span></span></span><span style="top:-2.9355em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail" style="min-width:0.853em;height:1.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.08em" viewBox="0 0 400000 1080" preserveAspectRatio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.0645em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.44em;vertical-align:-0.8953em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.5447em;"><span class="svg-align" style="top:-4.4em;"><span class="pstrut" style="height:4.4em;"></span><span class="mord" style="padding-left:1em;"><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.1076em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">x</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">y</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span><span style="top:-3.5047em;"><span class="pstrut" style="height:4.4em;"></span><span class="hide-tail" style="min-width:1.02em;height:2.48em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="2.48em" viewBox="0 0 400000 2592" preserveAspectRatio="xMinYMin slice"><path d="M424,2478
+c-1.3,-0.7,-38.5,-172,-111.5,-514c-73,-342,-109.8,-513.3,-110.5,-514
+c0,-2,-10.7,14.3,-32,49c-4.7,7.3,-9.8,15.7,-15.5,25c-5.7,9.3,-9.8,16,-12.5,20
+s-5,7,-5,7c-4,-3.3,-8.3,-7.7,-13,-13s-13,-13,-13,-13s76,-122,76,-122s77,-121,77,-121
+s209,968,209,968c0,-2,84.7,-361.7,254,-1079c169.3,-717.3,254.7,-1077.7,256,-1081
+l0 -0c4,-6.7,10,-10,18,-10 H400000
+v40H1014.6
+s-87.3,378.7,-272.6,1166c-185.3,787.3,-279.3,1182.3,-282,1185
+c-2,6,-10,9,-24,9
+c-8,0,-12,-0.7,-12,-2z M1001 80
+h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.8953em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8641em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">64</span></span></span></span></span></span></span></span></span></span></span></span></span></p>
+<h3 id="资本效率提升">资本效率提升</h3>
+<p>相比CPMM，CLMM在相同价格区间内的资本效率可提升数百倍：</p>
+<table>
+<thead>
+<tr>
+<th>价格范围</th>
+<th>CPMM资金利用率</th>
+<th>CLMM资金利用率</th>
+<th>效率提升</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>±5%</td>
+<td>21%</td>
+<td>100%</td>
+<td>4.8倍</td>
+</tr>
+<tr>
+<td>±10%</td>
+<td>11%</td>
+<td>100%</td>
+<td>9.1倍</td>
+</tr>
+<tr>
+<td>±50%</td>
+<td>4%</td>
+<td>100%</td>
+<td>25倍</td>
+</tr>
+</tbody>
+</table>
+<h2 id="DLMM：动态流动性市场做市商">DLMM：动态流动性市场做市商</h2>
+<h3 id="创新理念">创新理念</h3>
+<p>DLMM（Dynamic Liquidity Market Maker）代表了AMM的第三代进化，通过智能合约自动调整流动性分布，结合了CPMM的简单性和CLMM的效率优势。</p>
+<h3 id="动态调整机制">动态调整机制</h3>
+<p>DLMM的核心特点是流动性头寸能够根据市场条件自动调整：</p>
+<pre class="language-typescript" data-language="typescript"><code class="language-typescript"><span class="token keyword">interface</span> <span class="token class-name"><span class="token constant">DLMM</span></span> <span class="token punctuation">&#123;</span>
+    <span class="token comment">// 动态重新平衡</span>
+    <span class="token keyword">function</span> <span class="token function">rebalance</span><span class="token punctuation">(</span>
+        uint<span class="token punctuation">[</span><span class="token punctuation">]</span> calldata targetRanges<span class="token punctuation">,</span>
+        uint<span class="token punctuation">[</span><span class="token punctuation">]</span> calldata percentages
+    <span class="token punctuation">)</span> external<span class="token punctuation">;</span>
+
+    <span class="token comment">// 自动化做市策略</span>
+    <span class="token keyword">function</span> <span class="token function">executeStrategy</span><span class="token punctuation">(</span>
+        StrategyParams calldata params
+    <span class="token punctuation">)</span> external <span class="token function">returns</span> <span class="token punctuation">(</span>uint liquidityAdded<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h3 id="智能策略">智能策略</h3>
+<p>DLMM集成了多种自动化策略：</p>
+<ol>
+<li><strong>均值回归策略</strong>：在价格偏离均值时自动调整头寸</li>
+<li><strong>波动率适应策略</strong>：根据市场波动率动态调整价格区间</li>
+<li><strong>收益优化策略</strong>：自动将赚取的手续费进行复投</li>
+</ol>
+<h2 id="Raydium与融合创新">Raydium与融合创新</h2>
+<h3 id="Raydium-CLMM实现">Raydium CLMM实现</h3>
+<p>Raydium作为Solana生态的重要AMM，率先实现了CLMM：</p>
+<pre class="language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// Raydium AMM核心结构体</span>
+<span class="token attribute attr-name">#[account]</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">AmmInfo</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">pub</span> serum_program_id<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> serum_market<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> serum_coin_vault_account<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> serum_pc_vault_account<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> serum_withdraw_queue<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> serum_temp_lp_vault_account<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> amm_open_orders<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> amm_target_orders<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> amm_quantities<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> pool_coin_token_account<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> pool_pc_token_account<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> pool_withdraw_queue<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> pool_temp_lp_token_account<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> amm_owner<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+    <span class="token keyword">pub</span> pool_lp_token_account<span class="token punctuation">:</span> <span class="token class-name">Pubkey</span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span></code></pre>
+<h3 id="融合创新方向">融合创新方向</h3>
+<p>现代AMM开始融合多种模型的优势：</p>
+<ol>
+<li><strong>混合流动性模型</strong>：结合集中和全范围流动性</li>
+<li><strong>跨链AMM</strong>：多链部署和桥接整合</li>
+<li><strong>意图驱动AMM</strong>：集成用户交易意图优化</li>
+</ol>
+<h2 id="全面对比分析">全面对比分析</h2>
+<h3 id="资本效率对比">资本效率对比</h3>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>CPMM</th>
+<th>CLMM</th>
+<th>DLMM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>相同区间资本效率</td>
+<td>低</td>
+<td>高</td>
+<td>极高</td>
+</tr>
+<tr>
+<td>资金利用率</td>
+<td>5-20%</td>
+<td>80-100%</td>
+<td>90-100%</td>
+</tr>
+<tr>
+<td>流动性碎片化</td>
+<td>无</td>
+<td>中等</td>
+<td>低</td>
+</tr>
+<tr>
+<td>维护复杂度</td>
+<td>低</td>
+<td>高</td>
+<td>中等</td>
+</tr>
+</tbody>
+</table>
+<h3 id="风险评估">风险评估</h3>
+<h4 id="无常损失（IL）">无常损失（IL）</h4>
+<p>无常损失是LP面临的主要风险：</p>
+<ul>
+<li><strong>CPMM</strong>：全价格范围暴露，IL风险最高</li>
+<li><strong>CLMM</strong>：区间集中，IL风险可控但需精确预测</li>
+<li><strong>DLMM</strong>：动态调整，IL风险最低</li>
+</ul>
+<h4 id="滑点风险">滑点风险</h4>
+<p>滑点随交易规模和流动性分布变化：</p>
+<pre class="language-none"><code class="language-none">滑点 &#x3D; f(交易量, 流动性深度, 价格区间)</code></pre>
+<h4 id="操纵风险">操纵风险</h4>
+<p>不同模型面对操纵攻击的脆弱性：</p>
+<ul>
+<li><strong>三明治攻击</strong>：CLMM最易受影响</li>
+<li><strong>预言机操纵</strong>：CPMM相对安全</li>
+<li><strong>流动性操纵</strong>：DLMM通过动态调整缓解</li>
+</ul>
+<h2 id="适用场景分析">适用场景分析</h2>
+<h3 id="CPMM适用场景">CPMM适用场景</h3>
+<ul>
+<li>新兴交易对，需要广泛流动性</li>
+<li>小额交易，用户体验优先</li>
+<li>稳定币交易对，价格稳定</li>
+</ul>
+<h3 id="CLMM适用场景">CLMM适用场景</h3>
+<ul>
+<li>高频交易对，需要极高资本效率</li>
+<li>成熟交易对，有明确价格区间</li>
+<li>专业做市商和机构LP</li>
+</ul>
+<h3 id="DLMM适用场景">DLMM适用场景</h3>
+<ul>
+<li>波动率较高的交易对</li>
+<li>需要自动化管理的流动性池</li>
+<li>寻求最佳风险收益比的LP</li>
+</ul>
+<h2 id="未来发展趋势">未来发展趋势</h2>
+<h3 id="技术演进方向">技术演进方向</h3>
+<ol>
+<li><strong>AI驱动AMM</strong>：机器学习优化价格区间和流动性分布</li>
+<li><strong>零知识证明集成</strong>：隐私保护的AMM交易</li>
+<li><strong>意图导向设计</strong>：用户意图驱动的流动性配置</li>
+<li><strong>多链原生AMM</strong>：跨链原生流动性协议</li>
+</ol>
+<h3 id="生态融合趋势">生态融合趋势</h3>
+<p>现代DeFi生态中，三种模型将长期共存并相互融合：</p>
+<ul>
+<li><strong>协议层融合</strong>：单一协议支持多种流动性模型</li>
+<li><strong>跨协议协作</strong>：不同AMM协议间的流动性共享</li>
+<li><strong>生态级创新</strong>：DeFi协议栈的整体流动性优化</li>
+</ul>
+<h2 id="结论">结论</h2>
+<p>AMM流动性模型的三代演进代表了DeFi基础设施的成熟过程：</p>
+<ul>
+<li><strong>CPMM</strong>奠定了AMM的基础，证明了去中心化交易的可能性</li>
+<li><strong>CLMM</strong>大幅提升了资本效率，推动了机构采用</li>
+<li><strong>DLMM</strong>通过自动化和智能化，降低了用户使用门槛</li>
+</ul>
+<p>每种模型都有其独特的价值主张，选择合适的模型需要综合考虑资本效率、风险偏好和使用场景。随着技术的不断进步，AMM将继续演化，为DeFi生态提供更高效、更智能的流动性解决方案。</p>
+<hr>
+<p><em>本文基于公开技术文档和协议分析，旨在提供教育性内容。DeFi投资风险高，请谨慎决策。</em></p>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src="https://img.soniachen.com/IMG_0151.JPG" title="头像" alt="头像"><img class="post-copyright__author_img_front" src="https://img.soniachen.com/IMG_0151.JPG" title="头像" alt="头像"></a><div class="post-copyright__author_name">tinachan</div><div class="post-copyright__author_desc"></div></div><div class="post-copyright__post__info"><a class="post-copyright__reprint" title="该文章为转载文章，注意版权协议" target="_blank" rel="noopener" href="https://soniachan33.github.io">转载</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://soniachan33.github.io')">深度解析：AMM 流动性模型的&quot;三代同堂&quot; (CPMM vs CLMM vs DLMM)</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"><div class="post-reward" onclick="anzhiyu.addRewardMask()"><div class="reward-button button--animated" title="赞赏作者"><i class="anzhiyufont anzhiyu-icon-hand-heart-fill"></i>打赏作者</div><div class="reward-main"><div class="reward-all"><span class="reward-title">感谢你赐予我前进的力量</span><ul class="reward-group"><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5543.JPG" target="_blank"><img class="post-qr-code-img" src="https://img.soniachen.com/blog/IMG_5543.JPG" alt="微信"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5544.JPG" target="_blank"><img class="post-qr-code-img" src="https://img.soniachen.com/blog/IMG_5544.JPG" alt="支付宝"/></a><div class="post-qr-code-desc">支付宝</div></li></ul><a class="reward-main-btn" href="/about/#about-reward" target="_blank"><div class="reward-text">赞赏者名单</div><div class="reward-dec">因为你们的支持让我意识到写文章的价值🙏</div></a></div></div></div><div id="quit-box" onclick="anzhiyu.removeRewardMask()" style="display: none"></div></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://soniachan33.github.io"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><div class="share-link weibo"><a class="share-button" target="_blank" href="https://service.weibo.com/share/share.php?title=深度解析：AMM 流动性模型的&quot;三代同堂&quot; (CPMM vs CLMM vs DLMM)&amp;url=https://soniachan33.github.io&amp;pic=https://img.soniachen.com/blog/posts/2025/10/amm-liquidity-models.png" rel="external nofollow noreferrer noopener"><i class="anzhiyufont anzhiyu-icon-weibo"></i></a></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本文版权归作者所有，转载请注明出处</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Solana/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Solana<span class="tagsPageCount">27</span></a><a class="post-meta__box__tags" href="/tags/DeFi/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>DeFi<span class="tagsPageCount">3</span></a><a class="post-meta__box__tags" href="/tags/AMM/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AMM<span class="tagsPageCount">2</span></a><a class="post-meta__box__tags" href="/tags/CPMM/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>CPMM<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/CLMM/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>CLMM<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/DLMM/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>DLMM<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/Uniswap/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Uniswap<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/Raydium/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Raydium<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/Meteora/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Meteora<span class="tagsPageCount">1</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img.soniachen.com/blog/posts/2025/10/amm-liquidity-models.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-full"><a href="/2025/10/07/Orca-Solana%E4%B8%8A%E7%9A%84%E5%8E%BB%E4%B8%AD%E5%BF%83%E5%8C%96%E4%BA%A4%E6%98%93%E6%89%80/"><img class="prev-cover" src="https://img.soniachen.com/blog/posts/2025/10/image-20251007221550399.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Orca技术内幕：多链时代的DEX新范式</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/2025/10/07/Orca-Solana%E4%B8%8A%E7%9A%84%E5%8E%BB%E4%B8%AD%E5%BF%83%E5%8C%96%E4%BA%A4%E6%98%93%E6%89%80/" title="Orca技术内幕：多链时代的DEX新范式"><img class="cover" src="https://img.soniachen.com/blog/posts/2025/10/image-20251007221550399.png" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-10-07</div><div class="title">Orca技术内幕：多链时代的DEX新范式</div></div></a></div><div><a href="/2025/10/06/Solana-DeFi-%E4%BA%A4%E6%98%93%E7%9A%84%E2%80%9C%E5%A4%A7%E8%84%91%E2%80%9D%EF%BC%9AJupiter-JUP-%E5%A6%82%E4%BD%95%E9%80%9A%E8%BF%87%E8%81%9A%E5%90%88%E5%99%A8%E9%87%8D%E5%A1%91%E7%94%A8%E6%88%B7%E4%BD%93%E9%AA%8C%EF%BC%9F/" title="Solana DeFi 交易的“大脑”：Jupiter (JUP) 如何通过聚合器重塑用户体验？"><img class="cover" src="https://img.soniachen.com/blog/posts/2025/10/image-20251006205331573.png" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-10-06</div><div class="title">Solana DeFi 交易的“大脑”：Jupiter (JUP) 如何通过聚合器重塑用户体验？</div></div></a></div><div><a href="/2025/09/07/Solana%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98-TypeScript%E6%B5%8B%E8%AF%95%E6%96%87%E4%BB%B6%E8%AF%AD%E6%B3%95%E4%B8%8E%E5%85%B3%E9%94%AE%E8%AF%8D/" title="Solana项目实战_TypeScript测试文件语法与关键词"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=eafebda6-84f6-377d-4861-849c8b2d30d0" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-09-07</div><div class="title">Solana项目实战_TypeScript测试文件语法与关键词</div></div></a></div><div><a href="/2025/08/26/Solana-part22-DeFi%E9%A1%B9%E7%9B%AE%E6%8B%86%E8%A7%A3/" title="Solana[part22]_DeFi项目拆解"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=6bab80a3-5bac-65a7-737b-8a6c3b9294ed" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-26</div><div class="title">Solana[part22]_DeFi项目拆解</div></div></a></div><div><a href="/2025/08/26/Solana-part21-ETF%E7%9A%84%E8%B5%8E%E5%9B%9E/" title="Solana[part21]_ETF的赎回"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=ed08446d-82ed-5488-5ea1-8b1dbf77590e" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-26</div><div class="title">Solana[part21]_ETF的赎回</div></div></a></div><div><a href="/2025/08/25/Solana-part20-ETF%E7%9A%84%E8%B4%AD%E4%B9%B0/" title="Solana[part20]_ETF的购买"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=dde841f0-98a6-5f30-700e-861ed89f0a5e" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-25</div><div class="title">Solana[part20]_ETF的购买</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content is-expand"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link"><span class="toc-number">1.</span> <span class="toc-text">深度解析：AMM 流动性模型的&quot;三代同堂&quot;</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%95%E8%A8%80"><span class="toc-number">1.1.</span> <span class="toc-text">引言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CPMM%EF%BC%9A%E5%B8%B8%E6%95%B0%E4%B9%98%E7%A7%AF%E5%B8%82%E5%9C%BA%E5%81%9A%E5%B8%82%E5%95%86"><span class="toc-number">1.2.</span> <span class="toc-text">CPMM：常数乘积市场做市商</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%9C%BA%E5%88%B6"><span class="toc-number">1.2.1.</span> <span class="toc-text">核心机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%A4%E6%98%93%E6%9C%BA%E5%88%B6"><span class="toc-number">1.2.2.</span> <span class="toc-text">交易机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%98%E7%BC%BA%E7%82%B9%E5%88%86%E6%9E%90"><span class="toc-number">1.2.3.</span> <span class="toc-text">优缺点分析</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CLMM%EF%BC%9A%E9%9B%86%E4%B8%AD%E6%B5%81%E5%8A%A8%E6%80%A7%E5%B8%82%E5%9C%BA%E5%81%9A%E5%B8%82%E5%95%86"><span class="toc-number">1.3.</span> <span class="toc-text">CLMM：集中流动性市场做市商</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E6%96%B0%E7%AA%81%E7%A0%B4"><span class="toc-number">1.3.1.</span> <span class="toc-text">创新突破</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Tick%E7%B3%BB%E7%BB%9F"><span class="toc-number">1.3.2.</span> <span class="toc-text">Tick系统</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E5%AD%A6%E4%BC%98%E5%8C%96"><span class="toc-number">1.3.3.</span> <span class="toc-text">数学优化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B5%84%E6%9C%AC%E6%95%88%E7%8E%87%E6%8F%90%E5%8D%87"><span class="toc-number">1.3.4.</span> <span class="toc-text">资本效率提升</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DLMM%EF%BC%9A%E5%8A%A8%E6%80%81%E6%B5%81%E5%8A%A8%E6%80%A7%E5%B8%82%E5%9C%BA%E5%81%9A%E5%B8%82%E5%95%86"><span class="toc-number">1.4.</span> <span class="toc-text">DLMM：动态流动性市场做市商</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E6%96%B0%E7%90%86%E5%BF%B5"><span class="toc-number">1.4.1.</span> <span class="toc-text">创新理念</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E8%B0%83%E6%95%B4%E6%9C%BA%E5%88%B6"><span class="toc-number">1.4.2.</span> <span class="toc-text">动态调整机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%99%BA%E8%83%BD%E7%AD%96%E7%95%A5"><span class="toc-number">1.4.3.</span> <span class="toc-text">智能策略</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Raydium%E4%B8%8E%E8%9E%8D%E5%90%88%E5%88%9B%E6%96%B0"><span class="toc-number">1.5.</span> <span class="toc-text">Raydium与融合创新</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Raydium-CLMM%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.5.1.</span> <span class="toc-text">Raydium CLMM实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%9E%8D%E5%90%88%E5%88%9B%E6%96%B0%E6%96%B9%E5%90%91"><span class="toc-number">1.5.2.</span> <span class="toc-text">融合创新方向</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%A8%E9%9D%A2%E5%AF%B9%E6%AF%94%E5%88%86%E6%9E%90"><span class="toc-number">1.6.</span> <span class="toc-text">全面对比分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B5%84%E6%9C%AC%E6%95%88%E7%8E%87%E5%AF%B9%E6%AF%94"><span class="toc-number">1.6.1.</span> <span class="toc-text">资本效率对比</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A3%8E%E9%99%A9%E8%AF%84%E4%BC%B0"><span class="toc-number">1.6.2.</span> <span class="toc-text">风险评估</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%97%A0%E5%B8%B8%E6%8D%9F%E5%A4%B1%EF%BC%88IL%EF%BC%89"><span class="toc-number">1.6.2.1.</span> <span class="toc-text">无常损失（IL）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%BB%91%E7%82%B9%E9%A3%8E%E9%99%A9"><span class="toc-number">1.6.2.2.</span> <span class="toc-text">滑点风险</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%93%8D%E7%BA%B5%E9%A3%8E%E9%99%A9"><span class="toc-number">1.6.2.3.</span> <span class="toc-text">操纵风险</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF%E5%88%86%E6%9E%90"><span class="toc-number">1.7.</span> <span class="toc-text">适用场景分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#CPMM%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.7.1.</span> <span class="toc-text">CPMM适用场景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CLMM%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.7.2.</span> <span class="toc-text">CLMM适用场景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DLMM%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.7.3.</span> <span class="toc-text">DLMM适用场景</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AA%E6%9D%A5%E5%8F%91%E5%B1%95%E8%B6%8B%E5%8A%BF"><span class="toc-number">1.8.</span> <span class="toc-text">未来发展趋势</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8A%80%E6%9C%AF%E6%BC%94%E8%BF%9B%E6%96%B9%E5%90%91"><span class="toc-number">1.8.1.</span> <span class="toc-text">技术演进方向</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%9F%E6%80%81%E8%9E%8D%E5%90%88%E8%B6%8B%E5%8A%BF"><span class="toc-number">1.8.2.</span> <span class="toc-text">生态融合趋势</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E8%AE%BA"><span class="toc-number">1.9.</span> <span class="toc-text">结论</span></a></li></ol></li></ol></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div id="footer_deal"><a class="deal_link" href="/soniachan0831@gmail.com" title="email"><i class="anzhiyufont anzhiyu-icon-envelope"></i></a><img class="footer_mini_logo" title="返回顶部" alt="返回顶部" onclick="anzhiyu.scrollToDest(0, 500)" src="https://img.soniachen.com/IMG_0151.JPG" size="50px"/><a class="deal_link" target="_blank" rel="noopener" href="https://github.com/SoniaChan33" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://space.bilibili.com/360939620" title="Bilibili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="deal_link" href="/copyright" title="CC"><i class="anzhiyufont anzhiyu-icon-copyright-line"></i></a></div><div class="copyright">&copy;2021 - 2025 By SoniaChen</div><div id="workboard"><div id="runtimeTextTip"></div></div><p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo_v5.4.0" title="博客框架为Hexo_v5.4.0"><img src="https://npm.elemecdn.com/anzhiyu-blog@2.1.5/img/badge/Frame-Hexo.svg" alt="博客框架为Hexo_v5.4.0"/></a></p></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">59</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">25</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">7</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="back-menu-list-groups"><div class="back-menu-list-group"><div class="back-menu-list-title">网页</div><div class="back-menu-list"><a class="back-menu-item" href="https://blog.soniachen.com/" title="博客"><img class="back-menu-item-icon" src="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png" alt="博客"/><span class="back-menu-item-text">博客</span></a></div></div></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/?id=447363601&amp;server=netease"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/bangumis/"><i class="anzhiyufont anzhiyu-icon-bilibili faa-tada" style="font-size: 0.9em;"></i><span> 追番页</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AMM/" style="font-size: 0.88rem;">AMM<sup>2</sup></a><a href="/tags/BlockChain/" style="font-size: 0.88rem;">BlockChain<sup>4</sup></a><a href="/tags/Bug/" style="font-size: 0.88rem;">Bug<sup>2</sup></a><a href="/tags/CLMM/" style="font-size: 0.88rem;">CLMM<sup>1</sup></a><a href="/tags/CPMM/" style="font-size: 0.88rem;">CPMM<sup>1</sup></a><a href="/tags/CloudFlare/" style="font-size: 0.88rem;">CloudFlare<sup>2</sup></a><a href="/tags/DEX/" style="font-size: 0.88rem;">DEX<sup>1</sup></a><a href="/tags/DLMM/" style="font-size: 0.88rem;">DLMM<sup>1</sup></a><a href="/tags/DeFi/" style="font-size: 0.88rem;">DeFi<sup>3</sup></a><a href="/tags/Foundry/" style="font-size: 0.88rem;">Foundry<sup>1</sup></a><a href="/tags/Git/" style="font-size: 0.88rem;">Git<sup>1</sup></a><a href="/tags/JUP/" style="font-size: 0.88rem;">JUP<sup>1</sup></a><a href="/tags/Java/" style="font-size: 0.88rem;">Java<sup>1</sup></a><a href="/tags/Meteora/" style="font-size: 0.88rem;">Meteora<sup>1</sup></a><a href="/tags/Orca/" style="font-size: 0.88rem;">Orca<sup>1</sup></a><a href="/tags/PicGo/" style="font-size: 0.88rem;">PicGo<sup>1</sup></a><a href="/tags/Raydium/" style="font-size: 0.88rem;">Raydium<sup>1</sup></a><a href="/tags/Rust/" style="font-size: 0.88rem;">Rust<sup>43</sup></a><a href="/tags/Solana/" style="font-size: 0.88rem;">Solana<sup>27</sup></a><a href="/tags/Solidity/" style="font-size: 0.88rem;">Solidity<sup>4</sup></a><a href="/tags/TypeScript/" style="font-size: 0.88rem;">TypeScript<sup>2</sup></a><a href="/tags/Typora/" style="font-size: 0.88rem;">Typora<sup>1</sup></a><a href="/tags/Uniswap/" style="font-size: 0.88rem;">Uniswap<sup>1</sup></a><a href="/tags/Whirlpool/" style="font-size: 0.88rem;">Whirlpool<sup>1</sup></a><a href="/tags/hexo/" style="font-size: 0.88rem;">hexo<sup>2</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="447363601" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=447363601&amp;userid=321481294&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@5.0.28/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><canvas id="universe"></canvas><script async src="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/dark/dark.js"></script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("04/01/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎使用安知鱼!`,
+    `生活明朗, 万物可爱`,
+    `
+        
+       █████╗ ███╗   ██╗███████╗██╗  ██╗██╗██╗   ██╗██╗   ██╗
+      ██╔══██╗████╗  ██║╚══███╔╝██║  ██║██║╚██╗ ██╔╝██║   ██║
+      ███████║██╔██╗ ██║  ███╔╝ ███████║██║ ╚████╔╝ ██║   ██║
+      ██╔══██║██║╚██╗██║ ███╔╝  ██╔══██║██║  ╚██╔╝  ██║   ██║
+      ██║  ██║██║ ╚████║███████╗██║  ██║██║   ██║   ╚██████╔╝
+      ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝╚═╝   ╚═╝    ╚═════╝
+        
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By 安知鱼 V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by 安知鱼 %c 你正在访问 SoniaChen 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script async="async">(function () {
+  var grt = new Date("04/01/2021 00:00:00"); //设置网站上线时间
+  var now = new Date();
+  var dnum;
+  var hnum;
+  var mnum;
+  var snum;
+  var nowHour;
+
+  // 计算并更新天数、小时数、分钟数和秒数
+  function updateTime() {
+    now = new Date(); // 更新 now 的值
+    nowHour = now.getHours(); // 更新 nowHour 的值
+    var days = (now - grt) / 1000 / 60 / 60 / 24;
+    dnum = Math.floor(days);
+    var hours = (now - grt) / 1000 / 60 / 60 - 24 * dnum;
+    hnum = Math.floor(hours);
+    if (String(hnum).length == 1) {
+      hnum = "0" + hnum;
+    }
+    var minutes = (now - grt) / 1000 / 60 - 24 * 60 * dnum - 60 * hnum;
+    mnum = Math.floor(minutes);
+    if (String(mnum).length == 1) {
+      mnum = "0" + mnum;
+    }
+    var seconds = (now - grt) / 1000 - 24 * 60 * 60 * dnum - 60 * 60 * hnum - 60 * mnum;
+    snum = Math.round(seconds);
+    if (String(snum).length == 1) {
+      snum = "0" + snum;
+    }
+  }
+
+  // 更新网页中显示的网站运行时间
+  function updateHtml() {
+    const footer = document.getElementById("footer");
+    if (!footer) return
+    let currentTimeHtml = "";
+    if (nowHour < 18 && nowHour >= 9) {
+      // 如果是上班时间，默认就是"安知鱼-上班摸鱼中.svg"图片，不需要更改
+      currentTimeHtml = `本站居然运行了 ${dnum} 天<span id='runtime'> ${hnum} 小时 ${mnum} 分 ${snum} 秒 </span><i class='anzhiyufont anzhiyu-icon-heartbeat' style='color:red'></i>`;
+    } else {
+      // 如果是下班时间，插入"安知鱼-下班啦.svg"图片
+      let img = document.querySelector("#workboard .workSituationImg");
+      if (img != null) {
+        img.src = "";
+        img.title = "";
+        img.alt = "";
+      }
+
+      currentTimeHtml = `本站居然运行了 ${dnum} 天<span id='runtime'> ${hnum} 小时 ${mnum} 分 ${snum} 秒 </span><i class='anzhiyufont anzhiyu-icon-heartbeat' style='color:red'></i>`;
+    }
+
+    if (document.getElementById("runtimeTextTip")) {
+      document.getElementById("runtimeTextTip").innerHTML = currentTimeHtml;
+    }
+  }
+
+  setInterval(() => {
+    updateTime();
+    updateHtml();
+  }, 1000);
+})();</script><script src="/js/search/local-search.js"></script><div class="js-pjax"><input type="hidden" name="page-type" id="page-type" value="post"></div><script>var visitorMail = "visitor@soniachen.com";
+</script><script async data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><script src="/js/anzhiyu/right_click_menu.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="true" src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/dist/click-show-text.min.js" data-mobile="false" data-text="Don't,Click,Me" data-fontsize="15px" data-random="false" async="async"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404.html')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div><script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"left","width":150,"height":300},"mobile":{"show":true},"log":false});</script></body></html>
