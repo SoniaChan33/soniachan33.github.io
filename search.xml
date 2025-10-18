@@ -1,288 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Orca技术内幕：多链时代的DEX新范式</title>
-    <url>/2025/10/07/Orca-Solana%E4%B8%8A%E7%9A%84%E5%8E%BB%E4%B8%AD%E5%BF%83%E5%8C%96%E4%BA%A4%E6%98%93%E6%89%80/</url>
-    <content><![CDATA[Orca：Solana上的高性能AMM DEX深度解析
-引言
-在2025年DEX赛道竞争白热化的背景下，Orca作为Solana生态的领导者AMM协议，凭借其独特的Whirlpool机制和优秀的Rust实现，已成为全球最大的Solana DEX。本文将从技术实现角度深度解析Orca协议的设计理念和Rust代码结构，探讨其在多链时代的创新发展。
-
-📖 英文版本: Orca Deep Dive: The New Paradigm of DEX in the Multi-Chain Era
-
-DEX行业最新动态
-2025年DEX发展趋势
-
-AI驱动交易：集成机器学习算法的智能做市商兴起，Orca开始探索AI辅助的价格发现机制
-意图驱动交易：CowSwap、1inch Fusion等意图导向的聚合器获得市场认可，Orca集成意图路由
-多链聚合DEX：跨链桥接技术成熟，Orca通过Wormhole和LayerZero扩展到多链生态
-专业化AMM：针对特定资产类型的AMM快速发展，Orca推出专注稳定币和LST的池子
-MEV防护增强：Flashbots Protect等MEV解决方案被更多DEX集成，Orca采用SUAVE网络
-零知识证明集成：隐私保护交易成为趋势，Orca开始测试ZK隐私池
-RWA资产代币化：现实世界资产上链，Orca为RWA资产提供流动性
-
-Orca的市场地位
-Orca在Solana生态中占据领导地位：
-
-TVL排名第一：超越Raydium成为Solana最大DEX，TVL超过50亿美元
-日交易量突破：日均交易量超过10亿美元，创历史新高
-生态主导地位：与Jupiter、Raydium、Meteora等协议深度合作，形成流动性联盟
-多链扩张：通过Wormhole桥接扩展到以太坊、Arbitrum、Optimism等链
-机构采用：多家传统金融机构集成Orca进行加密资产交易
-
-Orca核心技术架构
-Whirlpool机制详解
-Orca的Whirlpool是其核心创新，借鉴了Uniswap V3的集中流动性概念，但针对Solana进行了深度优化。
-核心数据结构
-// Whirlpool核心结构体（基于Anchor框架）
-#[account]
-pub struct Whirlpool &#123;
-    pub whirlpools_config: Pubkey,
-    pub whirlpool_bump: [u8; 1],
-
-    // 交易对信息
-    pub token_mint_a: Pubkey,
-    pub token_mint_b: Pubkey,
-    pub token_vault_a: Pubkey,
-    pub token_vault_b: Pubkey,
-
-    // 费率和tick相关
-    pub fee_rate: u16,
-    pub protocol_fee_rate: u16,
-    pub tick_spacing: u16,
-    pub tick_spacing_seed: u8,
-
-    // 流动性状态
-    pub current_tick_index: i32,
-    pub sqrt_price: u128,
-    pub liquidity: u128,
-    pub fee_growth_global_a: u128,
-    pub fee_growth_global_b: u128,
-&#125;
-Tick系统实现
-// Tick数组管理
-#[account(zero_copy)]
-pub struct TickArray &#123;
-    pub whirlpool: Pubkey,
-    pub start_tick_index: i32,
-    pub ticks: [Tick; 88], // 每个数组包含88个ticks
-&#125;
-
-// 单个Tick结构
-#[zero_copy]
-pub struct Tick &#123;
-    pub initialized: bool,
-    pub liquidity_net: i128,
-    pub fee_growth_outside_a: u128,
-    pub fee_growth_outside_b: u128,
-    // ... 其他字段
-&#125;
-数学计算优化
-价格计算公式
-Orca使用Q64.64定点数进行价格计算，确保精度和gas效率：
-// 价格计算核心逻辑
-pub fn calculate_price_from_sqrt_price(sqrt_price: u128) -> f64 &#123;
-    let price = (sqrt_price as f64).powi(2) / (2.0_f64.powi(64));
-    price
-&#125;
-
-// Tick价格计算
-pub fn tick_index_to_sqrt_price(tick_index: i32) -> u128 &#123;
-    let tick = tick_index as f64;
-    let sqrt_price = 1.0001_f64.powf(tick / 2.0);
-    (sqrt_price * 2.0_f64.powi(64)) as u128
-&#125;
-Rust实现深度解析
-内存管理优化
-零拷贝设计
-Orca大量使用零拷贝（zero-copy）技术减少内存分配：
-// 零拷贝账户定义
-#[zero_copy]
-pub struct Position &#123;
-    pub whirlpool: Pubkey,
-    pub position_mint: Pubkey,
-    pub liquidity: u128,
-    pub tick_lower_index: i32,
-    pub tick_upper_index: i32,
-    pub fee_growth_inside_a: u128,
-    pub fee_growth_inside_b: u128,
-&#125;
-
-// 账户约束优化
-#[derive(Accounts)]
-pub struct ModifyLiquidity&lt;'info> &#123;
-    #[account(
-        constraint = whirlpool.whirlpool_bump == [] @ WhirlpoolError::InvalidWhirlpoolBump
-    )]
-    pub whirlpool: Box&lt;Account&lt;'info, Whirlpool>>,
-&#125;
-栈上内存分配
-// 使用数组而非Vec减少堆分配
-pub struct SwapCalculation &#123;
-    pub amount_a: u64,
-    pub amount_b: u64,
-    pub sqrt_price_limit: u128,
-    pub amount_specified_is_input: bool,
-    pub a_to_b: bool,
-&#125;
-
-// 关键计算函数
-impl SwapCalculation &#123;
-    pub fn calculate_swap(
-        &amp;self,
-        whirlpool: &amp;Whirlpool,
-        tick_arrays: &amp;[TickArray],
-    ) -> SwapResult &#123;
-        // 栈上计算，避免动态分配
-        let mut current_tick = whirlpool.current_tick_index;
-        let mut current_sqrt_price = whirlpool.sqrt_price;
-        let mut amount_remaining = if self.amount_specified_is_input &#123;
-            self.amount_a
-        &#125; else &#123;
-            self.amount_b
-        &#125;;
-
-        // 主循环逻辑...
-    &#125;
-&#125;
-错误处理模式
-自定义错误类型
-// 错误定义
-#[error_code]
-pub enum WhirlpoolError &#123;
-    #[msg("Invalid tick index")]
-    InvalidTickIndex,
-    #[msg("Insufficient liquidity")]
-    InsufficientLiquidity,
-    #[msg("Price limit reached")]
-    PriceLimitReached,
-    #[msg("Zero amount specified")]
-    ZeroAmountSpecified,
-&#125;
-
-// 错误处理函数
-pub fn validate_tick_range(
-    tick_lower: i32,
-    tick_upper: i32,
-    tick_spacing: u16,
-) -> Result&lt;()> &#123;
-    if tick_lower >= tick_upper &#123;
-        return Err(WhirlpoolError::InvalidTickIndex.into());
-    &#125;
-    if tick_lower % tick_spacing as i32 != 0 &#123;
-        return Err(WhirlpoolError::InvalidTickIndex.into());
-    &#125;
-    Ok(())
-&#125;
-高级特性实现
-协议费用机制
-// 协议费用收集
-pub fn collect_protocol_fee(
-    whirlpool: &amp;mut Account&lt;Whirlpool>,
-    fee_authority: &amp;Signer,
-    token_owner_account_a: &amp;mut Account&lt;TokenAccount>,
-    token_owner_account_b: &amp;mut Account&lt;TokenAccount>,
-) -> Result&lt;()> &#123;
-    let fee_amount_a = whirlpool.fee_growth_global_a
-        .checked_sub(protocol_fee_owed_a)
-        .unwrap();
-    let fee_amount_b = whirlpool.fee_growth_global_b
-        .checked_sub(protocol_fee_owed_b)
-        .unwrap();
-
-    // 转移协议费用...
-    Ok(())
-&#125;
-跨指令优化
-Orca使用跨指令优化的设计模式：
-// 复合指令定义
-#[derive(Accounts)]
-pub struct SwapWithPartner&lt;'info> &#123;
-    pub whirlpool: Account&lt;'info, Whirlpool>,
-    pub partner: Account&lt;'info, Partner>,
-    /// CHECK: Partner program will validate this
-    pub partner_authority: UncheckedAccount&lt;'info>,
-    pub partner_token_account: Account&lt;'info, TokenAccount>,
-&#125;
-
-// 复合指令处理
-pub fn swap_with_partner(ctx: Context&lt;SwapWithPartner>, data: SwapData) -> Result&lt;()> &#123;
-    // 第一阶段：标准交换
-    let mut swap_result = perform_swap(&amp;ctx.accounts.whirlpool, &amp;data)?;
-
-    // 第二阶段：伙伴程序处理
-    let partner_ix = Instruction &#123;
-        program_id: ctx.accounts.partner.key(),
-        accounts: vec![
-            AccountMeta::new_readonly(ctx.accounts.partner_authority.key(), true),
-            AccountMeta::new(ctx.accounts.partner_token_account.key(), false),
-        ],
-        data: partner_data,
-    &#125;;
-
-    invoke(&amp;partner_ix, &amp;[ctx.accounts.partner_authority.to_account_info()])?;
-    Ok(())
-&#125;
-技术要点总结
-核心机制对比
-Whirlpool vs 传统AMM的区别：
-
-流动性管理：集中流动性 vs 全范围流动性
-价格发现：Tick系统管理 vs 简单恒定乘积
-资本效率：更高的资金利用率 vs 更简单的实现
-
-零拷贝技术的优势
-零拷贝技术在Orca中的应用带来了显著的性能提升：
-
-减少序列化开销：直接内存访问，避免不必要的拷贝操作
-栈上内存分配：使用固定大小数组而非动态分配
-更好的gas效率：降低交易成本，提升用户体验
-
-价格操纵防护
-Orca通过多层机制防止价格操纵：
-
-Tick间距控制：限制流动性位置的粒度
-预言机价格验证：集成链上价格预言机
-滑点保护机制：最大滑点限制和交易失败保护
-
-未来发展方向
-2025年技术演进
-
-AI智能做市：集成机器学习算法，实现动态费率调整和智能价格发现
-多链聚合扩张：通过LayerZero和Wormhole实现真正的跨链AMM
-零知识隐私池：集成ZK证明技术，为机构用户提供隐私保护交易
-意图驱动集成：与CowSwap等意图协议深度合作，提供更智能的交易路由
-RWA资产支持：推出专为现实世界资产代币化设计的AMM池
-MEV防护升级：采用SUAVE网络和Flashbots Protect的最新防护机制
-量子安全加密：为后量子时代做准备，研究抗量子计算的加密算法
-
-生态合作与扩张
-Orca在2025年深化生态合作：
-
-流动性联盟：与Jupiter、Raydium、Meteora形成Solana流动性联盟
-跨链桥接：深度集成Wormhole，实现多链资产的无缝流动
-机构级集成：与传统金融机构合作，提供托管和清算服务
-Layer2扩张：支持Arbitrum、Optimism、Base等以太坊Layer2网络
-新兴生态：扩展到TON、SUI、Aptos等高性能区块链网络
-
-结论
-Orca作为Solana生态的核心基础设施，不仅展示了Rust在高性能DeFi应用中的强大能力，也引领着2025年DEX技术创新的浪潮。通过深入理解其技术实现，开发者可以在多链时代更好地应用这些先进的AMM设计模式和跨链技术理念，为下一代去中心化交易所的发展贡献力量。
-
-本文内容基于公开技术文档和技术分析，仅供学习参考。加密货币投资具有高风险，请谨慎决策。
-]]></content>
-      <categories>
-        <category>Eco Insights</category>
-      </categories>
-      <tags>
-        <tag>Solana</tag>
-        <tag>DeFi</tag>
-        <tag>DEX</tag>
-        <tag>Orca</tag>
-        <tag>AMM</tag>
-        <tag>Whirlpool</tag>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>DEX私有RPC节点：从概念到实践</title>
     <url>/2025/10/11/DEX%E7%A7%81%E6%9C%89RPC%E8%8A%82%E7%82%B9%EF%BC%9A%E4%BB%8E%E6%A6%82%E5%BF%B5%E5%88%B0%E5%AE%9E%E8%B7%B5/</url>
     <content><![CDATA[DEX私有RPC节点：从概念到实践
@@ -592,9 +310,96 @@ Orca开发者文档：https://www.orca.so/docs
       </categories>
       <tags>
         <tag>Solana</tag>
-        <tag>DEX</tag>
         <tag>RPC</tag>
+        <tag>DEX</tag>
         <tag>区块链基础设施</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Rust基础[part1]</title>
+    <url>/2025/07/08/Rust%E5%9F%BA%E7%A1%80-part1/</url>
+    <content><![CDATA[Rust基础[part1]
+安装
+➜  rust curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+安装成功
+
+验证
+➜  rust rustc --version
+zsh: command not found: rustc
+因为我是用的是zsh，所以zsh配置文件需要加入配置
+➜  rust echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
+➜  rust source ~/.zshrc
+➜  rust rustc --version
+rustc 1.88.0 (6b00bc388 2025-06-23)
+安装成功！
+其他命令：
+➜  rust rustup update # 安装
+➜  rust rustup self uninstall # 卸载
+VsCode插件
+rust语言支持：
+
+rust包支持：
+
+toml支持：
+
+rustc
+创建目录
+mkdir hello-world
+cd hello-world
+创建源文件main.rs
+fn main() &#123;
+    println!("Hello, world!");
+&#125;
+终端输入 rustc main.rs 会得到一个二进制的文件mian
+执行mian 会得到输出
+
+cargo
+初始化
+
+
+初始化项目 cargo new [项目名] 
+
+
+构建 cargo build并运行./target/debug/hello_cargo ；或者直接使用cargo run
+
+
+当项目最终准备好发布时，可通过以下命令对 Rust 项目进行优化编译：
+cargo build --release  
+
+输出目录：编译产物会生成在 target/release 目录下（开发阶段默认的 cargo build 会输出到 target/debug）。
+优化特性：--release 会启用 Rust 编译器的性能优化（如代码内联、循环展开、冗余代码消除等），使最终程序的运行速度显著提升。
+
+依赖
+crate是Rust的一个代码库，可以包含任意能被其他程序使用的代码，但是不能只执行。
+cargo.toml中 [dependencies]  增加配置
+[dependencies]
+rand="0.8.5"
+重新构建执行cargo build 会从cargo.io拉到指定的依赖版本到cargo.lock中。
+执行cargo update会忽略cargo.lock 的版本，从cargo.io拉到最新的依赖版本
+配置国内镜像
+➜  hello_cargo git:(main) touch ~/.cargo/config.toml
+➜  hello_cargo git:(main) vim ~/.cargo/config.toml
+第一种配置：
+[registries]
+ustc = &#123; index = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/" &#125;
+前缀 sparse+ 启用稀疏模式，比传统全量索引更快
+Cargo.toml 指定镜像地址
+[dependencies]
+rand = &#123;registry = "ustc", version = "0.8.5"&#125;
+第二种配置
+直接覆盖原cargo.io ，不用指定镜像地址了
+[source.crates-io]
+replace-with = "ustc"
+
+[source.ustc]
+registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"
+重新build一遍
+]]></content>
+      <categories>
+        <category>Rust</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
       </tags>
   </entry>
   <entry>
@@ -1012,99 +817,12 @@ Meteora作为Solana生态的下一代动态AMM协议，不仅继承了CLMM的高
       </categories>
       <tags>
         <tag>Solana</tag>
-        <tag>DeFi</tag>
         <tag>DEX</tag>
-        <tag>AMM</tag>
         <tag>Rust</tag>
+        <tag>DeFi</tag>
         <tag>Meteora</tag>
         <tag>DLMM</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Rust基础[part1]</title>
-    <url>/2025/07/08/Rust%E5%9F%BA%E7%A1%80-part1/</url>
-    <content><![CDATA[Rust基础[part1]
-安装
-➜  rust curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
-安装成功
-
-验证
-➜  rust rustc --version
-zsh: command not found: rustc
-因为我是用的是zsh，所以zsh配置文件需要加入配置
-➜  rust echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
-➜  rust source ~/.zshrc
-➜  rust rustc --version
-rustc 1.88.0 (6b00bc388 2025-06-23)
-安装成功！
-其他命令：
-➜  rust rustup update # 安装
-➜  rust rustup self uninstall # 卸载
-VsCode插件
-rust语言支持：
-
-rust包支持：
-
-toml支持：
-
-rustc
-创建目录
-mkdir hello-world
-cd hello-world
-创建源文件main.rs
-fn main() &#123;
-    println!("Hello, world!");
-&#125;
-终端输入 rustc main.rs 会得到一个二进制的文件mian
-执行mian 会得到输出
-
-cargo
-初始化
-
-
-初始化项目 cargo new [项目名] 
-
-
-构建 cargo build并运行./target/debug/hello_cargo ；或者直接使用cargo run
-
-
-当项目最终准备好发布时，可通过以下命令对 Rust 项目进行优化编译：
-cargo build --release  
-
-输出目录：编译产物会生成在 target/release 目录下（开发阶段默认的 cargo build 会输出到 target/debug）。
-优化特性：--release 会启用 Rust 编译器的性能优化（如代码内联、循环展开、冗余代码消除等），使最终程序的运行速度显著提升。
-
-依赖
-crate是Rust的一个代码库，可以包含任意能被其他程序使用的代码，但是不能只执行。
-cargo.toml中 [dependencies]  增加配置
-[dependencies]
-rand="0.8.5"
-重新构建执行cargo build 会从cargo.io拉到指定的依赖版本到cargo.lock中。
-执行cargo update会忽略cargo.lock 的版本，从cargo.io拉到最新的依赖版本
-配置国内镜像
-➜  hello_cargo git:(main) touch ~/.cargo/config.toml
-➜  hello_cargo git:(main) vim ~/.cargo/config.toml
-第一种配置：
-[registries]
-ustc = &#123; index = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/" &#125;
-前缀 sparse+ 启用稀疏模式，比传统全量索引更快
-Cargo.toml 指定镜像地址
-[dependencies]
-rand = &#123;registry = "ustc", version = "0.8.5"&#125;
-第二种配置
-直接覆盖原cargo.io ，不用指定镜像地址了
-[source.crates-io]
-replace-with = "ustc"
-
-[source.ustc]
-registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"
-重新build一遍
-]]></content>
-      <categories>
-        <category>Rust</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
+        <tag>AMM</tag>
       </tags>
   </entry>
   <entry>
@@ -1194,232 +912,285 @@ fn binding() &#123;
       </tags>
   </entry>
   <entry>
-    <title>Rust基础[part3]_函数、流程控制</title>
-    <url>/2025/07/10/Rust%E5%9F%BA%E7%A1%80-part3-%E5%87%BD%E6%95%B0/</url>
-    <content><![CDATA[Rust基础[part3]_函数、流程控制
-函数
-组成和定义
-fn add(i: i32, j: i32) -> i32 &#123;
-    i + j
+    <title>Orca技术内幕：多链时代的DEX新范式</title>
+    <url>/2025/10/07/Orca-Solana%E4%B8%8A%E7%9A%84%E5%8E%BB%E4%B8%AD%E5%BF%83%E5%8C%96%E4%BA%A4%E6%98%93%E6%89%80/</url>
+    <content><![CDATA[Orca：Solana上的高性能AMM DEX深度解析
+引言
+在2025年DEX赛道竞争白热化的背景下，Orca作为Solana生态的领导者AMM协议，凭借其独特的Whirlpool机制和优秀的Rust实现，已成为全球最大的Solana DEX。本文将从技术实现角度深度解析Orca协议的设计理念和Rust代码结构，探讨其在多链时代的创新发展。
+
+📖 英文版本: Orca Deep Dive: The New Paradigm of DEX in the Multi-Chain Era
+
+DEX行业最新动态
+2025年DEX发展趋势
+
+AI驱动交易：集成机器学习算法的智能做市商兴起，Orca开始探索AI辅助的价格发现机制
+意图驱动交易：CowSwap、1inch Fusion等意图导向的聚合器获得市场认可，Orca集成意图路由
+多链聚合DEX：跨链桥接技术成熟，Orca通过Wormhole和LayerZero扩展到多链生态
+专业化AMM：针对特定资产类型的AMM快速发展，Orca推出专注稳定币和LST的池子
+MEV防护增强：Flashbots Protect等MEV解决方案被更多DEX集成，Orca采用SUAVE网络
+零知识证明集成：隐私保护交易成为趋势，Orca开始测试ZK隐私池
+RWA资产代币化：现实世界资产上链，Orca为RWA资产提供流动性
+
+Orca的市场地位
+Orca在Solana生态中占据领导地位：
+
+TVL排名第一：超越Raydium成为Solana最大DEX，TVL超过50亿美元
+日交易量突破：日均交易量超过10亿美元，创历史新高
+生态主导地位：与Jupiter、Raydium、Meteora等协议深度合作，形成流动性联盟
+多链扩张：通过Wormhole桥接扩展到以太坊、Arbitrum、Optimism等链
+机构采用：多家传统金融机构集成Orca进行加密资产交易
+
+Orca核心技术架构
+Whirlpool机制详解
+Orca的Whirlpool是其核心创新，借鉴了Uniswap V3的集中流动性概念，但针对Solana进行了深度优化。
+核心数据结构
+// Whirlpool核心结构体（基于Anchor框架）
+#[account]
+pub struct Whirlpool &#123;
+    pub whirlpools_config: Pubkey,
+    pub whirlpool_bump: [u8; 1],
+
+    // 交易对信息
+    pub token_mint_a: Pubkey,
+    pub token_mint_b: Pubkey,
+    pub token_vault_a: Pubkey,
+    pub token_vault_b: Pubkey,
+
+    // 费率和tick相关
+    pub fee_rate: u16,
+    pub protocol_fee_rate: u16,
+    pub tick_spacing: u16,
+    pub tick_spacing_seed: u8,
+
+    // 流动性状态
+    pub current_tick_index: i32,
+    pub sqrt_price: u128,
+    pub liquidity: u128,
+    pub fee_growth_global_a: u128,
+    pub fee_growth_global_b: u128,
+&#125;
+Tick系统实现
+// Tick数组管理
+#[account(zero_copy)]
+pub struct TickArray &#123;
+    pub whirlpool: Pubkey,
+    pub start_tick_index: i32,
+    pub ticks: [Tick; 88], // 每个数组包含88个ticks
 &#125;
 
-声明函数的关键字 fn
-函数名add()
-参数i和j和参数类型 i32
-返回值类型`i32``
-函数题i+j
-
-函数返回
-返回形态
-i+j 和 return i+j;
-可以有两种形态
-
-return + 分号
-无return + 无分号
-
-无返回值的情况：
-就返回 ()
-fn add(i: i32, j: i32) -> () &#123;
-  
+// 单个Tick结构
+#[zero_copy]
+pub struct Tick &#123;
+    pub initialized: bool,
+    pub liquidity_net: i128,
+    pub fee_growth_outside_a: u128,
+    pub fee_growth_outside_b: u128,
+    // ... 其他字段
 &#125;
-永不返回值的情况：
-!表示函数永不返回，例如panic!宏会导致程序崩溃，函数不会返回。
-fn add_one(i: i32, j: i32) -> ! &#123;
-    panic!("weeee");
+数学计算优化
+价格计算公式
+Orca使用Q64.64定点数进行价格计算，确保精度和gas效率：
+// 价格计算核心逻辑
+pub fn calculate_price_from_sqrt_price(sqrt_price: u128) -> f64 &#123;
+    let price = (sqrt_price as f64).powi(2) / (2.0_f64.powi(64));
+    price
 &#125;
-死循环也不会返回
-fn infinite_loop() -> ! &#123;
-    loop &#123;
-        // 永远不会返回
+
+// Tick价格计算
+pub fn tick_index_to_sqrt_price(tick_index: i32) -> u128 &#123;
+    let tick = tick_index as f64;
+    let sqrt_price = 1.0001_f64.powf(tick / 2.0);
+    (sqrt_price * 2.0_f64.powi(64)) as u128
+&#125;
+Rust实现深度解析
+内存管理优化
+零拷贝设计
+Orca大量使用零拷贝（zero-copy）技术减少内存分配：
+// 零拷贝账户定义
+#[zero_copy]
+pub struct Position &#123;
+    pub whirlpool: Pubkey,
+    pub position_mint: Pubkey,
+    pub liquidity: u128,
+    pub tick_lower_index: i32,
+    pub tick_upper_index: i32,
+    pub fee_growth_inside_a: u128,
+    pub fee_growth_inside_b: u128,
+&#125;
+
+// 账户约束优化
+#[derive(Accounts)]
+pub struct ModifyLiquidity&lt;'info> &#123;
+    #[account(
+        constraint = whirlpool.whirlpool_bump == [] @ WhirlpoolError::InvalidWhirlpoolBump
+    )]
+    pub whirlpool: Box&lt;Account&lt;'info, Whirlpool>>,
+&#125;
+栈上内存分配
+// 使用数组而非Vec减少堆分配
+pub struct SwapCalculation &#123;
+    pub amount_a: u64,
+    pub amount_b: u64,
+    pub sqrt_price_limit: u128,
+    pub amount_specified_is_input: bool,
+    pub a_to_b: bool,
+&#125;
+
+// 关键计算函数
+impl SwapCalculation &#123;
+    pub fn calculate_swap(
+        &amp;self,
+        whirlpool: &amp;Whirlpool,
+        tick_arrays: &amp;[TickArray],
+    ) -> SwapResult &#123;
+        // 栈上计算，避免动态分配
+        let mut current_tick = whirlpool.current_tick_index;
+        let mut current_sqrt_price = whirlpool.sqrt_price;
+        let mut amount_remaining = if self.amount_specified_is_input &#123;
+            self.amount_a
+        &#125; else &#123;
+            self.amount_b
+        &#125;;
+
+        // 主循环逻辑...
     &#125;
 &#125;
+错误处理模式
+自定义错误类型
+// 错误定义
+#[error_code]
+pub enum WhirlpoolError &#123;
+    #[msg("Invalid tick index")]
+    InvalidTickIndex,
+    #[msg("Insufficient liquidity")]
+    InsufficientLiquidity,
+    #[msg("Price limit reached")]
+    PriceLimitReached,
+    #[msg("Zero amount specified")]
+    ZeroAmountSpecified,
+&#125;
 
-流程控制
-if语法
- // if_else();
-  let number = 3;
-  if number &lt; 5 &#123;
-      println!("Condition was true");
-  &#125; else &#123;
-      println!("Condition was false");
-  &#125;
-	
-// else if
-	let number = 3;
-  if number % 4 == 0&#123;
-      println!("Condition was true");
-  &#125; else if number % 3 == 0 &#123;
-      println!("Condition was true for number % 3");
-  &#125; else if number % 2 == 0 &#123;
-      println!("Condition was true for number % 2");
-  &#125; else &#123;
-      println!("Condition was false");
-  &#125;
-
-let 语句中使用if，需要注意分号结尾。
-let condition = true;
-   let number = if condition &#123; 5 &#125; else &#123; 6 &#125;;
-   println!("The value of number is: &#123;&#125;", number);
-loop循环
-//loop 循环
-    loop &#123;
-        println!("This is an infinite loop");
+// 错误处理函数
+pub fn validate_tick_range(
+    tick_lower: i32,
+    tick_upper: i32,
+    tick_spacing: u16,
+) -> Result&lt;()> &#123;
+    if tick_lower >= tick_upper &#123;
+        return Err(WhirlpoolError::InvalidTickIndex.into());
     &#125;
-
-break、 continue
-使用break 关键字来告诉程序停止循环，使用continue关键字来告诉程序继续循环。
-let语句中也可以使用loop返回, 需要注意分号结尾。
-// let语句中使用loop
-   let result = loop &#123;
-       count += 1;
-       if count == 10 &#123;
-           println!("Breaking the loop at count: &#123;&#125;", count);
-           break count * 2; // 返回值
-       &#125;
-   &#125;;
-多层loop
-break退出内层循环，可以使用命名loop的方法来退出指定的循环。标签的语法是使用单引号（'）后跟一个标识符
-// 多层循环可以使用标签来控制跳出特定的循环层级
-   // 标签可以帮助我们在多层嵌套循环中跳出特定的循环层级
-   // 标签的语法是使用单引号（'）后跟一个标识符
-   let mut i = 0;
-   'outerloop: loop &#123;
-       loop &#123;
-           i += 1;
-           println!("Inner loop iteration with i: &#123;&#125;", i);
-           if i == 2 &#123;
-               println!("Breaking out of the inner loop at i: &#123;&#125;", i);
-               break; // 跳出内层循环
-           &#125;
-           if i == 3 &#123;
-               println!("Breaking out of the outer loop at i: &#123;&#125;", i);
-               break 'outerloop; // 跳出外层循环
-           &#125;
-       &#125;
-   &#125;
-while 条件循环
-fn while_example() &#123;
-    let mut count: i32 = 0;
-    while count &lt; 5 &#123;
-        count += 1;
-        println!("Current count: &#123;&#125;", count);
+    if tick_lower % tick_spacing as i32 != 0 &#123;
+        return Err(WhirlpoolError::InvalidTickIndex.into());
     &#125;
+    Ok(())
 &#125;
-在rust中如果是条件判断的循环，使用while是比较便捷的，如果需要遍历集合的话，可以使用for
-for遍历集合
-fn for_example() &#123;
-    let numbers = [1, 2, 3, 4, 5];
-    for i in numbers &#123;
-        println!("Current number: &#123;&#125;", i)
-    &#125;
+高级特性实现
+协议费用机制
+// 协议费用收集
+pub fn collect_protocol_fee(
+    whirlpool: &amp;mut Account&lt;Whirlpool>,
+    fee_authority: &amp;Signer,
+    token_owner_account_a: &amp;mut Account&lt;TokenAccount>,
+    token_owner_account_b: &amp;mut Account&lt;TokenAccount>,
+) -> Result&lt;()> &#123;
+    let fee_amount_a = whirlpool.fee_growth_global_a
+        .checked_sub(protocol_fee_owed_a)
+        .unwrap();
+    let fee_amount_b = whirlpool.fee_growth_global_b
+        .checked_sub(protocol_fee_owed_b)
+        .unwrap();
 
-    // 直接遍历数值，逆序使用rev()
-    for i in (1..=4).rev() &#123;
-        println!("Current number in range: &#123;&#125;", i);
-    &#125;
+    // 转移协议费用...
+    Ok(())
 &#125;
-所有权转移与借用：
-是Rust中的循环访问规则
-1. 未实现Copy trait的类型：所有权会转移（Move语义）
-像Vec这类集合类型没有实现Copy trait，当直接用它们进行循环遍历（for v in vec）时，循环会获取vec的所有权（即“所有权转移”）。
-
-循环结束后，vec的所有权已被消耗，无法再被访问（编译器会报错）。
-
-let mut vec = vec![1, 2, 3, 4, 5];
-// 直接遍历vec：所有权转移给循环变量v
-for v in vec &#123;
-    println!("Current value: &#123;&#125;", v); // 此时v是vec中元素的所有权持有者
-&#125;
-
-// ❌ 错误：vec的所有权已转移，无法再使用
-println!("Vector after loop: &#123;:?&#125;", vec); 
-2. 解决办法：用“借用”避免所有权转移
-若想在循环后继续使用vec，需通过引用（&amp;） 进行“借用”，而非直接转移所有权。根据是否需要修改元素，分为两种借用方式：
-（1）不可变借用（&amp;vec）：仅读取，不修改
-用&amp;vec进行遍历，循环获取的是vec的不可变引用，所有权仍归原变量所有。
-
-循环中只能读取元素，不能修改。
-
-let vec = vec![1, 2, 3, 4, 5];
-// 不可变借用：&amp;vec表示“临时借用vec的读取权”
-for v in &amp;vec &#123;
-    println!("Current value: &#123;&#125;", v); // v是&amp;i32类型（不可变引用）
+跨指令优化
+Orca使用跨指令优化的设计模式：
+// 复合指令定义
+#[derive(Accounts)]
+pub struct SwapWithPartner&lt;'info> &#123;
+    pub whirlpool: Account&lt;'info, Whirlpool>,
+    pub partner: Account&lt;'info, Partner>,
+    /// CHECK: Partner program will validate this
+    pub partner_authority: UncheckedAccount&lt;'info>,
+    pub partner_token_account: Account&lt;'info, TokenAccount>,
 &#125;
 
-// ✅ 合法：vec所有权未转移，可继续使用
-println!("Vector after loop: &#123;:?&#125;", vec); 
-（2）可变借用（&amp;mut vec）：需要修改元素
-若要在循环中修改元素，需用&amp;mut vec进行可变借用，此时循环变量v是&amp;mut i32（可变引用）。
+// 复合指令处理
+pub fn swap_with_partner(ctx: Context&lt;SwapWithPartner>, data: SwapData) -> Result&lt;()> &#123;
+    // 第一阶段：标准交换
+    let mut swap_result = perform_swap(&amp;ctx.accounts.whirlpool, &amp;data)?;
 
-修改元素时需用*v解引用（获取引用指向的实际值）。
+    // 第二阶段：伙伴程序处理
+    let partner_ix = Instruction &#123;
+        program_id: ctx.accounts.partner.key(),
+        accounts: vec![
+            AccountMeta::new_readonly(ctx.accounts.partner_authority.key(), true),
+            AccountMeta::new(ctx.accounts.partner_token_account.key(), false),
+        ],
+        data: partner_data,
+    &#125;;
 
-let mut vec = vec![1, 2, 3, 4, 5];
-// 可变借用：&amp;mut vec表示“临时借用vec的修改权”
-for v in &amp;mut vec &#123;
-    if *v == 3 &#123;
-        *v += 10; // ✅ 解引用后修改：3 → 13
-    &#125;
-    println!("Current value: &#123;&#125;", v); // v是&amp;mut i32，打印时自动解引用
+    invoke(&amp;partner_ix, &amp;[ctx.accounts.partner_authority.to_account_info()])?;
+    Ok(())
 &#125;
+技术要点总结
+核心机制对比
+Whirlpool vs 传统AMM的区别：
 
-// ✅ 合法：所有权未转移，修改后的值已保留
-println!("Vector after loop: &#123;:?&#125;", vec); // 输出 [1, 2, 13, 4, 5]
-3. 实现Copy trait的类型：所有权不转移（Copy语义）
-像整数、布尔值等基本数据类型，以及由它们组成的数组（[i32; n]），都实现了Copy trait。
+流动性管理：集中流动性 vs 全范围流动性
+价格发现：Tick系统管理 vs 简单恒定乘积
+资本效率：更高的资金利用率 vs 更简单的实现
 
-循环遍历这类类型时，会自动复制元素（而非转移所有权），原变量的所有权仍保留，循环后可正常使用。
+零拷贝技术的优势
+零拷贝技术在Orca中的应用带来了显著的性能提升：
 
-let arr = [1, 2, 3, 4, 5]; // 数组元素是i32（实现了Copy）
-// 遍历arr：会复制每个元素给v，而非转移所有权
-for v in arr &#123;
-    println!("Current value: &#123;&#125;", v); // v是复制的i32值
-&#125;
+减少序列化开销：直接内存访问，避免不必要的拷贝操作
+栈上内存分配：使用固定大小数组而非动态分配
+更好的gas效率：降低交易成本，提升用户体验
 
-// ✅ 合法：arr的所有权未转移，可继续使用
-println!("Array after loop: &#123;:?&#125;", arr); // 输出 [1, 2, 3, 4, 5]
-核心区别总结
+价格操纵防护
+Orca通过多层机制防止价格操纵：
 
+Tick间距控制：限制流动性位置的粒度
+预言机价格验证：集成链上价格预言机
+滑点保护机制：最大滑点限制和交易失败保护
 
+未来发展方向
+2025年技术演进
 
-类型特征
-循环方式
-所有权状态
-循环后能否使用原变量
+AI智能做市：集成机器学习算法，实现动态费率调整和智能价格发现
+多链聚合扩张：通过LayerZero和Wormhole实现真正的跨链AMM
+零知识隐私池：集成ZK证明技术，为机构用户提供隐私保护交易
+意图驱动集成：与CowSwap等意图协议深度合作，提供更智能的交易路由
+RWA资产支持：推出专为现实世界资产代币化设计的AMM池
+MEV防护升级：采用SUAVE网络和Flashbots Protect的最新防护机制
+量子安全加密：为后量子时代做准备，研究抗量子计算的加密算法
 
+生态合作与扩张
+Orca在2025年深化生态合作：
 
+流动性联盟：与Jupiter、Raydium、Meteora形成Solana流动性联盟
+跨链桥接：深度集成Wormhole，实现多链资产的无缝流动
+机构级集成：与传统金融机构合作，提供托管和清算服务
+Layer2扩张：支持Arbitrum、Optimism、Base等以太坊Layer2网络
+新兴生态：扩展到TON、SUI、Aptos等高性能区块链网络
 
+结论
+Orca作为Solana生态的核心基础设施，不仅展示了Rust在高性能DeFi应用中的强大能力，也引领着2025年DEX技术创新的浪潮。通过深入理解其技术实现，开发者可以在多链时代更好地应用这些先进的AMM设计模式和跨链技术理念，为下一代去中心化交易所的发展贡献力量。
 
-未实现Copy（如Vec）
-for v in vec
-所有权转移给v
-不能（已被消耗）
-
-
-未实现Copy（如Vec）
-for v in &amp;vec
-仅借出不可变引用
-能（所有权仍保留）
-
-
-未实现Copy（如Vec）
-for v in &amp;mut vec
-仅借出可变引用
-能（所有权仍保留）
-
-
-实现Copy（如[i32; n]）
-for v in arr
-元素被复制，所有权不转移
-能（原变量未被修改）
-
-
-
+本文内容基于公开技术文档和技术分析，仅供学习参考。加密货币投资具有高风险，请谨慎决策。
 ]]></content>
       <categories>
-        <category>Rust</category>
+        <category>Eco Insights</category>
       </categories>
       <tags>
+        <tag>Solana</tag>
+        <tag>DEX</tag>
         <tag>Rust</tag>
+        <tag>DeFi</tag>
+        <tag>AMM</tag>
+        <tag>Orca</tag>
+        <tag>Whirlpool</tag>
       </tags>
   </entry>
   <entry>
@@ -1534,257 +1305,6 @@ pub fn lifetime_example() &#123;
 引用外部变量（如fn get_a(s: &amp;String) -&gt; &amp;String）：确保被引用对象生命周期足够长。
 生命周期注解（如fn longest&lt;'a&gt;(x: &amp;'a str) -&gt; &amp;'a str）：明确引用的合法存活范围。
 
-]]></content>
-      <categories>
-        <category>Rust</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Rust基础[part6]_数组与切片_字符串</title>
-    <url>/2025/07/13/Rust%E5%9F%BA%E7%A1%80-part6-%E6%95%B0%E7%BB%84%E4%B8%8E%E5%88%87%E7%89%87-%E5%AD%97%E7%AC%A6%E4%B8%B2/</url>
-    <content><![CDATA[Rust基础[part6]_数组与切片、字符串
-数组
-数组的类型格式:[T; N]
-
-固定长度：必须在编译时指定长度 N，且无法扩容。
-可变：如果声明为 mut，可以修改元素值，但不能改变长度。
-存储在栈上（除非被装箱到堆上，如 Box&lt;[T; N]&gt;）。
-
-定义
-let arr = [1, 2, 3, 4, 5];
-   println!("Array: &#123;:?&#125;", arr);
-默认初始值
-// 默认初始值
-   let arr1: [i32; 4] = [10; 4];
-   println!("Array with default value: &#123;:?&#125;", arr1);
-数组长度
-// 数组长度
-   println!("Array length: &#123;&#125;", arr1.len());
-遍历
-for index in 0..arr.len() &#123;
-        // 遍历索引
-        println!("Element at index &#123;&#125;: &#123;&#125;", index, arr[index]);
-    &#125;
-    for element in arr1.iter() &#123;
-        // 使用迭代器遍历
-        println!("Element: &#123;&#125;", element)
-    &#125;
-    arr1.iter().for_each(|x: &amp;i32| println!("Element: &#123;&#125;", x)); // 使用闭包遍历
-
-数组的值传递
-    // 数组值传递
-    println!("Before update: &#123;:?&#125;", arr2);
-    update(arr2);
-    println!("After update: &#123;:?&#125;", arr2); // 注意这里的 arr2 仍然是原来的值，因为数组是值传递
-fn update(mut arr: [i32; 5]) &#123;
-    println!("Updating array: &#123;:?&#125;", arr);
-    for index in 0..arr.len() &#123;
-        arr[index] = 100; // 修改每个元素
-    &#125;
-    println!("Updated array inside function: &#123;:?&#125;", arr);
-&#125;
-
-输出：主函数中的数组并未改变，因为是值传递
-Before update: [10, 2, 3, 4, 5]
-Updating array: [10, 2, 3, 4, 5]
-Updated array inside function: [100, 100, 100, 100, 100]
-After update: [10, 2, 3, 4, 5]
-数组的引用传递
- // 数组引用传递
-    println!("Before update_mut: &#123;:?&#125;", arr2);
-    update_mut(&amp;mut arr2);
-    println!("After update_mut: &#123;:?&#125;", arr2); // 这里的 arr2 已经被修改，因为传递的是可变引用
-
-fn update_mut(arr: &amp;mut [i32; 5]) &#123;
-    println!("Updating array with mutable reference: &#123;:?&#125;", arr);
-    for index in 0..arr.len() &#123;
-        arr[index] = 100; // 修改每个元素
-    &#125;
-    println!("Updated array with mutable reference: &#123;:?&#125;", arr);
-&#125;
-输出：
-Before update_mut: [10, 2, 3, 4, 5]
-Updating array with mutable reference: [10, 2, 3, 4, 5]
-Updated array with mutable reference: [100, 100, 100, 100, 100]
-After update_mut: [100, 100, 100, 100, 100]
-数组的切片
-也就是slice类型，他表示从包含多个元素的容器中取得局部数据，这个过程称为切片操作。 不同语言对切片的支持有所不同。 Rust可以支持Slice操作，Rust中的切片操作只允许获取一段连续的局部数据。支持的有Array、String、Vec。
-
-⚠️ Slice切片 是单独的类型
-切片的类型是 &amp;[T]（不可变切片）或 &amp;mut [T]（可变切片），它不包含长度信息。
-切片也是一种引用，不包含所有权
-
-内存结构，切片由两部分组成：
-
-指向数据起始位置的指针（指向数组或 Vec 的内存）。
-长度字段（len），表示切片包含的元素个数。
-
-这里以Array的切片示例：
-fn slice_example() &#123;
-    let arr = [1, 2, 3, 4, 5];
-    let slice1: &amp;[i32] = &amp;arr[1..3]; // 包含索引1和2的元素
-    println!("Slice from index 1 to 3: &#123;:?&#125;", slice1);
-
-    let slice2: &amp;[i32] = &amp;arr[..3]; // 包含前3个元素
-    println!("Slice of first three elements: &#123;:?&#125;", slice2);
-
-    let slice3: &amp;[i32] = &amp;arr[2..]; // 从索引2开始到末尾
-    println!("Slice from index 2 to end: &#123;:?&#125;", slice3);
-&#125;
-常用的函数
-
-
-len ()：取 slice 元素个数
-
-
-is_empty ()：判断 slice 是否为空
-
-
-contains ()：判断是否包含某个元素
-
-
-repeat ()：重复 slice 指定次数
-
-
-reverse ()：反转 slice
-
-
-join ()：将各元素压平 (flatten) 并通过指定的分隔符连接起来
-
-
-swap ()：交换两个索引处的元素，如 s.swap (1,3)
-
-
-windows ()：以指定大小的窗口进行滚动迭代
-for i in arr.windows(3) &#123;
-        // 遍历数组的窗口
-        println!("Window of size 3: &#123;:?&#125;", i);
-    &#125;
-Window of size 3: [1, 2, 3]
-Window of size 3: [2, 3, 4]
-Window of size 3: [3, 4, 5]
-
-
-starts_with ()：判断 slice 是否以某个 slice 开头
-
-
-练习 ⚠️
-
-给定一个整数数组 nums，返回一个数组 answer ，使得 answer[i] 等于 nums 除 nums[i] 之外的所有元素的乘积。 任何前缀或后缀的乘积 nums 都保证适合 32 位整数。 您必须编写一个能够及时运行 O(n) 且无需使用除法运算的算法。
-示例 1： 输入：nums = [1,2,3,4] 输出：[24,12,8,6]
-示例 2： 输入：nums = [-1,1,0,-3,3] 输出：[0,0,9,0,0] 限制： 2 &lt;= nums.length &lt;= 10^5 -30 &lt;= nums[i] &lt;= 30 任何前缀或后缀的乘积 nums 都保证适合 32 位整数。
-进阶：你能以 O(1) 额外空间复杂度解决这个问题吗？（输出数组不算作空间复杂度分析的额外空间。）
-
-#[test]
-fn feature_array_practice() &#123;
-    let nums: [i32; 4] = [1, 2, 3, 4];
-    let answer: Vec&lt;i32> = arr_practice(&amp;nums[..]);
-    println!("Result of arr_practice: &#123;:?&#125;", answer);
-&#125;
-
-fn arr_practice(nums: &amp;[i32]) -> Vec&lt;i32> &#123;
-    let n: usize = nums.len();
-    let mut answer = vec![1; n]; // 初始化为全1
-
-    for i in 1..n &#123;
-        answer[i] = answer[i - 1] * nums[i - 1];
-    &#125;
-    let mut suffix = 1;
-    for i in (0..n).rev() &#123;
-        answer[i] *= suffix;
-        suffix *= nums[i];
-    &#125;
-
-    answer
-&#125;
-字符串
-是字符组成的连续集合
-Rust字符是Unicode类型，每个字符占四个字节，但是在字符串里面不一样，字符串是UTF-8编码。也就是字符串中的字符所占的字节数的变化的四分之一。
-Rust 的字符串主要分为两种类型：
-
-str（字符串切片）：它是不可变的引用类型，长度固定，通常以借用的形式存在，即&amp;str。
-String：这是一个在堆上分配内存的可增长类型，具备所有权。
-
-创建字符串
-// 创建String类型
-let s1 = String::new(); // 空字符串
-let s2 = "初始内容".to_string(); // 从&amp;str转换
-let s3 = String::from("直接创建"); // 使用from函数
-
-// 创建&amp;str类型（字符串字面量）
-let s4: &amp;str = "这是一个字符串切片";
-String -&gt;&amp;str
-三种
-pub fn string_example() &#123;
-    let s3 = String::from("Rust");
-     say_hello(&amp;s3); // Rust自动解引用s3，&amp;String会自动转换为&amp;str
-    say_hello(s3.as_str()); // 显式转换为&amp;str
-    say_hello(&amp;s3[..]); // 通过切片转换为&amp;str
-&#125;
-
-fn say_hello(s: &amp;str) &#123;
-    println!("Hello, &#123;&#125;!", s);
-&#125;
-各种转换方式
-
-字符串拼接
-都是原有的字符串添加，需要可变
-let mut s = String::from("Hello");
-s.push(' '); // 添加单个字符
-s.push_str("world!"); // 添加字符串切片
-
-let s2 = format!("&#123;&#125; &#123;&#125;", s, "Rust"); // 格式化拼接
-字符串查找与替换
-是返回的新的字符串，不需要可变
-let s = "Hello, world!";
-let contains = s.contains("world"); // true
-let replaced = s.replace("world", "Rust"); // "Hello, Rust!"
-其他常见操作
-let mut s = String::from("Hello");
-s.pop(); // 删除最后一个字符
-   println!("After pop: &#123;&#125;", s);
-
-   s.remove(0); // 删除第一个字符
-   println!("After remove: &#123;&#125;", s);
-
-   s.truncate(3); // 截断字符串到指定长度
-   println!("After truncate: &#123;&#125;", s);
-
-   s.clear(); // 清空字符串
-   println!("After clear: &#123;&#125;", s); 
-
-   // 字符串连接
-   let s4 = String::from("Hello");
-   let s5 = String::from(", Rust!");
-   let s6 = s4 + &amp;s5; // 使用 + 运算符连接字符串，使用 &amp;s5 传递引用
-   println!("After concat: &#123;&#125;", s6);
- //format
-   let s7 = format!("&#123;&#125;&#123;&#125;", s5, " is awesome!"); // 使用 format! 宏连接字符串
-
-	// 转义
-
-
-
-
-性能考量
-
-拼接字符串时，format!宏比+运算符更高效。
-频繁修改字符串建议使用String。
-
-练习
-
-// 修复所有错误，并且不要新增代码行
-fn main() &#123;
-    let mut s = String::from("hello");
-    s.push(',');
-    s.push_str(" world");
-    s += "!";//字面量 不能用to_string()
-
-    println!("&#123;&#125;", s)
-&#125;
 ]]></content>
       <categories>
         <category>Rust</category>
@@ -2987,6 +2507,486 @@ fn test_inventory_system() &#123;
       </tags>
   </entry>
   <entry>
+    <title>Rust基础[part3]_函数、流程控制</title>
+    <url>/2025/07/10/Rust%E5%9F%BA%E7%A1%80-part3-%E5%87%BD%E6%95%B0/</url>
+    <content><![CDATA[Rust基础[part3]_函数、流程控制
+函数
+组成和定义
+fn add(i: i32, j: i32) -> i32 &#123;
+    i + j
+&#125;
+
+声明函数的关键字 fn
+函数名add()
+参数i和j和参数类型 i32
+返回值类型`i32``
+函数题i+j
+
+函数返回
+返回形态
+i+j 和 return i+j;
+可以有两种形态
+
+return + 分号
+无return + 无分号
+
+无返回值的情况：
+就返回 ()
+fn add(i: i32, j: i32) -> () &#123;
+  
+&#125;
+永不返回值的情况：
+!表示函数永不返回，例如panic!宏会导致程序崩溃，函数不会返回。
+fn add_one(i: i32, j: i32) -> ! &#123;
+    panic!("weeee");
+&#125;
+死循环也不会返回
+fn infinite_loop() -> ! &#123;
+    loop &#123;
+        // 永远不会返回
+    &#125;
+&#125;
+
+流程控制
+if语法
+ // if_else();
+  let number = 3;
+  if number &lt; 5 &#123;
+      println!("Condition was true");
+  &#125; else &#123;
+      println!("Condition was false");
+  &#125;
+	
+// else if
+	let number = 3;
+  if number % 4 == 0&#123;
+      println!("Condition was true");
+  &#125; else if number % 3 == 0 &#123;
+      println!("Condition was true for number % 3");
+  &#125; else if number % 2 == 0 &#123;
+      println!("Condition was true for number % 2");
+  &#125; else &#123;
+      println!("Condition was false");
+  &#125;
+
+let 语句中使用if，需要注意分号结尾。
+let condition = true;
+   let number = if condition &#123; 5 &#125; else &#123; 6 &#125;;
+   println!("The value of number is: &#123;&#125;", number);
+loop循环
+//loop 循环
+    loop &#123;
+        println!("This is an infinite loop");
+    &#125;
+
+break、 continue
+使用break 关键字来告诉程序停止循环，使用continue关键字来告诉程序继续循环。
+let语句中也可以使用loop返回, 需要注意分号结尾。
+// let语句中使用loop
+   let result = loop &#123;
+       count += 1;
+       if count == 10 &#123;
+           println!("Breaking the loop at count: &#123;&#125;", count);
+           break count * 2; // 返回值
+       &#125;
+   &#125;;
+多层loop
+break退出内层循环，可以使用命名loop的方法来退出指定的循环。标签的语法是使用单引号（'）后跟一个标识符
+// 多层循环可以使用标签来控制跳出特定的循环层级
+   // 标签可以帮助我们在多层嵌套循环中跳出特定的循环层级
+   // 标签的语法是使用单引号（'）后跟一个标识符
+   let mut i = 0;
+   'outerloop: loop &#123;
+       loop &#123;
+           i += 1;
+           println!("Inner loop iteration with i: &#123;&#125;", i);
+           if i == 2 &#123;
+               println!("Breaking out of the inner loop at i: &#123;&#125;", i);
+               break; // 跳出内层循环
+           &#125;
+           if i == 3 &#123;
+               println!("Breaking out of the outer loop at i: &#123;&#125;", i);
+               break 'outerloop; // 跳出外层循环
+           &#125;
+       &#125;
+   &#125;
+while 条件循环
+fn while_example() &#123;
+    let mut count: i32 = 0;
+    while count &lt; 5 &#123;
+        count += 1;
+        println!("Current count: &#123;&#125;", count);
+    &#125;
+&#125;
+在rust中如果是条件判断的循环，使用while是比较便捷的，如果需要遍历集合的话，可以使用for
+for遍历集合
+fn for_example() &#123;
+    let numbers = [1, 2, 3, 4, 5];
+    for i in numbers &#123;
+        println!("Current number: &#123;&#125;", i)
+    &#125;
+
+    // 直接遍历数值，逆序使用rev()
+    for i in (1..=4).rev() &#123;
+        println!("Current number in range: &#123;&#125;", i);
+    &#125;
+&#125;
+所有权转移与借用：
+是Rust中的循环访问规则
+1. 未实现Copy trait的类型：所有权会转移（Move语义）
+像Vec这类集合类型没有实现Copy trait，当直接用它们进行循环遍历（for v in vec）时，循环会获取vec的所有权（即“所有权转移”）。
+
+循环结束后，vec的所有权已被消耗，无法再被访问（编译器会报错）。
+
+let mut vec = vec![1, 2, 3, 4, 5];
+// 直接遍历vec：所有权转移给循环变量v
+for v in vec &#123;
+    println!("Current value: &#123;&#125;", v); // 此时v是vec中元素的所有权持有者
+&#125;
+
+// ❌ 错误：vec的所有权已转移，无法再使用
+println!("Vector after loop: &#123;:?&#125;", vec); 
+2. 解决办法：用“借用”避免所有权转移
+若想在循环后继续使用vec，需通过引用（&amp;） 进行“借用”，而非直接转移所有权。根据是否需要修改元素，分为两种借用方式：
+（1）不可变借用（&amp;vec）：仅读取，不修改
+用&amp;vec进行遍历，循环获取的是vec的不可变引用，所有权仍归原变量所有。
+
+循环中只能读取元素，不能修改。
+
+let vec = vec![1, 2, 3, 4, 5];
+// 不可变借用：&amp;vec表示“临时借用vec的读取权”
+for v in &amp;vec &#123;
+    println!("Current value: &#123;&#125;", v); // v是&amp;i32类型（不可变引用）
+&#125;
+
+// ✅ 合法：vec所有权未转移，可继续使用
+println!("Vector after loop: &#123;:?&#125;", vec); 
+（2）可变借用（&amp;mut vec）：需要修改元素
+若要在循环中修改元素，需用&amp;mut vec进行可变借用，此时循环变量v是&amp;mut i32（可变引用）。
+
+修改元素时需用*v解引用（获取引用指向的实际值）。
+
+let mut vec = vec![1, 2, 3, 4, 5];
+// 可变借用：&amp;mut vec表示“临时借用vec的修改权”
+for v in &amp;mut vec &#123;
+    if *v == 3 &#123;
+        *v += 10; // ✅ 解引用后修改：3 → 13
+    &#125;
+    println!("Current value: &#123;&#125;", v); // v是&amp;mut i32，打印时自动解引用
+&#125;
+
+// ✅ 合法：所有权未转移，修改后的值已保留
+println!("Vector after loop: &#123;:?&#125;", vec); // 输出 [1, 2, 13, 4, 5]
+3. 实现Copy trait的类型：所有权不转移（Copy语义）
+像整数、布尔值等基本数据类型，以及由它们组成的数组（[i32; n]），都实现了Copy trait。
+
+循环遍历这类类型时，会自动复制元素（而非转移所有权），原变量的所有权仍保留，循环后可正常使用。
+
+let arr = [1, 2, 3, 4, 5]; // 数组元素是i32（实现了Copy）
+// 遍历arr：会复制每个元素给v，而非转移所有权
+for v in arr &#123;
+    println!("Current value: &#123;&#125;", v); // v是复制的i32值
+&#125;
+
+// ✅ 合法：arr的所有权未转移，可继续使用
+println!("Array after loop: &#123;:?&#125;", arr); // 输出 [1, 2, 3, 4, 5]
+核心区别总结
+
+
+
+类型特征
+循环方式
+所有权状态
+循环后能否使用原变量
+
+
+
+
+未实现Copy（如Vec）
+for v in vec
+所有权转移给v
+不能（已被消耗）
+
+
+未实现Copy（如Vec）
+for v in &amp;vec
+仅借出不可变引用
+能（所有权仍保留）
+
+
+未实现Copy（如Vec）
+for v in &amp;mut vec
+仅借出可变引用
+能（所有权仍保留）
+
+
+实现Copy（如[i32; n]）
+for v in arr
+元素被复制，所有权不转移
+能（原变量未被修改）
+
+
+
+]]></content>
+      <categories>
+        <category>Rust</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Rust基础[part6]_数组与切片_字符串</title>
+    <url>/2025/07/13/Rust%E5%9F%BA%E7%A1%80-part6-%E6%95%B0%E7%BB%84%E4%B8%8E%E5%88%87%E7%89%87-%E5%AD%97%E7%AC%A6%E4%B8%B2/</url>
+    <content><![CDATA[Rust基础[part6]_数组与切片、字符串
+数组
+数组的类型格式:[T; N]
+
+固定长度：必须在编译时指定长度 N，且无法扩容。
+可变：如果声明为 mut，可以修改元素值，但不能改变长度。
+存储在栈上（除非被装箱到堆上，如 Box&lt;[T; N]&gt;）。
+
+定义
+let arr = [1, 2, 3, 4, 5];
+   println!("Array: &#123;:?&#125;", arr);
+默认初始值
+// 默认初始值
+   let arr1: [i32; 4] = [10; 4];
+   println!("Array with default value: &#123;:?&#125;", arr1);
+数组长度
+// 数组长度
+   println!("Array length: &#123;&#125;", arr1.len());
+遍历
+for index in 0..arr.len() &#123;
+        // 遍历索引
+        println!("Element at index &#123;&#125;: &#123;&#125;", index, arr[index]);
+    &#125;
+    for element in arr1.iter() &#123;
+        // 使用迭代器遍历
+        println!("Element: &#123;&#125;", element)
+    &#125;
+    arr1.iter().for_each(|x: &amp;i32| println!("Element: &#123;&#125;", x)); // 使用闭包遍历
+
+数组的值传递
+    // 数组值传递
+    println!("Before update: &#123;:?&#125;", arr2);
+    update(arr2);
+    println!("After update: &#123;:?&#125;", arr2); // 注意这里的 arr2 仍然是原来的值，因为数组是值传递
+fn update(mut arr: [i32; 5]) &#123;
+    println!("Updating array: &#123;:?&#125;", arr);
+    for index in 0..arr.len() &#123;
+        arr[index] = 100; // 修改每个元素
+    &#125;
+    println!("Updated array inside function: &#123;:?&#125;", arr);
+&#125;
+
+输出：主函数中的数组并未改变，因为是值传递
+Before update: [10, 2, 3, 4, 5]
+Updating array: [10, 2, 3, 4, 5]
+Updated array inside function: [100, 100, 100, 100, 100]
+After update: [10, 2, 3, 4, 5]
+数组的引用传递
+ // 数组引用传递
+    println!("Before update_mut: &#123;:?&#125;", arr2);
+    update_mut(&amp;mut arr2);
+    println!("After update_mut: &#123;:?&#125;", arr2); // 这里的 arr2 已经被修改，因为传递的是可变引用
+
+fn update_mut(arr: &amp;mut [i32; 5]) &#123;
+    println!("Updating array with mutable reference: &#123;:?&#125;", arr);
+    for index in 0..arr.len() &#123;
+        arr[index] = 100; // 修改每个元素
+    &#125;
+    println!("Updated array with mutable reference: &#123;:?&#125;", arr);
+&#125;
+输出：
+Before update_mut: [10, 2, 3, 4, 5]
+Updating array with mutable reference: [10, 2, 3, 4, 5]
+Updated array with mutable reference: [100, 100, 100, 100, 100]
+After update_mut: [100, 100, 100, 100, 100]
+数组的切片
+也就是slice类型，他表示从包含多个元素的容器中取得局部数据，这个过程称为切片操作。 不同语言对切片的支持有所不同。 Rust可以支持Slice操作，Rust中的切片操作只允许获取一段连续的局部数据。支持的有Array、String、Vec。
+
+⚠️ Slice切片 是单独的类型
+切片的类型是 &amp;[T]（不可变切片）或 &amp;mut [T]（可变切片），它不包含长度信息。
+切片也是一种引用，不包含所有权
+
+内存结构，切片由两部分组成：
+
+指向数据起始位置的指针（指向数组或 Vec 的内存）。
+长度字段（len），表示切片包含的元素个数。
+
+这里以Array的切片示例：
+fn slice_example() &#123;
+    let arr = [1, 2, 3, 4, 5];
+    let slice1: &amp;[i32] = &amp;arr[1..3]; // 包含索引1和2的元素
+    println!("Slice from index 1 to 3: &#123;:?&#125;", slice1);
+
+    let slice2: &amp;[i32] = &amp;arr[..3]; // 包含前3个元素
+    println!("Slice of first three elements: &#123;:?&#125;", slice2);
+
+    let slice3: &amp;[i32] = &amp;arr[2..]; // 从索引2开始到末尾
+    println!("Slice from index 2 to end: &#123;:?&#125;", slice3);
+&#125;
+常用的函数
+
+
+len ()：取 slice 元素个数
+
+
+is_empty ()：判断 slice 是否为空
+
+
+contains ()：判断是否包含某个元素
+
+
+repeat ()：重复 slice 指定次数
+
+
+reverse ()：反转 slice
+
+
+join ()：将各元素压平 (flatten) 并通过指定的分隔符连接起来
+
+
+swap ()：交换两个索引处的元素，如 s.swap (1,3)
+
+
+windows ()：以指定大小的窗口进行滚动迭代
+for i in arr.windows(3) &#123;
+        // 遍历数组的窗口
+        println!("Window of size 3: &#123;:?&#125;", i);
+    &#125;
+Window of size 3: [1, 2, 3]
+Window of size 3: [2, 3, 4]
+Window of size 3: [3, 4, 5]
+
+
+starts_with ()：判断 slice 是否以某个 slice 开头
+
+
+练习 ⚠️
+
+给定一个整数数组 nums，返回一个数组 answer ，使得 answer[i] 等于 nums 除 nums[i] 之外的所有元素的乘积。 任何前缀或后缀的乘积 nums 都保证适合 32 位整数。 您必须编写一个能够及时运行 O(n) 且无需使用除法运算的算法。
+示例 1： 输入：nums = [1,2,3,4] 输出：[24,12,8,6]
+示例 2： 输入：nums = [-1,1,0,-3,3] 输出：[0,0,9,0,0] 限制： 2 &lt;= nums.length &lt;= 10^5 -30 &lt;= nums[i] &lt;= 30 任何前缀或后缀的乘积 nums 都保证适合 32 位整数。
+进阶：你能以 O(1) 额外空间复杂度解决这个问题吗？（输出数组不算作空间复杂度分析的额外空间。）
+
+#[test]
+fn feature_array_practice() &#123;
+    let nums: [i32; 4] = [1, 2, 3, 4];
+    let answer: Vec&lt;i32> = arr_practice(&amp;nums[..]);
+    println!("Result of arr_practice: &#123;:?&#125;", answer);
+&#125;
+
+fn arr_practice(nums: &amp;[i32]) -> Vec&lt;i32> &#123;
+    let n: usize = nums.len();
+    let mut answer = vec![1; n]; // 初始化为全1
+
+    for i in 1..n &#123;
+        answer[i] = answer[i - 1] * nums[i - 1];
+    &#125;
+    let mut suffix = 1;
+    for i in (0..n).rev() &#123;
+        answer[i] *= suffix;
+        suffix *= nums[i];
+    &#125;
+
+    answer
+&#125;
+字符串
+是字符组成的连续集合
+Rust字符是Unicode类型，每个字符占四个字节，但是在字符串里面不一样，字符串是UTF-8编码。也就是字符串中的字符所占的字节数的变化的四分之一。
+Rust 的字符串主要分为两种类型：
+
+str（字符串切片）：它是不可变的引用类型，长度固定，通常以借用的形式存在，即&amp;str。
+String：这是一个在堆上分配内存的可增长类型，具备所有权。
+
+创建字符串
+// 创建String类型
+let s1 = String::new(); // 空字符串
+let s2 = "初始内容".to_string(); // 从&amp;str转换
+let s3 = String::from("直接创建"); // 使用from函数
+
+// 创建&amp;str类型（字符串字面量）
+let s4: &amp;str = "这是一个字符串切片";
+String -&gt;&amp;str
+三种
+pub fn string_example() &#123;
+    let s3 = String::from("Rust");
+     say_hello(&amp;s3); // Rust自动解引用s3，&amp;String会自动转换为&amp;str
+    say_hello(s3.as_str()); // 显式转换为&amp;str
+    say_hello(&amp;s3[..]); // 通过切片转换为&amp;str
+&#125;
+
+fn say_hello(s: &amp;str) &#123;
+    println!("Hello, &#123;&#125;!", s);
+&#125;
+各种转换方式
+
+字符串拼接
+都是原有的字符串添加，需要可变
+let mut s = String::from("Hello");
+s.push(' '); // 添加单个字符
+s.push_str("world!"); // 添加字符串切片
+
+let s2 = format!("&#123;&#125; &#123;&#125;", s, "Rust"); // 格式化拼接
+字符串查找与替换
+是返回的新的字符串，不需要可变
+let s = "Hello, world!";
+let contains = s.contains("world"); // true
+let replaced = s.replace("world", "Rust"); // "Hello, Rust!"
+其他常见操作
+let mut s = String::from("Hello");
+s.pop(); // 删除最后一个字符
+   println!("After pop: &#123;&#125;", s);
+
+   s.remove(0); // 删除第一个字符
+   println!("After remove: &#123;&#125;", s);
+
+   s.truncate(3); // 截断字符串到指定长度
+   println!("After truncate: &#123;&#125;", s);
+
+   s.clear(); // 清空字符串
+   println!("After clear: &#123;&#125;", s); 
+
+   // 字符串连接
+   let s4 = String::from("Hello");
+   let s5 = String::from(", Rust!");
+   let s6 = s4 + &amp;s5; // 使用 + 运算符连接字符串，使用 &amp;s5 传递引用
+   println!("After concat: &#123;&#125;", s6);
+ //format
+   let s7 = format!("&#123;&#125;&#123;&#125;", s5, " is awesome!"); // 使用 format! 宏连接字符串
+
+	// 转义
+
+
+
+
+性能考量
+
+拼接字符串时，format!宏比+运算符更高效。
+频繁修改字符串建议使用String。
+
+练习
+
+// 修复所有错误，并且不要新增代码行
+fn main() &#123;
+    let mut s = String::from("hello");
+    s.push(',');
+    s.push_str(" world");
+    s += "!";//字面量 不能用to_string()
+
+    println!("&#123;&#125;", s)
+&#125;
+]]></content>
+      <categories>
+        <category>Rust</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Rust基础[part4]_基本类型,所有权</title>
     <url>/2025/07/11/Rust%E5%9F%BA%E7%A1%80%5Bpart4%5D_%E5%9F%BA%E6%9C%AC%E7%B1%BB%E5%9E%8B,%E6%89%80%E6%9C%89%E6%9D%83/</url>
     <content><![CDATA[Rust基础[part4]_基本类型,所有权
@@ -3353,6 +3353,342 @@ pub fn take_ownership(s: &amp;String) -> &amp;String &#123;
     &amp;s // 返回s的引用
 &#125;
 后面会详细讲到引用的用法
+]]></content>
+      <categories>
+        <category>Rust</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Rust进阶[part1]_智能指针概述&amp;box指针</title>
+    <url>/2025/07/18/Rust%E8%BF%9B%E9%98%B6-part1-%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E6%A6%82%E8%BF%B0-box%E6%8C%87%E9%92%88/</url>
+    <content><![CDATA[Rust进阶[part1]_智能指针概述&amp;box指针
+智能指针概述
+在Rust中，智能指针是一类特殊的数据结构，它们不仅像普通指针一样可以引用数据，还带有额外的元数据和功能。与普通指针不同，智能指针通常使用结构体实现，并且会实现 Deref 和 Drop 等特定的trait，以提供更强大的功能和更安全的内存管理。
+智能指针在Rust编程中扮演着重要的角色，它们能够帮助开发者处理复杂的内存管理场景，确保程序的安全性和性能。例如，在处理动态大小的数据、递归数据结构或者需要自定义资源释放逻辑时，智能指针就显得尤为重要。
+Box指针
+内存分配到堆上
+在Rust中，栈内存的分配和释放是自动且高效的，但栈空间是有限的。对于一些大型的数据结构或者需要在运行时动态确定大小的数据，将其存储在栈上可能会导致栈溢出。这时，我们可以使用 Box 指针将数据分配到堆上。
+Box 是Rust标准库中最基本的智能指针之一，它允许我们在堆上分配内存，并将数据存储在其中。通过 Box 指针，我们可以在栈上存储一个指向堆上数据的引用，从而实现对堆上数据的访问。
+以下是一个简单的示例，展示了如何使用 Box 将一个整数分配到堆上：
+fn main() &#123;
+    let boxed_int = Box::new(42);
+    println!("The value inside the box is: &#123;&#125;", *boxed_int);
+&#125;
+在这个示例中，Box::new(42) 创建了一个 Box 指针，它指向堆上存储的整数 42。
+通过解引用运算符 *，我们可以访问堆上的数据。
+允许处理动态大小类型（DST）
+Rust中的动态大小类型（DST）是指在编译时无法确定大小的数据类型，例如切片（[T]）和特征对象（dyn Trait）。
+由于栈上的内存分配需要在编译时确定大小，因此无法直接将DST存储在栈上。而 Box 指针可以用于存储DST，因为它会在堆上分配内存，从而避免了栈上内存分配的限制。
+以下是一个使用 Box 存储切片的示例：
+fn main() &#123;
+    let slice: &amp;[i32] = &amp;[1, 2, 3];
+    let boxed_slice: Box&lt;[i32]> = Box::from(slice);
+    println!("The boxed slice contains: &#123;:?&#125;", boxed_slice);
+&#125;
+在这个示例中，我们首先创建了一个切片 slice，然后使用 Box::from 方法将其转换为 Box&lt;[i32]&gt; 类型，从而将切片存储在堆上。
+
+// 允许处理动态大小类型，比如结构体和元组
+let boxed_tuple = Box::new((String::from("hello"), 5));
+println!("Boxed tuple: &#123;:?&#125;", boxed_tuple);
+
+递归数据结构
+递归数据结构是指包含自身类型的成员的结构体或枚举。由于递归数据结构的大小在编译时无法确定，因此无法直接将其存储在栈上。Box 指针可以用于解决这个问题，通过在递归数据结构中使用 Box 指针，我们可以将递归成员存储在堆上，从而避免栈溢出的问题。
+以下是一个使用 Box 实现链表节点的示例：
+#[derive(Debug)]
+enum List &#123;
+    Cons(i32, Box&lt;List>),
+    Nil,
+&#125;
+
+fn main() &#123;
+    let list = List::Cons(1, Box::new(List::Cons(2, Box::new(List::Nil))));
+    println!("The list is: &#123;:?&#125;", list);
+&#125;
+在这个示例中，List 枚举表示一个链表，其中 Cons 变体包含一个整数和一个指向另一个 List 节点的 Box 指针。通过使用 Box 指针，我们可以创建一个递归的链表结构。
+类型擦除
+类型擦除是指在编译时隐藏具体的类型信息，只保留类型的共性。在Rust中，我们可以使用 Box&lt;dyn Trait&gt; 来实现类型擦除。Box&lt;dyn Trait&gt; 是一个特征对象，它可以存储任何实现了指定特征的类型的值。
+以下是一个使用 Box&lt;dyn Trait&gt; 实现类型擦除的示例：
+trait Draw &#123;
+    fn draw(&amp;self);
+&#125;
+
+struct Circle;
+impl Draw for Circle &#123;
+    fn draw(&amp;self) &#123;
+        println!("Drawing a circle");
+    &#125;
+&#125;
+
+struct Square;
+impl Draw for Square &#123;
+    fn draw(&amp;self) &#123;
+        println!("Drawing a square");
+    &#125;
+&#125;
+
+fn main() &#123;
+    let shapes: Vec&lt;Box&lt;dyn Draw>> = vec![
+        Box::new(Circle),
+        Box::new(Square),
+    ];
+
+    for shape in shapes &#123;
+        shape.draw();
+    &#125;
+&#125;
+在这个示例中，我们定义了一个 Draw 特征，并为 Circle 和 Square 结构体实现了该特征。然后，我们创建了一个 Vec&lt;Box&lt;dyn Draw&gt;&gt; 类型的向量，其中存储了 Circle 和 Square 的实例。通过使用 Box&lt;dyn Draw&gt;，我们实现了类型擦除，使得向量可以存储不同类型的形状。
+内存管理和性能优化
+Box 指针在内存管理方面具有重要的作用。当 Box 指针离开作用域时，Rust会自动调用其 Drop 实现，从而释放堆上分配的内存。这种自动内存管理机制确保了内存的安全性，避免了内存泄漏的问题。
+在性能方面，由于 Box 指针涉及到堆上的内存分配和释放，因此会比栈上的内存分配和释放稍微慢一些。但是，对于需要动态分配内存或者处理动态大小类型的场景，使用 Box 指针是必要的。在实际编程中，我们应该根据具体的需求和性能要求来选择合适的内存分配方式。
+box的优缺点
+优点
+
+动态内存分配：允许在运行时动态分配内存，处理大型数据结构和动态大小类型。
+递归数据结构支持：可以用于实现递归数据结构，避免栈溢出的问题。
+类型擦除：支持类型擦除，使得代码更加灵活和可复用。
+自动内存管理：Rust的所有权系统确保了 Box 指针离开作用域时，堆上的内存会被自动释放，避免了内存泄漏。
+
+缺点
+
+性能开销：堆上的内存分配和释放比栈上的内存分配和释放稍微慢一些，可能会影响性能。
+额外的间接访问：使用 Box 指针需要通过指针进行间接访问，可能会增加一定的开销。
+
+Drop Trait
+Drop trait 用于自定义当值离开作用域时执行的代码，通常用于释放资源，例如内存、文件句柄、网络连接等。当一个实现了 Drop trait 的值离开作用域时，Rust会自动调用其 drop 方法。
+以下是一个简单的示例，展示了如何实现 Drop trait：
+struct CustomSmartPointer &#123;
+    data: String,
+&#125;
+
+impl Drop for CustomSmartPointer &#123;
+    fn drop(&amp;mut self) &#123;
+        println!("Dropping CustomSmartPointer with data `&#123;&#125;`!", self.data);
+    &#125;
+&#125;
+
+fn main() &#123;
+    let c = CustomSmartPointer &#123; data: String::from("my stuff") &#125;;
+    let d = CustomSmartPointer &#123; data: String::from("other stuff") &#125;;
+    println!("CustomSmartPointers created.");
+&#125;
+在这个示例中，我们定义了一个 CustomSmartPointer 结构体，并为其实现了 Drop trait。当 c 和 d 离开作用域时，Rust会自动调用它们的 drop 方法，打印出相应的信息。
+Deref Trait
+Deref trait 用于重载解引用运算符（*），允许我们自定义指针类型的解引用行为。通过实现 Deref trait，我们可以让自定义的智能指针像普通指针一样使用解引用运算符。
+Deref trait 定义了一个 deref 方法，该方法返回一个指向内部数据的引用。
+以下是一个简单的示例，展示了如何实现 Deref trait：
+use std::ops::Deref;
+
+struct MyBox&lt;T>(T);
+
+impl&lt;T> MyBox&lt;T> &#123;
+    fn new(x: T) -> MyBox&lt;T> &#123;
+        MyBox(x)
+    &#125;
+&#125;
+
+impl&lt;T> Deref for MyBox&lt;T> &#123;
+    type Target = T;
+
+    fn deref(&amp;self) -> &amp;Self::Target &#123;
+        &amp;self.0
+    &#125;
+&#125;
+
+fn main() &#123;
+    let x = 5;
+    let y = MyBox::new(x);
+
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
+&#125;
+在这个示例中，我们定义了一个 MyBox 结构体，并为其实现了 Deref trait。通过实现 deref 方法，我们可以使用解引用运算符 * 来访问 MyBox 内部的数据。
+练习
+1. 创建一个大型数组并将其分配在堆上，然后测量和比较分配在堆和栈上的性能差异。
+使用instant::now() ; 以及elapsed()
+use std::time::Instant;
+
+const ARRAY_SIZE: usize = 1000000;
+
+fn main() &#123;
+    // 测量栈上分配的时间
+    let start_stack = Instant::now();
+    let _stack_array: [i32; ARRAY_SIZE] = [0; ARRAY_SIZE];
+    let stack_duration = start_stack.elapsed();
+
+    // 测量堆上分配的时间
+    let start_heap = Instant::now();
+    let _heap_array: Box&lt;[i32]> = vec![0; ARRAY_SIZE].into_boxed_slice();
+    let heap_duration = start_heap.elapsed();
+
+    println!("Stack allocation time: &#123;:?&#125;", stack_duration);
+    println!("Heap allocation time: &#123;:?&#125;", heap_duration);
+&#125;
+2. 创建一个包含1_000_000个元素的数据，分别将其分配在堆和栈上。使用std::time::Instant来测量分配和访问时间。
+use std::time::Instant;
+
+const ELEMENT_COUNT: usize = 1_000_000;
+
+fn main() &#123;
+    // 栈上分配
+    let start_stack_alloc = Instant::now();
+    let stack_data: [i32; ELEMENT_COUNT] = [0; ELEMENT_COUNT];
+    let stack_alloc_time = start_stack_alloc.elapsed();
+
+    let start_stack_access = Instant::now();
+    for i in 0..ELEMENT_COUNT &#123;
+        let _ = stack_data[i];
+    &#125;
+    let stack_access_time = start_stack_access.elapsed();
+
+    // 堆上分配
+    let start_heap_alloc = Instant::now();
+    let heap_data: Box&lt;[i32]> = vec![0; ELEMENT_COUNT].into_boxed_slice();
+    let heap_alloc_time = start_heap_alloc.elapsed();
+
+    let start_heap_access = Instant::now();
+    for i in 0..ELEMENT_COUNT &#123;
+        let _ = heap_data[i];
+    &#125;
+    let heap_access_time = start_heap_access.elapsed();
+
+    println!("Stack allocation time: &#123;:?&#125;", stack_alloc_time);
+    println!("Stack access time: &#123;:?&#125;", stack_access_time);
+    println!("Heap allocation time: &#123;:?&#125;", heap_alloc_time);
+    println!("Heap access time: &#123;:?&#125;", heap_access_time);
+&#125;
+通过以上练习，我们可以更深入地了解 Box 指针在堆上分配内存的性能特点，以及与栈上分配的差异。
+3. 实现一个简单的文件系统模拟
+目标
+实现一个简单的文件系统模拟，其中包含文件和文件夹的概念。文件夹可以包含文件和其他文件夹。使用 Box 来管理内存，并实现对文件系统的基本操作（如创建文件、创建文件夹、列出文件和文件夹）。
+作业要求
+
+
+定义 FileSystem trait 和 Node 枚举
+
+FileSystem trait 包含 create_file、create_folder 和 list_contents 方法。
+Node 枚举包含 File 和 Folder 变体。
+
+
+
+实现 FolderNode 结构体
+
+FolderNode 实现 FileSystem trait，包含 name 和 contents 字段。
+使用 Box 管理 contents 中的子节点。
+
+
+
+实现文件系统的基本操作
+
+create_file 方法在文件夹中创建文件。
+create_folder 方法在文件夹中创建子文件夹。
+list_contents 方法列出文件夹的所有内容。
+
+
+
+测试文件系统的操作
+
+创建根文件夹并添加文件和文件夹。
+创建子文件夹并添加文件。
+列出文件夹的内容并输出文件系统结构。
+
+
+
+提示
+
+使用 Box 来管理 Folder 中的子节点。
+使用递归方法来遍历和列出文件和文件夹的内容。
+考虑使用 Vec 来存储文件夹的子节点。
+
+/**
+ * ---------------文件系统----------------------------
+ */
+// 节点枚举 用来区分文件夹还是文件，文件夹通过box包装来避免递归类型的大小歧义
+// 定义 Node 枚举：包含文件（File）和文件夹（Folder）两种变体
+#[derive(Debug)]
+enum Node &#123;
+    File(String),            // 文件：存储文件名
+    Folder(Box&lt;FolderNode>), // 文件夹：存储 FolderNode 的 Box（避免递归结构的大小问题）
+&#125;
+
+// 定义 FileSystem trait：包含文件系统的核心操作
+trait FileSystem &#123;
+    fn create_file(&amp;mut self, name: String); // 在当前文件夹创建文件
+    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self; // 在当前文件夹创建子文件夹（返回子文件夹引用以便链式操作）
+    fn list_contents(&amp;self, indent: &amp;str); // 列出当前文件夹内容（带缩进，方便展示结构）
+&#125;
+
+// 定义 FolderNode 结构体：表示文件夹节点
+#[derive(Debug)]
+struct FolderNode &#123;
+    name: String,        // 文件夹名称
+    contents: Vec&lt;Node>, // 存储子节点（文件或文件夹）
+&#125;
+
+// 为 FolderNode 实现 FileSystem trait
+impl FileSystem for FolderNode &#123;
+    // 1. 创建文件：向 contents 添加 File 节点
+    fn create_file(&amp;mut self, name: String) &#123;
+        self.contents.push(Node::File(name));
+    &#125;
+
+    // 2. 创建子文件夹：向 contents 添加 Folder 节点，并返回子文件夹的可变引用
+    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self &#123;
+        // 新建子文件夹节点
+        let new_folder = FolderNode &#123;
+            name: name.clone(),
+            contents: Vec::new(),
+        &#125;;
+        // 将子文件夹包装为 Box 并加入 contents
+        self.contents.push(Node::Folder(Box::new(new_folder)));
+
+        // 找到刚添加的子文件夹并返回其可变引用（通过 last_mut 确保是最后一个元素）
+        match self.contents.last_mut() &#123;
+            Some(Node::Folder(folder_box)) => &amp;mut **folder_box,
+            _ => panic!("创建文件夹失败：逻辑错误"), // 理论上不会触发
+        &#125;
+    &#125;
+
+    // 3. 列出内容：递归遍历子节点，带缩进展示结构
+    fn list_contents(&amp;self, indent: &amp;str) &#123;
+        // 打印当前文件夹名称
+        println!("&#123;&#125;&#123;&#125;", indent, self.name);
+        // 遍历子节点
+        for node in &amp;self.contents &#123;
+            match node &#123;
+                Node::File(file_name) => println!("&#123;&#125;&#123;&#125;", indent, file_name), // 打印文件
+                Node::Folder(folder) => folder.list_contents(&amp;format!("&#123;&#125;  ", indent)), // 递归打印子文件夹（增加缩进）
+            &#125;
+        &#125;
+    &#125;
+&#125;
+
+// 测试代码：创建文件系统并执行操作
+#[test]
+fn test_file_system() &#123;
+    // 1. 创建根文件夹
+    let mut root = FolderNode &#123;
+        name: "Root".to_string(),
+        contents: Vec::new(),
+    &#125;;
+
+    // 2. 根文件夹操作：创建文件 + 子文件夹
+    root.create_file("file1.txt".to_string()); // 根目录创建文件
+    let mut sub1 = root.create_folder("sub1".to_string()); // 根目录创建子文件夹 sub1
+    sub1.create_file("subfile1.txt".to_string()); // 在 sub1 中创建文件
+
+    // 3. 子文件夹嵌套操作
+    let mut sub2 = root.create_folder("sub2".to_string()); // 根目录创建子文件夹 sub2
+    let mut subsub2 = sub2.create_folder("subsub2".to_string()); // 在 sub2 中创建子文件夹 subsub2
+    subsub2.create_file("deepfile.txt".to_string()); // 在 subsub2 中创建文件
+
+    // 4. 列出根文件夹内容（从空缩进开始）
+    println!("文件系统结构：");
+    root.list_contents("");
+&#125;
+
 ]]></content>
       <categories>
         <category>Rust</category>
@@ -3858,342 +4194,6 @@ Rust 中用于管理 多个相关包（crate）的功能。工作区允许将多
 可以通过在cargo.toml中添加
 [workspace] 
 members = ["course","lib_add","lib_divide"]
-
-]]></content>
-      <categories>
-        <category>Rust</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Rust进阶[part1]_智能指针概述&amp;box指针</title>
-    <url>/2025/07/18/Rust%E8%BF%9B%E9%98%B6-part1-%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E6%A6%82%E8%BF%B0-box%E6%8C%87%E9%92%88/</url>
-    <content><![CDATA[Rust进阶[part1]_智能指针概述&amp;box指针
-智能指针概述
-在Rust中，智能指针是一类特殊的数据结构，它们不仅像普通指针一样可以引用数据，还带有额外的元数据和功能。与普通指针不同，智能指针通常使用结构体实现，并且会实现 Deref 和 Drop 等特定的trait，以提供更强大的功能和更安全的内存管理。
-智能指针在Rust编程中扮演着重要的角色，它们能够帮助开发者处理复杂的内存管理场景，确保程序的安全性和性能。例如，在处理动态大小的数据、递归数据结构或者需要自定义资源释放逻辑时，智能指针就显得尤为重要。
-Box指针
-内存分配到堆上
-在Rust中，栈内存的分配和释放是自动且高效的，但栈空间是有限的。对于一些大型的数据结构或者需要在运行时动态确定大小的数据，将其存储在栈上可能会导致栈溢出。这时，我们可以使用 Box 指针将数据分配到堆上。
-Box 是Rust标准库中最基本的智能指针之一，它允许我们在堆上分配内存，并将数据存储在其中。通过 Box 指针，我们可以在栈上存储一个指向堆上数据的引用，从而实现对堆上数据的访问。
-以下是一个简单的示例，展示了如何使用 Box 将一个整数分配到堆上：
-fn main() &#123;
-    let boxed_int = Box::new(42);
-    println!("The value inside the box is: &#123;&#125;", *boxed_int);
-&#125;
-在这个示例中，Box::new(42) 创建了一个 Box 指针，它指向堆上存储的整数 42。
-通过解引用运算符 *，我们可以访问堆上的数据。
-允许处理动态大小类型（DST）
-Rust中的动态大小类型（DST）是指在编译时无法确定大小的数据类型，例如切片（[T]）和特征对象（dyn Trait）。
-由于栈上的内存分配需要在编译时确定大小，因此无法直接将DST存储在栈上。而 Box 指针可以用于存储DST，因为它会在堆上分配内存，从而避免了栈上内存分配的限制。
-以下是一个使用 Box 存储切片的示例：
-fn main() &#123;
-    let slice: &amp;[i32] = &amp;[1, 2, 3];
-    let boxed_slice: Box&lt;[i32]> = Box::from(slice);
-    println!("The boxed slice contains: &#123;:?&#125;", boxed_slice);
-&#125;
-在这个示例中，我们首先创建了一个切片 slice，然后使用 Box::from 方法将其转换为 Box&lt;[i32]&gt; 类型，从而将切片存储在堆上。
-
-// 允许处理动态大小类型，比如结构体和元组
-let boxed_tuple = Box::new((String::from("hello"), 5));
-println!("Boxed tuple: &#123;:?&#125;", boxed_tuple);
-
-递归数据结构
-递归数据结构是指包含自身类型的成员的结构体或枚举。由于递归数据结构的大小在编译时无法确定，因此无法直接将其存储在栈上。Box 指针可以用于解决这个问题，通过在递归数据结构中使用 Box 指针，我们可以将递归成员存储在堆上，从而避免栈溢出的问题。
-以下是一个使用 Box 实现链表节点的示例：
-#[derive(Debug)]
-enum List &#123;
-    Cons(i32, Box&lt;List>),
-    Nil,
-&#125;
-
-fn main() &#123;
-    let list = List::Cons(1, Box::new(List::Cons(2, Box::new(List::Nil))));
-    println!("The list is: &#123;:?&#125;", list);
-&#125;
-在这个示例中，List 枚举表示一个链表，其中 Cons 变体包含一个整数和一个指向另一个 List 节点的 Box 指针。通过使用 Box 指针，我们可以创建一个递归的链表结构。
-类型擦除
-类型擦除是指在编译时隐藏具体的类型信息，只保留类型的共性。在Rust中，我们可以使用 Box&lt;dyn Trait&gt; 来实现类型擦除。Box&lt;dyn Trait&gt; 是一个特征对象，它可以存储任何实现了指定特征的类型的值。
-以下是一个使用 Box&lt;dyn Trait&gt; 实现类型擦除的示例：
-trait Draw &#123;
-    fn draw(&amp;self);
-&#125;
-
-struct Circle;
-impl Draw for Circle &#123;
-    fn draw(&amp;self) &#123;
-        println!("Drawing a circle");
-    &#125;
-&#125;
-
-struct Square;
-impl Draw for Square &#123;
-    fn draw(&amp;self) &#123;
-        println!("Drawing a square");
-    &#125;
-&#125;
-
-fn main() &#123;
-    let shapes: Vec&lt;Box&lt;dyn Draw>> = vec![
-        Box::new(Circle),
-        Box::new(Square),
-    ];
-
-    for shape in shapes &#123;
-        shape.draw();
-    &#125;
-&#125;
-在这个示例中，我们定义了一个 Draw 特征，并为 Circle 和 Square 结构体实现了该特征。然后，我们创建了一个 Vec&lt;Box&lt;dyn Draw&gt;&gt; 类型的向量，其中存储了 Circle 和 Square 的实例。通过使用 Box&lt;dyn Draw&gt;，我们实现了类型擦除，使得向量可以存储不同类型的形状。
-内存管理和性能优化
-Box 指针在内存管理方面具有重要的作用。当 Box 指针离开作用域时，Rust会自动调用其 Drop 实现，从而释放堆上分配的内存。这种自动内存管理机制确保了内存的安全性，避免了内存泄漏的问题。
-在性能方面，由于 Box 指针涉及到堆上的内存分配和释放，因此会比栈上的内存分配和释放稍微慢一些。但是，对于需要动态分配内存或者处理动态大小类型的场景，使用 Box 指针是必要的。在实际编程中，我们应该根据具体的需求和性能要求来选择合适的内存分配方式。
-box的优缺点
-优点
-
-动态内存分配：允许在运行时动态分配内存，处理大型数据结构和动态大小类型。
-递归数据结构支持：可以用于实现递归数据结构，避免栈溢出的问题。
-类型擦除：支持类型擦除，使得代码更加灵活和可复用。
-自动内存管理：Rust的所有权系统确保了 Box 指针离开作用域时，堆上的内存会被自动释放，避免了内存泄漏。
-
-缺点
-
-性能开销：堆上的内存分配和释放比栈上的内存分配和释放稍微慢一些，可能会影响性能。
-额外的间接访问：使用 Box 指针需要通过指针进行间接访问，可能会增加一定的开销。
-
-Drop Trait
-Drop trait 用于自定义当值离开作用域时执行的代码，通常用于释放资源，例如内存、文件句柄、网络连接等。当一个实现了 Drop trait 的值离开作用域时，Rust会自动调用其 drop 方法。
-以下是一个简单的示例，展示了如何实现 Drop trait：
-struct CustomSmartPointer &#123;
-    data: String,
-&#125;
-
-impl Drop for CustomSmartPointer &#123;
-    fn drop(&amp;mut self) &#123;
-        println!("Dropping CustomSmartPointer with data `&#123;&#125;`!", self.data);
-    &#125;
-&#125;
-
-fn main() &#123;
-    let c = CustomSmartPointer &#123; data: String::from("my stuff") &#125;;
-    let d = CustomSmartPointer &#123; data: String::from("other stuff") &#125;;
-    println!("CustomSmartPointers created.");
-&#125;
-在这个示例中，我们定义了一个 CustomSmartPointer 结构体，并为其实现了 Drop trait。当 c 和 d 离开作用域时，Rust会自动调用它们的 drop 方法，打印出相应的信息。
-Deref Trait
-Deref trait 用于重载解引用运算符（*），允许我们自定义指针类型的解引用行为。通过实现 Deref trait，我们可以让自定义的智能指针像普通指针一样使用解引用运算符。
-Deref trait 定义了一个 deref 方法，该方法返回一个指向内部数据的引用。
-以下是一个简单的示例，展示了如何实现 Deref trait：
-use std::ops::Deref;
-
-struct MyBox&lt;T>(T);
-
-impl&lt;T> MyBox&lt;T> &#123;
-    fn new(x: T) -> MyBox&lt;T> &#123;
-        MyBox(x)
-    &#125;
-&#125;
-
-impl&lt;T> Deref for MyBox&lt;T> &#123;
-    type Target = T;
-
-    fn deref(&amp;self) -> &amp;Self::Target &#123;
-        &amp;self.0
-    &#125;
-&#125;
-
-fn main() &#123;
-    let x = 5;
-    let y = MyBox::new(x);
-
-    assert_eq!(5, x);
-    assert_eq!(5, *y);
-&#125;
-在这个示例中，我们定义了一个 MyBox 结构体，并为其实现了 Deref trait。通过实现 deref 方法，我们可以使用解引用运算符 * 来访问 MyBox 内部的数据。
-练习
-1. 创建一个大型数组并将其分配在堆上，然后测量和比较分配在堆和栈上的性能差异。
-使用instant::now() ; 以及elapsed()
-use std::time::Instant;
-
-const ARRAY_SIZE: usize = 1000000;
-
-fn main() &#123;
-    // 测量栈上分配的时间
-    let start_stack = Instant::now();
-    let _stack_array: [i32; ARRAY_SIZE] = [0; ARRAY_SIZE];
-    let stack_duration = start_stack.elapsed();
-
-    // 测量堆上分配的时间
-    let start_heap = Instant::now();
-    let _heap_array: Box&lt;[i32]> = vec![0; ARRAY_SIZE].into_boxed_slice();
-    let heap_duration = start_heap.elapsed();
-
-    println!("Stack allocation time: &#123;:?&#125;", stack_duration);
-    println!("Heap allocation time: &#123;:?&#125;", heap_duration);
-&#125;
-2. 创建一个包含1_000_000个元素的数据，分别将其分配在堆和栈上。使用std::time::Instant来测量分配和访问时间。
-use std::time::Instant;
-
-const ELEMENT_COUNT: usize = 1_000_000;
-
-fn main() &#123;
-    // 栈上分配
-    let start_stack_alloc = Instant::now();
-    let stack_data: [i32; ELEMENT_COUNT] = [0; ELEMENT_COUNT];
-    let stack_alloc_time = start_stack_alloc.elapsed();
-
-    let start_stack_access = Instant::now();
-    for i in 0..ELEMENT_COUNT &#123;
-        let _ = stack_data[i];
-    &#125;
-    let stack_access_time = start_stack_access.elapsed();
-
-    // 堆上分配
-    let start_heap_alloc = Instant::now();
-    let heap_data: Box&lt;[i32]> = vec![0; ELEMENT_COUNT].into_boxed_slice();
-    let heap_alloc_time = start_heap_alloc.elapsed();
-
-    let start_heap_access = Instant::now();
-    for i in 0..ELEMENT_COUNT &#123;
-        let _ = heap_data[i];
-    &#125;
-    let heap_access_time = start_heap_access.elapsed();
-
-    println!("Stack allocation time: &#123;:?&#125;", stack_alloc_time);
-    println!("Stack access time: &#123;:?&#125;", stack_access_time);
-    println!("Heap allocation time: &#123;:?&#125;", heap_alloc_time);
-    println!("Heap access time: &#123;:?&#125;", heap_access_time);
-&#125;
-通过以上练习，我们可以更深入地了解 Box 指针在堆上分配内存的性能特点，以及与栈上分配的差异。
-3. 实现一个简单的文件系统模拟
-目标
-实现一个简单的文件系统模拟，其中包含文件和文件夹的概念。文件夹可以包含文件和其他文件夹。使用 Box 来管理内存，并实现对文件系统的基本操作（如创建文件、创建文件夹、列出文件和文件夹）。
-作业要求
-
-
-定义 FileSystem trait 和 Node 枚举
-
-FileSystem trait 包含 create_file、create_folder 和 list_contents 方法。
-Node 枚举包含 File 和 Folder 变体。
-
-
-
-实现 FolderNode 结构体
-
-FolderNode 实现 FileSystem trait，包含 name 和 contents 字段。
-使用 Box 管理 contents 中的子节点。
-
-
-
-实现文件系统的基本操作
-
-create_file 方法在文件夹中创建文件。
-create_folder 方法在文件夹中创建子文件夹。
-list_contents 方法列出文件夹的所有内容。
-
-
-
-测试文件系统的操作
-
-创建根文件夹并添加文件和文件夹。
-创建子文件夹并添加文件。
-列出文件夹的内容并输出文件系统结构。
-
-
-
-提示
-
-使用 Box 来管理 Folder 中的子节点。
-使用递归方法来遍历和列出文件和文件夹的内容。
-考虑使用 Vec 来存储文件夹的子节点。
-
-/**
- * ---------------文件系统----------------------------
- */
-// 节点枚举 用来区分文件夹还是文件，文件夹通过box包装来避免递归类型的大小歧义
-// 定义 Node 枚举：包含文件（File）和文件夹（Folder）两种变体
-#[derive(Debug)]
-enum Node &#123;
-    File(String),            // 文件：存储文件名
-    Folder(Box&lt;FolderNode>), // 文件夹：存储 FolderNode 的 Box（避免递归结构的大小问题）
-&#125;
-
-// 定义 FileSystem trait：包含文件系统的核心操作
-trait FileSystem &#123;
-    fn create_file(&amp;mut self, name: String); // 在当前文件夹创建文件
-    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self; // 在当前文件夹创建子文件夹（返回子文件夹引用以便链式操作）
-    fn list_contents(&amp;self, indent: &amp;str); // 列出当前文件夹内容（带缩进，方便展示结构）
-&#125;
-
-// 定义 FolderNode 结构体：表示文件夹节点
-#[derive(Debug)]
-struct FolderNode &#123;
-    name: String,        // 文件夹名称
-    contents: Vec&lt;Node>, // 存储子节点（文件或文件夹）
-&#125;
-
-// 为 FolderNode 实现 FileSystem trait
-impl FileSystem for FolderNode &#123;
-    // 1. 创建文件：向 contents 添加 File 节点
-    fn create_file(&amp;mut self, name: String) &#123;
-        self.contents.push(Node::File(name));
-    &#125;
-
-    // 2. 创建子文件夹：向 contents 添加 Folder 节点，并返回子文件夹的可变引用
-    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self &#123;
-        // 新建子文件夹节点
-        let new_folder = FolderNode &#123;
-            name: name.clone(),
-            contents: Vec::new(),
-        &#125;;
-        // 将子文件夹包装为 Box 并加入 contents
-        self.contents.push(Node::Folder(Box::new(new_folder)));
-
-        // 找到刚添加的子文件夹并返回其可变引用（通过 last_mut 确保是最后一个元素）
-        match self.contents.last_mut() &#123;
-            Some(Node::Folder(folder_box)) => &amp;mut **folder_box,
-            _ => panic!("创建文件夹失败：逻辑错误"), // 理论上不会触发
-        &#125;
-    &#125;
-
-    // 3. 列出内容：递归遍历子节点，带缩进展示结构
-    fn list_contents(&amp;self, indent: &amp;str) &#123;
-        // 打印当前文件夹名称
-        println!("&#123;&#125;&#123;&#125;", indent, self.name);
-        // 遍历子节点
-        for node in &amp;self.contents &#123;
-            match node &#123;
-                Node::File(file_name) => println!("&#123;&#125;&#123;&#125;", indent, file_name), // 打印文件
-                Node::Folder(folder) => folder.list_contents(&amp;format!("&#123;&#125;  ", indent)), // 递归打印子文件夹（增加缩进）
-            &#125;
-        &#125;
-    &#125;
-&#125;
-
-// 测试代码：创建文件系统并执行操作
-#[test]
-fn test_file_system() &#123;
-    // 1. 创建根文件夹
-    let mut root = FolderNode &#123;
-        name: "Root".to_string(),
-        contents: Vec::new(),
-    &#125;;
-
-    // 2. 根文件夹操作：创建文件 + 子文件夹
-    root.create_file("file1.txt".to_string()); // 根目录创建文件
-    let mut sub1 = root.create_folder("sub1".to_string()); // 根目录创建子文件夹 sub1
-    sub1.create_file("subfile1.txt".to_string()); // 在 sub1 中创建文件
-
-    // 3. 子文件夹嵌套操作
-    let mut sub2 = root.create_folder("sub2".to_string()); // 根目录创建子文件夹 sub2
-    let mut subsub2 = sub2.create_folder("subsub2".to_string()); // 在 sub2 中创建子文件夹 subsub2
-    subsub2.create_file("deepfile.txt".to_string()); // 在 subsub2 中创建文件
-
-    // 4. 列出根文件夹内容（从空缩进开始）
-    println!("文件系统结构：");
-    root.list_contents("");
-&#125;
 
 ]]></content>
       <categories>
@@ -5840,170 +5840,6 @@ $(total += $x;)*  // 对每个捕获的表达式，生成一次累加语句
       </tags>
   </entry>
   <entry>
-    <title>Rust进阶[part7]_闭包</title>
-    <url>/2025/07/31/Rust%E8%BF%9B%E9%98%B6-part7-%E9%97%AD%E5%8C%85/</url>
-    <content><![CDATA[Rust进阶[part7]_闭包
-闭包概述
-
-闭包是一个可以捕获所在环境中的变量的匿名函数
-在Rust中，闭包通过||符号定义，可以像普通函数一样调用，但和函数不同，闭包可以访问外部作用域的变量
-
-特点
-
-匿名性：没有函数名，通常作为表达式使用
-捕获环境：能自动捕获定义所在作用域中的变量（无需显式声明）
-类型推断：参数和返回值类型可由编译器自动推断，无需显式标注
-灵活语法：语法简洁，可根据复杂度调整写法（单行可省略&#123;&#125;和return）
-实现trait：编译器会为闭包自动实现Fn、FnMut或FnOnce trait，使其能作为参数传递
-
-语法
-基本语法：|参数列表| 代码块（返回值由最后一行表达式决定）
-// 无参数闭包
-let hello = || println!("Hello, closure!");
-hello(); // 调用闭包
-
-// 单参数闭包（省略类型标注）
-let square = |x| x * x;
-println!("&#123;&#125;", square(5)); // 输出：25
-
-// 多参数闭包（显式标注类型，可选）
-let add = |a: i32, b: i32| -> i32 &#123; a + b &#125;;
-println!("&#123;&#125;", add(2, 3)); // 输出：5
-
-// 多行闭包（需用&#123;&#125;包裹）
-let complex_calc = |x: i32| &#123;
-    let y = x * 2;
-    y + 3 // 隐式返回
-&#125;;
-println!("&#123;&#125;", complex_calc(4)); // 输出：11
-使用场景
-函数的参数
-闭包常作为参数传递给函数（如迭代器方法、异步任务等），实现灵活的逻辑注入
-// 1. 结合迭代器使用
-let numbers = vec![1, 2, 3, 4, 5];
-let doubled: Vec&lt;i32> = numbers.iter().map(|x| x * 2).collect();
-println!("&#123;:?&#125;", doubled); // 输出：[2, 4, 6, 8, 10]
-
-// 2. 自定义接受闭包的函数
-fn apply&lt;F>(f: F, value: i32) -> i32 
-where 
-    F: Fn(i32) -> i32  // 约束闭包类型
-&#123;
-    f(value)
-&#125;
-
-let result = apply(|x| x * 3 + 2, 5);
-println!("&#123;&#125;", result); // 输出：17
-捕获环境变量
-可以捕获并使用其定义所在环境中的变量，捕获方式由编译器根据使用场景自动推断
-// 1. 按引用捕获（&amp;T）：适用于只读访问
-let message = String::from("Hello");
-let print_msg = || println!("&#123;&#125;", message); // 捕获message的引用
-print_msg(); // 输出：Hello
-println!("&#123;&#125;", message); // 仍可使用message（未转移所有权）
-
-// 2. 按可变引用捕获（&amp;mut T）：适用于修改变量
-let mut count = 0;
-let mut increment = || &#123;
-    count += 1; // 修改捕获的变量
-    println!("Count: &#123;&#125;", count);
-&#125;;
-increment(); // 输出：Count: 1
-increment(); // 输出：Count: 2
-
-// 3. 按值捕获（T）：适用于需要转移所有权的场景
-let name = String::from("Alice");
-let take_name = || &#123;
-    println!("Name: &#123;&#125;", name); // 捕获name的所有权
-&#125;;
-take_name(); 
-// println!("&#123;&#125;", name); // 错误：name的所有权已被闭包捕获
-闭包原理
-
-
-自动实现的函数类型：编译器会为每个闭包自动实现Fn、FnMut或FnOnce中的一个或多个trait：
-
-FnOnce：闭包消耗捕获的变量（所有权转移），因此只能调用一次
-FnMut：闭包通过可变引用修改捕获的变量，可多次调用
-Fn：闭包通过不可变引用访问捕获的变量，可多次调用（实现Fn的闭包自动实现FnMut和FnOnce）
-
-
-
-闭包的类型推断：
-
-闭包的参数和返回值类型由编译器根据上下文自动推断
-同一闭包的类型是唯一的（即使签名相同，不同闭包类型也不同）
-若需存储闭包或作为返回值，需通过trait对象（如Box&lt;dyn Fn(...) -&gt; ...&gt;）实现
-
-
-
-生命周期与闭包：
-
-捕获引用的闭包，其生命周期受限于所捕获变量的生命周期
-若闭包作为返回值，需确保返回的闭包不捕获已销毁的变量引用
-
-
-
-move关键字
-在参数列表前使用move关键字，可强制闭包取得它所使用的环境值的所有权（忽略默认的引用捕获）
-// 基础示例：转移所有权
-let x = vec![1, 2, 3];
-let equal_to_x = move |y| y == x; // x的所有权被闭包捕获
-// println!("&#123;:?&#125;", x); // 错误：x的所有权已转移
-let y = vec![1, 2, 3];
-assert!(equal_to_x(y));
-
-// 多线程场景：确保闭包拥有变量所有权（避免生命周期问题）
-use std::thread;
-
-let s = String::from("thread message");
-thread::spawn(move || &#123; // 必须用move转移s的所有权到子线程
-    println!("&#123;&#125;", s);
-&#125;).join().unwrap();
-练习
-
-实现一个闭包，计算两个数的乘积并加上一个外部定义的偏移量（如offset = 10）
-使用闭包作为filter方法的参数，从整数列表中筛选出偶数
-用move关键字创建一个闭包，在新线程中打印捕获的字符串
-编写一个函数，接受两个闭包参数（一个计算平方，一个计算立方），并返回两个闭包结果的和
-
-示例答案参考：
-// 练习1
-let offset = 10;
-let calc = |a: i32, b: i32| a * b + offset;
-println!("&#123;&#125;", calc(3, 4)); // 输出：22（3*4+10）
-
-// 练习2
-let numbers = vec![1, 2, 3, 4, 5, 6];
-let evens: Vec&lt;_> = numbers.into_iter().filter(|x| x % 2 == 0).collect();
-println!("&#123;:?&#125;", evens); // 输出：[2, 4, 6]
-
-// 练习3
-use std::thread;
-let msg = String::from("hello from thread");
-thread::spawn(move || &#123;
-    println!("&#123;&#125;", msg);
-&#125;).join().unwrap();
-
-// 练习4
-fn combine&lt;F1, F2>(f1: F1, f2: F2, x: i32) -> i32
-where
-    F1: Fn(i32) -> i32,
-    F2: Fn(i32) -> i32,
-&#123;
-    f1(x) + f2(x)
-&#125;
-let square = |n| n * n;
-let cube = |n| n * n * n;
-println!("&#123;&#125;", combine(square, cube, 2)); // 输出：4 + 8 = 12]]></content>
-      <categories>
-        <category>Rust</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Rust进阶[part8]_迭代器</title>
     <url>/2025/07/31/Rust%E8%BF%9B%E9%98%B6-part8-%E8%BF%AD%E4%BB%A3%E5%99%A8/</url>
     <content><![CDATA[Rust进阶[part8]_迭代器&amp;关联类型
@@ -6185,67 +6021,167 @@ next 方法通过更新 current 和 next 的值生成下一个数，始终返回
       </tags>
   </entry>
   <entry>
-    <title>Solana DeFi 交易的“大脑”：Jupiter (JUP) 如何通过聚合器重塑用户体验？</title>
-    <url>/2025/10/06/Solana-DeFi-%E4%BA%A4%E6%98%93%E7%9A%84%E2%80%9C%E5%A4%A7%E8%84%91%E2%80%9D%EF%BC%9AJupiter-JUP-%E5%A6%82%E4%BD%95%E9%80%9A%E8%BF%87%E8%81%9A%E5%90%88%E5%99%A8%E9%87%8D%E5%A1%91%E7%94%A8%E6%88%B7%E4%BD%93%E9%AA%8C%EF%BC%9F/</url>
-    <content><![CDATA[Solana DeFi 交易的“大脑”：Jupiter (JUP) 如何通过聚合器重塑用户体验？
-在 Solana 的 DeFi 世界中，有一个应用扮演着至关重要的角色，它不是一个交易所，但处理着 Solana 上大部分的交易量。它就是 Jupiter (JUP)。https://jup.ag/
-如果你想在 Web3 领域建立深度认知，理解 JUP 的核心业务逻辑和技术优势是必不可少的一步。
-什么是 Jupiter (JUP)？ —— Solana 上的“打车软件”
-JUP 是 Solana 生态中最大的“去中心化交易所聚合器”（DEX Aggregator）。
-你可以把 JUP 理解为 DeFi 领域的 “打车软件”（比如滴滴或 Uber）。它的核心任务是：帮用户以最快速度、最低成本，找到最佳的交易路径。
+    <title>Rust进阶[part7]_闭包</title>
+    <url>/2025/07/31/Rust%E8%BF%9B%E9%98%B6-part7-%E9%97%AD%E5%8C%85/</url>
+    <content><![CDATA[Rust进阶[part7]_闭包
+闭包概述
 
-传统 DEX 的困境： Solana 上有许多独立的 DEX，如 Orca、Raydium、Meteora。它们就像一家家独立的流动性提供商。用户想要兑换代币时，必须一家家去比较价格，费时费力。
-JUP 的核心价值： JUP 不自己提供流动性，而是作为“最优路径规划师”。当你输入一笔交易时，JUP 会实时扫描所有这些 DEX 的流动性池，并计算出一个能在全网获得最佳价格和最小滑点的复杂交易路线。
-用户体验重塑： 最终，JUP 将复杂的后端运算和多步操作简化为用户前端的“一键交易”，极大地降低了 DeFi 的使用门槛。
+闭包是一个可以捕获所在环境中的变量的匿名函数
+在Rust中，闭包通过||符号定义，可以像普通函数一样调用，但和函数不同，闭包可以访问外部作用域的变量
 
-JUP 解决的 DeFi 两大“头疼问题”
-JUP 之所以成为 Solana 的“大脑”，是因为它直接解决了 DeFi 交易中最令用户头疼的两个痛点：
-痛点一：交易滑点失控 (Slippage)
-滑点指的是你发起交易时的预期价格与最终链上实际成交价格之间的差异。
+特点
 
-问题所在： 在单一 DEX 上进行大额交易或交易流动性较低的代币时，你的交易行为会立刻改变流动性池中资产的比例，导致价格瞬时变化。购买数量越大，价格冲击越大，滑点损失就越高。
-JUP 的解决方案： JUP 会将你的大额交易拆分成许多小份，并巧妙地路由到不同的 DEX 池中。这有效分散了对单个流动性池的冲击，从而显著降低了你的总体滑点损失。
+匿名性：没有函数名，通常作为表达式使用
+捕获环境：能自动捕获定义所在作用域中的变量（无需显式声明）
+类型推断：参数和返回值类型可由编译器自动推断，无需显式标注
+灵活语法：语法简洁，可根据复杂度调整写法（单行可省略&#123;&#125;和return）
+实现trait：编译器会为闭包自动实现Fn、FnMut或FnOnce trait，使其能作为参数传递
 
-痛点二：寻找最低价的“地狱级难度”
+语法
+基本语法：|参数列表| 代码块（返回值由最后一行表达式决定）
+// 无参数闭包
+let hello = || println!("Hello, closure!");
+hello(); // 调用闭包
 
-问题所在： 寻找最佳交易价格需要用户手动去多个平台进行比较。在市场快速波动时，这种手动操作不仅效率低下，而且会错失良机。
-JUP 的解决方案： JUP 算法全自动完成这个过程，在毫秒级内锁定最低价。它甚至能规划多步跳跃交易（例如：用 SOL 换 USDC，再用 USDC 换目标币），以避开某些流动性不佳的交易对，从而找到最优解。
+// 单参数闭包（省略类型标注）
+let square = |x| x * x;
+println!("&#123;&#125;", square(5)); // 输出：25
 
-JUP 的高性能秘密武器：Rust 与 Solana 的原子性
-JUP 能够在高频交易场景中稳定运行，离不开 Rust 语言和 Solana 底层架构的支撑。这是 JUP 相较于 EVM 链聚合器的核心技术优势。
-1. 算法核心：多路径、广度优先的最优路由
-JUP 的算法类似于一个复杂的 GPS 导航系统，致力于寻找能提供最大产出量的交易路径。
+// 多参数闭包（显式标注类型，可选）
+let add = |a: i32, b: i32| -> i32 &#123; a + b &#125;;
+println!("&#123;&#125;", add(2, 3)); // 输出：5
 
-实时图谱： JUP 实时追踪 Solana 上所有 DEX 的流动性状态，将它们视为一个巨大的网络图。
-交易拆分与组合： 算法不会将你的资金视为单一整体。它会尝试将你的交易智能拆分成多份，并计算出所有可能的多步路径组合（例如：将一笔 SOL 交易，拆分成 A 部分走 Orca → B 路径，B 部分走 Raydium → C 路径）。
-实时计算与优化： 算法对每条路径进行实时报价，并纳入滑点影响，最终确定能让你获得最多目标代币的那个路径组合。
+// 多行闭包（需用&#123;&#125;包裹）
+let complex_calc = |x: i32| &#123;
+    let y = x * 2;
+    y + 3 // 隐式返回
+&#125;;
+println!("&#123;&#125;", complex_calc(4)); // 输出：11
+使用场景
+函数的参数
+闭包常作为参数传递给函数（如迭代器方法、异步任务等），实现灵活的逻辑注入
+// 1. 结合迭代器使用
+let numbers = vec![1, 2, 3, 4, 5];
+let doubled: Vec&lt;i32> = numbers.iter().map(|x| x * 2).collect();
+println!("&#123;:?&#125;", doubled); // 输出：[2, 4, 6, 8, 10]
 
-2. Rust 带来的计算效率
+// 2. 自定义接受闭包的函数
+fn apply&lt;F>(f: F, value: i32) -> i32 
+where 
+    F: Fn(i32) -> i32  // 约束闭包类型
+&#123;
+    f(value)
+&#125;
 
-高性能引擎： JUP 的聚合算法是用 Rust 编写的。Rust 的内存安全和极高的运行时效率，使得 JUP 能够承受巨大的计算量，在 Solana 极低的延迟下，快速完成复杂的路径搜索和计算。
-业务价值： 速度是保障。只有快速计算才能确保报价的准确性，防止市场在计算过程中发生变化。
+let result = apply(|x| x * 3 + 2, 5);
+println!("&#123;&#125;", result); // 输出：17
+捕获环境变量
+可以捕获并使用其定义所在环境中的变量，捕获方式由编译器根据使用场景自动推断
+// 1. 按引用捕获（&amp;T）：适用于只读访问
+let message = String::from("Hello");
+let print_msg = || println!("&#123;&#125;", message); // 捕获message的引用
+print_msg(); // 输出：Hello
+println!("&#123;&#125;", message); // 仍可使用message（未转移所有权）
 
-3. Solana 的原子性事务保证交易安全
+// 2. 按可变引用捕获（&amp;mut T）：适用于修改变量
+let mut count = 0;
+let mut increment = || &#123;
+    count += 1; // 修改捕获的变量
+    println!("Count: &#123;&#125;", count);
+&#125;;
+increment(); // 输出：Count: 1
+increment(); // 输出：Count: 2
 
-核心实现： JUP 最重要的技术实现，是利用 Solana 的事务（Transaction）模型，将复杂的多步交易路径（涉及多个 DEX 的买入和卖出）打包成一个单一的 Solana 事务。
-安全保证： 原子性（Atomic） 意味着：要么交易路径上的每一步指令都成功执行，交易才算完成；要么整个事务失败并安全地回滚所有资金。这有效避免了在多步交易中，因某一环节失败而导致用户资产被困或损失的风险。
+// 3. 按值捕获（T）：适用于需要转移所有权的场景
+let name = String::from("Alice");
+let take_name = || &#123;
+    println!("Name: &#123;&#125;", name); // 捕获name的所有权
+&#125;;
+take_name(); 
+// println!("&#123;&#125;", name); // 错误：name的所有权已被闭包捕获
+闭包原理
 
-超越聚合：JUP 的生态野心
-作为 Solana 的基础设施，JUP 并没有止步于交易聚合，它正在向 “DeFi 超级应用” 发展：
 
-先进的交易功能： 提供**限价单（Limit Orders）和定期定投（DCA）**等，将中心化交易所的专业功能带到链上，进一步提升了用户体验。
-LFG Launchpad： 作为 Solana 项目的启动平台，JUP 正在成为生态系统新血液涌入的关键门户。
-JUP Token 与治理： JUP 代币不仅是激励机制的一部分，更是平台的治理权力。它确保了 JUP 的发展和升级由社区驱动。
+自动实现的函数类型：编译器会为每个闭包自动实现Fn、FnMut或FnOnce中的一个或多个trait：
 
-所以你认为 JUP 的下一个创新点会是什么？它对 Solana 生态的哪个赛道（GameFi, DePIN, etc.）影响最大呢？
-]]></content>
+FnOnce：闭包消耗捕获的变量（所有权转移），因此只能调用一次
+FnMut：闭包通过可变引用修改捕获的变量，可多次调用
+Fn：闭包通过不可变引用访问捕获的变量，可多次调用（实现Fn的闭包自动实现FnMut和FnOnce）
+
+
+
+闭包的类型推断：
+
+闭包的参数和返回值类型由编译器根据上下文自动推断
+同一闭包的类型是唯一的（即使签名相同，不同闭包类型也不同）
+若需存储闭包或作为返回值，需通过trait对象（如Box&lt;dyn Fn(...) -&gt; ...&gt;）实现
+
+
+
+生命周期与闭包：
+
+捕获引用的闭包，其生命周期受限于所捕获变量的生命周期
+若闭包作为返回值，需确保返回的闭包不捕获已销毁的变量引用
+
+
+
+move关键字
+在参数列表前使用move关键字，可强制闭包取得它所使用的环境值的所有权（忽略默认的引用捕获）
+// 基础示例：转移所有权
+let x = vec![1, 2, 3];
+let equal_to_x = move |y| y == x; // x的所有权被闭包捕获
+// println!("&#123;:?&#125;", x); // 错误：x的所有权已转移
+let y = vec![1, 2, 3];
+assert!(equal_to_x(y));
+
+// 多线程场景：确保闭包拥有变量所有权（避免生命周期问题）
+use std::thread;
+
+let s = String::from("thread message");
+thread::spawn(move || &#123; // 必须用move转移s的所有权到子线程
+    println!("&#123;&#125;", s);
+&#125;).join().unwrap();
+练习
+
+实现一个闭包，计算两个数的乘积并加上一个外部定义的偏移量（如offset = 10）
+使用闭包作为filter方法的参数，从整数列表中筛选出偶数
+用move关键字创建一个闭包，在新线程中打印捕获的字符串
+编写一个函数，接受两个闭包参数（一个计算平方，一个计算立方），并返回两个闭包结果的和
+
+示例答案参考：
+// 练习1
+let offset = 10;
+let calc = |a: i32, b: i32| a * b + offset;
+println!("&#123;&#125;", calc(3, 4)); // 输出：22（3*4+10）
+
+// 练习2
+let numbers = vec![1, 2, 3, 4, 5, 6];
+let evens: Vec&lt;_> = numbers.into_iter().filter(|x| x % 2 == 0).collect();
+println!("&#123;:?&#125;", evens); // 输出：[2, 4, 6]
+
+// 练习3
+use std::thread;
+let msg = String::from("hello from thread");
+thread::spawn(move || &#123;
+    println!("&#123;&#125;", msg);
+&#125;).join().unwrap();
+
+// 练习4
+fn combine&lt;F1, F2>(f1: F1, f2: F2, x: i32) -> i32
+where
+    F1: Fn(i32) -> i32,
+    F2: Fn(i32) -> i32,
+&#123;
+    f1(x) + f2(x)
+&#125;
+let square = |n| n * n;
+let cube = |n| n * n * n;
+println!("&#123;&#125;", combine(square, cube, 2)); // 输出：4 + 8 = 12]]></content>
       <categories>
-        <category>Eco Insights</category>
+        <category>Rust</category>
       </categories>
       <tags>
-        <tag>Solana</tag>
-        <tag>DeFi</tag>
-        <tag>JUP</tag>
+        <tag>Rust</tag>
       </tags>
   </entry>
   <entry>
@@ -6467,6 +6403,70 @@ benches：基准测试使用#[bench]标记，通过cargo bench运行，用于评
       </categories>
       <tags>
         <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solana DeFi 交易的“大脑”：Jupiter (JUP) 如何通过聚合器重塑用户体验？</title>
+    <url>/2025/10/06/Solana-DeFi-%E4%BA%A4%E6%98%93%E7%9A%84%E2%80%9C%E5%A4%A7%E8%84%91%E2%80%9D%EF%BC%9AJupiter-JUP-%E5%A6%82%E4%BD%95%E9%80%9A%E8%BF%87%E8%81%9A%E5%90%88%E5%99%A8%E9%87%8D%E5%A1%91%E7%94%A8%E6%88%B7%E4%BD%93%E9%AA%8C%EF%BC%9F/</url>
+    <content><![CDATA[Solana DeFi 交易的“大脑”：Jupiter (JUP) 如何通过聚合器重塑用户体验？
+在 Solana 的 DeFi 世界中，有一个应用扮演着至关重要的角色，它不是一个交易所，但处理着 Solana 上大部分的交易量。它就是 Jupiter (JUP)。https://jup.ag/
+如果你想在 Web3 领域建立深度认知，理解 JUP 的核心业务逻辑和技术优势是必不可少的一步。
+什么是 Jupiter (JUP)？ —— Solana 上的“打车软件”
+JUP 是 Solana 生态中最大的“去中心化交易所聚合器”（DEX Aggregator）。
+你可以把 JUP 理解为 DeFi 领域的 “打车软件”（比如滴滴或 Uber）。它的核心任务是：帮用户以最快速度、最低成本，找到最佳的交易路径。
+
+传统 DEX 的困境： Solana 上有许多独立的 DEX，如 Orca、Raydium、Meteora。它们就像一家家独立的流动性提供商。用户想要兑换代币时，必须一家家去比较价格，费时费力。
+JUP 的核心价值： JUP 不自己提供流动性，而是作为“最优路径规划师”。当你输入一笔交易时，JUP 会实时扫描所有这些 DEX 的流动性池，并计算出一个能在全网获得最佳价格和最小滑点的复杂交易路线。
+用户体验重塑： 最终，JUP 将复杂的后端运算和多步操作简化为用户前端的“一键交易”，极大地降低了 DeFi 的使用门槛。
+
+JUP 解决的 DeFi 两大“头疼问题”
+JUP 之所以成为 Solana 的“大脑”，是因为它直接解决了 DeFi 交易中最令用户头疼的两个痛点：
+痛点一：交易滑点失控 (Slippage)
+滑点指的是你发起交易时的预期价格与最终链上实际成交价格之间的差异。
+
+问题所在： 在单一 DEX 上进行大额交易或交易流动性较低的代币时，你的交易行为会立刻改变流动性池中资产的比例，导致价格瞬时变化。购买数量越大，价格冲击越大，滑点损失就越高。
+JUP 的解决方案： JUP 会将你的大额交易拆分成许多小份，并巧妙地路由到不同的 DEX 池中。这有效分散了对单个流动性池的冲击，从而显著降低了你的总体滑点损失。
+
+痛点二：寻找最低价的“地狱级难度”
+
+问题所在： 寻找最佳交易价格需要用户手动去多个平台进行比较。在市场快速波动时，这种手动操作不仅效率低下，而且会错失良机。
+JUP 的解决方案： JUP 算法全自动完成这个过程，在毫秒级内锁定最低价。它甚至能规划多步跳跃交易（例如：用 SOL 换 USDC，再用 USDC 换目标币），以避开某些流动性不佳的交易对，从而找到最优解。
+
+JUP 的高性能秘密武器：Rust 与 Solana 的原子性
+JUP 能够在高频交易场景中稳定运行，离不开 Rust 语言和 Solana 底层架构的支撑。这是 JUP 相较于 EVM 链聚合器的核心技术优势。
+1. 算法核心：多路径、广度优先的最优路由
+JUP 的算法类似于一个复杂的 GPS 导航系统，致力于寻找能提供最大产出量的交易路径。
+
+实时图谱： JUP 实时追踪 Solana 上所有 DEX 的流动性状态，将它们视为一个巨大的网络图。
+交易拆分与组合： 算法不会将你的资金视为单一整体。它会尝试将你的交易智能拆分成多份，并计算出所有可能的多步路径组合（例如：将一笔 SOL 交易，拆分成 A 部分走 Orca → B 路径，B 部分走 Raydium → C 路径）。
+实时计算与优化： 算法对每条路径进行实时报价，并纳入滑点影响，最终确定能让你获得最多目标代币的那个路径组合。
+
+2. Rust 带来的计算效率
+
+高性能引擎： JUP 的聚合算法是用 Rust 编写的。Rust 的内存安全和极高的运行时效率，使得 JUP 能够承受巨大的计算量，在 Solana 极低的延迟下，快速完成复杂的路径搜索和计算。
+业务价值： 速度是保障。只有快速计算才能确保报价的准确性，防止市场在计算过程中发生变化。
+
+3. Solana 的原子性事务保证交易安全
+
+核心实现： JUP 最重要的技术实现，是利用 Solana 的事务（Transaction）模型，将复杂的多步交易路径（涉及多个 DEX 的买入和卖出）打包成一个单一的 Solana 事务。
+安全保证： 原子性（Atomic） 意味着：要么交易路径上的每一步指令都成功执行，交易才算完成；要么整个事务失败并安全地回滚所有资金。这有效避免了在多步交易中，因某一环节失败而导致用户资产被困或损失的风险。
+
+超越聚合：JUP 的生态野心
+作为 Solana 的基础设施，JUP 并没有止步于交易聚合，它正在向 “DeFi 超级应用” 发展：
+
+先进的交易功能： 提供**限价单（Limit Orders）和定期定投（DCA）**等，将中心化交易所的专业功能带到链上，进一步提升了用户体验。
+LFG Launchpad： 作为 Solana 项目的启动平台，JUP 正在成为生态系统新血液涌入的关键门户。
+JUP Token 与治理： JUP 代币不仅是激励机制的一部分，更是平台的治理权力。它确保了 JUP 的发展和升级由社区驱动。
+
+所以你认为 JUP 的下一个创新点会是什么？它对 Solana 生态的哪个赛道（GameFi, DePIN, etc.）影响最大呢？
+]]></content>
+      <categories>
+        <category>Eco Insights</category>
+      </categories>
+      <tags>
+        <tag>Solana</tag>
+        <tag>DeFi</tag>
+        <tag>JUP</tag>
       </tags>
   </entry>
   <entry>
@@ -9039,6 +9039,100 @@ CPI（Cross-Program Invocation）：调用MPL元数据程序创建元数据，�
       </tags>
   </entry>
   <entry>
+    <title>Solana[part20]_ETF的购买</title>
+    <url>/2025/08/25/Solana-part20-ETF%E7%9A%84%E8%B4%AD%E4%B9%B0/</url>
+    <content><![CDATA[Solana[part20]_ETF的购买
+购买 ETF
+基本思路
+以 ETF No.1 为例，ETF No.1 包含 jitoSOL 和 mSOL，权重分别为 20%、80%。 「 etf里面不是token账户吗 拿来的sol 」
+当前价格
+
+1 JitoSOL = 1.16 SOL
+1 mSOL = 1.25 SOL
+
+用户需求与成本计算
+用户当前持有 SOL，计划购买 ETF No.1 100 份，需花费：100×20%×1.16+100×80%×1.25=123.2 SOL
+方案一：前端 swap
+
+【用户】 通过 ray 或 okx 等平台，将 123.2 SOL 换出 80 mSOL 和 20 JitoSOL。
+【用户】 执行【Transfer】操作，将 JitoSOL 20 份和 mSOL 80 份转入【合约】。
+【合约】 执行【Mint】操作，向【用户】发行 100 份 ETF No.1。
+
+方案二：合约 swap
+
+【用户】 执行【Transfer】操作，将 123.2 SOL 转入【合约】。
+【合约】 通过 ray 或 okx 等平台，将 123.2 SOL 换出 80 mSOL 和 20 JitoSOL。
+【合约】 执行【Mint】操作，向【用户】发行 100 份 ETF No.1。
+
+（注：操作中的【Transfer】【Mint】为链上交互动作，需结合具体合约逻辑执行。）
+前置准备：
+➜  anchor git:(main) ✗ spl-token create-token
+Creating token HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+
+Address:  HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
+Decimals:  9
+
+Signature: qkrfqj8QKGHWiCSr3DjooVd9EB2FHvSPMfgk95f3R4n2G7AkdoSN1ufoFj6Suw9rYKzxcDJa441uokk5i5xosfC
+
+➜  anchor git:(main) ✗ spl-token create-token
+Creating token D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+
+Address:  D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
+Decimals:  9
+
+Signature: aR8akG7j4A15h9Qs4MnUMbMtNA965g5rDSj53oaCyvfXNQsQHYDSVQ6Mw5En8EcMLwfX3AHWNjCWpGciHJQZTbb
+
+➜  anchor git:(main) ✗ spl-token create-account D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
+Creating account FKFZdRon44c7UG3sWDhkfdRhsbnjnPdERFHT4eVwZbkM
+
+Signature: 5xoKsk1VmbSYzsVivUv3vQqEjpURMBqPzDDbLDHZ1DsWqJjdqoJbcUAUBAFR5VdGcjrh5ik3mdJo85SRiHgotK8k
+
+➜  anchor git:(main) ✗ spl-token create-account HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
+Creating account For4aUqGLAVwvJCJ7W7xp9oNXAtQQqTdyA5kityMxhkB
+
+Signature: 3o2UV8S756A6vtL4bKgpWQRf8oS5mmQx5RuG8drarjFpnEFwucVyAZoapcRrBVVryukmu8Mxuf7EyrnLJyVy3Rpp
+
+➜  anchor git:(main) ✗ spl-token mint HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  100
+Minting 100 tokens
+  Token: HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
+  Recipient: For4aUqGLAVwvJCJ7W7xp9oNXAtQQqTdyA5kityMxhkB
+
+Signature: 5mijdTfBDZvD51zKfhw31JNaxNvZYesCKoHbDD48zCcMkwN1oMqZcjYamjpM4MCAD1fvbsu1BK5sKoHX4Ghiehfo
+
+➜  anchor git:(main) ✗ spl-token mint D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW 100
+Minting 100 tokens
+  Token: D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
+  Recipient: FKFZdRon44c7UG3sWDhkfdRhsbnjnPdERFHT4eVwZbkM
+
+Signature: 5ZMfewBZQfrVC7jcE62FtKNKckcDk4WfwiLhqQAmukgGYBpNwnhoirTNHT31oFoaYVje29fhp9ege4KATAiKPt2n
+
+➜  anchor git:(main) ✗ spl-token accounts
+Token                                         Balance
+-----------------------------------------------------
+D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW  100
+HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  100
+运行成功：
+➜  anchor git:(main) ✗ anchor run example
+6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H
+4Zcee6VcEoATiTjwMHp9LPsvYLW2tmYmExQFhZ6TkQGYGganfDJGKXSuicAdFrWMZJjWomgunEQ3keGHNEyvfhLN
+➜  anchor git:(main) ✗ spl-token accounts
+Token                                         Balance
+-----------------------------------------------------
+6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H  200
+D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW  90 
+HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  10 
+但是却是两百份
+定位问题发现是mint逻辑放在了循环里面，购买了两次
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Solana</tag>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Solana[part2]_Solana开发入门</title>
     <url>/2025/08/05/Solana-part2-Solana%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8/</url>
     <content><![CDATA[Solana[part2]_Solana开发入门
@@ -9468,100 +9562,6 @@ Native Rust：适合深入理解Solana底层，灵活性高但开发效率低。
 Playground：适合快速验证想法，无需配置环境，适合新手入门。
 Anchor：生产环境首选，大幅提升开发效率，生态工具丰富。
 
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Solana</tag>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solana[part20]_ETF的购买</title>
-    <url>/2025/08/25/Solana-part20-ETF%E7%9A%84%E8%B4%AD%E4%B9%B0/</url>
-    <content><![CDATA[Solana[part20]_ETF的购买
-购买 ETF
-基本思路
-以 ETF No.1 为例，ETF No.1 包含 jitoSOL 和 mSOL，权重分别为 20%、80%。 「 etf里面不是token账户吗 拿来的sol 」
-当前价格
-
-1 JitoSOL = 1.16 SOL
-1 mSOL = 1.25 SOL
-
-用户需求与成本计算
-用户当前持有 SOL，计划购买 ETF No.1 100 份，需花费：100×20%×1.16+100×80%×1.25=123.2 SOL
-方案一：前端 swap
-
-【用户】 通过 ray 或 okx 等平台，将 123.2 SOL 换出 80 mSOL 和 20 JitoSOL。
-【用户】 执行【Transfer】操作，将 JitoSOL 20 份和 mSOL 80 份转入【合约】。
-【合约】 执行【Mint】操作，向【用户】发行 100 份 ETF No.1。
-
-方案二：合约 swap
-
-【用户】 执行【Transfer】操作，将 123.2 SOL 转入【合约】。
-【合约】 通过 ray 或 okx 等平台，将 123.2 SOL 换出 80 mSOL 和 20 JitoSOL。
-【合约】 执行【Mint】操作，向【用户】发行 100 份 ETF No.1。
-
-（注：操作中的【Transfer】【Mint】为链上交互动作，需结合具体合约逻辑执行。）
-前置准备：
-➜  anchor git:(main) ✗ spl-token create-token
-Creating token HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
-
-Address:  HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
-Decimals:  9
-
-Signature: qkrfqj8QKGHWiCSr3DjooVd9EB2FHvSPMfgk95f3R4n2G7AkdoSN1ufoFj6Suw9rYKzxcDJa441uokk5i5xosfC
-
-➜  anchor git:(main) ✗ spl-token create-token
-Creating token D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
-
-Address:  D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
-Decimals:  9
-
-Signature: aR8akG7j4A15h9Qs4MnUMbMtNA965g5rDSj53oaCyvfXNQsQHYDSVQ6Mw5En8EcMLwfX3AHWNjCWpGciHJQZTbb
-
-➜  anchor git:(main) ✗ spl-token create-account D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
-Creating account FKFZdRon44c7UG3sWDhkfdRhsbnjnPdERFHT4eVwZbkM
-
-Signature: 5xoKsk1VmbSYzsVivUv3vQqEjpURMBqPzDDbLDHZ1DsWqJjdqoJbcUAUBAFR5VdGcjrh5ik3mdJo85SRiHgotK8k
-
-➜  anchor git:(main) ✗ spl-token create-account HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
-Creating account For4aUqGLAVwvJCJ7W7xp9oNXAtQQqTdyA5kityMxhkB
-
-Signature: 3o2UV8S756A6vtL4bKgpWQRf8oS5mmQx5RuG8drarjFpnEFwucVyAZoapcRrBVVryukmu8Mxuf7EyrnLJyVy3Rpp
-
-➜  anchor git:(main) ✗ spl-token mint HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  100
-Minting 100 tokens
-  Token: HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk
-  Recipient: For4aUqGLAVwvJCJ7W7xp9oNXAtQQqTdyA5kityMxhkB
-
-Signature: 5mijdTfBDZvD51zKfhw31JNaxNvZYesCKoHbDD48zCcMkwN1oMqZcjYamjpM4MCAD1fvbsu1BK5sKoHX4Ghiehfo
-
-➜  anchor git:(main) ✗ spl-token mint D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW 100
-Minting 100 tokens
-  Token: D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW
-  Recipient: FKFZdRon44c7UG3sWDhkfdRhsbnjnPdERFHT4eVwZbkM
-
-Signature: 5ZMfewBZQfrVC7jcE62FtKNKckcDk4WfwiLhqQAmukgGYBpNwnhoirTNHT31oFoaYVje29fhp9ege4KATAiKPt2n
-
-➜  anchor git:(main) ✗ spl-token accounts
-Token                                         Balance
------------------------------------------------------
-D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW  100
-HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  100
-运行成功：
-➜  anchor git:(main) ✗ anchor run example
-6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H
-4Zcee6VcEoATiTjwMHp9LPsvYLW2tmYmExQFhZ6TkQGYGganfDJGKXSuicAdFrWMZJjWomgunEQ3keGHNEyvfhLN
-➜  anchor git:(main) ✗ spl-token accounts
-Token                                         Balance
------------------------------------------------------
-6RQFEKBGuqJAasPDLZEK2Uk3pLMEEo3xfSgz5AvjU65H  200
-D5izrwQEikX5FGhzkgG4HgBNWXXaayNy4UF1X1YNVJFW  90 
-HCux2X4pDQe79mwhAwcfjBPYXf5ocU6VN9HSjxzuJVzk  10 
-但是却是两百份
-定位问题发现是mint逻辑放在了循环里面，购买了两次
 ]]></content>
       <categories>
         <category>Solana</category>
@@ -11408,6 +11408,73 @@ Anchor Discord频道
       </tags>
   </entry>
   <entry>
+    <title>Solana 项目构建问题：工具链版本不兼容</title>
+    <url>/2025/09/22/Solana-%E9%A1%B9%E7%9B%AE%E6%9E%84%E5%BB%BA%E9%97%AE%E9%A2%98%EF%BC%9A%E5%B7%A5%E5%85%B7%E9%93%BE%E7%89%88%E6%9C%AC%E4%B8%8D%E5%85%BC%E5%AE%B9/</url>
+    <content><![CDATA[解决 Rust 版本兼容性问题  error: rustc 1.79.0-dev is not supported by the following packages:
+问题背景
+在开发 Solana Anchor 项目时，经常会遇到工具链版本不兼容的问题。本文档记录了一次典型的工具链重装过程，旨在帮助开发者快速解决类似的版本冲突问题。
+问题现象
+1. 初始编译错误
+Error: Function _ZN131_$LT$solana_program_ed25519_dalek_bump..instruction..InstructionError$u20$as$u20$solana_frozen_abi..abi_example..AbiEnumVisitor$GT$13visit_for_abi17h93da246eef4af815E Stack offset of 6592 exceeded max offset of 4096 by 2496 bytes, please minimize large stack variables. Estimated function frame size: 6656 bytes. Exceeding the maximum stack offset may cause undefined behavior during execution.
+2. Rust 版本兼容性错误
+error: rustc 1.79.0-dev is not supported by the following packages:
+  base64ct@1.7.3 requires rustc 1.81
+  solana-address@1.0.0 requires rustc 1.81.0
+  solana-hash@3.0.0 requires rustc 1.81.0
+  solana-instruction-error@2.0.0 requires rustc 1.81.0
+  solana-program@3.0.0 requires rustc 1.81.0
+  solana-program-entrypoint@3.1.0 requires rustc 1.81.0
+  solana-program-error@3.0.0 requires rustc 1.81.0
+  solana-pubkey@3.0.0 requires rustc 1.81.0
+  solana-sanitize@3.0.1 requires rustc 1.81.0
+3. Cargo.lock 版本问题
+error: failed to parse lock file at: &#x2F;Users&#x2F;tinachan&#x2F;temple&#x2F;anchor&#x2F;Cargo.lock
+
+Caused by:
+  lock file version 4 requires &#96;-Znext-lockfile-bump&#96;
+问题根源分析
+
+栈内存溢出：Anchor 程序中的账户结构体过大，超过了 Solana 的 4096 字节栈限制
+工具链版本过旧：当前使用的 Solana CLI (v2.1.21) 内置的 rustc 版本为 1.79.0-dev，无法满足新版本依赖的要求
+依赖版本冲突：项目依赖的包需要更新的 Rust 编译器版本
+Cargo.lock 格式问题：使用了实验性功能生成的锁文件版本与稳定工具链不兼容
+
+解决方案
+第一阶段：修复栈内存溢出
+对大型账户结构体应用 Box&lt;Account&lt;'info, T&gt;&gt; 包装：
+第二阶段：清理构建缓存
+cd anchor
+rm -rf target
+rm Cargo.lock
+cargo clean
+第三阶段：降级不兼容依赖
+尝试降级特定包版本以匹配当前工具链：
+cargo update base64ct@1.7.3 --precise 1.6.0
+...
+没用，好像因为某个依赖一直都没法编译成功，所以准备重装solana
+第四阶段：重装 Solana 工具链
+调用
+sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
+会报错，无法连接。。。
+使用 Anza 官方的最新稳定版本：
+
+# 安装新工具链
+sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+
+➜  anchor git:(main) ✗ solana --version                                                                           
+solana-cli 2.3.10 (src:b3ae6759; feat:2142755730, client:Agave)
+成功兼容所有依赖！！
+参考
+https://solana.stackexchange.com/questions/19629/anchor-build-error-solana-program-requires-rust-1-79-0-but-solana-tools-use-1
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Bug</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Solana实战Bug记录</title>
     <url>/2025/08/24/Solana%E5%AE%9E%E6%88%98Bug%E8%AE%B0%E5%BD%95/</url>
     <content><![CDATA[Solana实战Bug记录
@@ -11662,73 +11729,6 @@ npx vitest --watch
       </tags>
   </entry>
   <entry>
-    <title>Solana 项目构建问题：工具链版本不兼容</title>
-    <url>/2025/09/22/Solana-%E9%A1%B9%E7%9B%AE%E6%9E%84%E5%BB%BA%E9%97%AE%E9%A2%98%EF%BC%9A%E5%B7%A5%E5%85%B7%E9%93%BE%E7%89%88%E6%9C%AC%E4%B8%8D%E5%85%BC%E5%AE%B9/</url>
-    <content><![CDATA[解决 Rust 版本兼容性问题  error: rustc 1.79.0-dev is not supported by the following packages:
-问题背景
-在开发 Solana Anchor 项目时，经常会遇到工具链版本不兼容的问题。本文档记录了一次典型的工具链重装过程，旨在帮助开发者快速解决类似的版本冲突问题。
-问题现象
-1. 初始编译错误
-Error: Function _ZN131_$LT$solana_program_ed25519_dalek_bump..instruction..InstructionError$u20$as$u20$solana_frozen_abi..abi_example..AbiEnumVisitor$GT$13visit_for_abi17h93da246eef4af815E Stack offset of 6592 exceeded max offset of 4096 by 2496 bytes, please minimize large stack variables. Estimated function frame size: 6656 bytes. Exceeding the maximum stack offset may cause undefined behavior during execution.
-2. Rust 版本兼容性错误
-error: rustc 1.79.0-dev is not supported by the following packages:
-  base64ct@1.7.3 requires rustc 1.81
-  solana-address@1.0.0 requires rustc 1.81.0
-  solana-hash@3.0.0 requires rustc 1.81.0
-  solana-instruction-error@2.0.0 requires rustc 1.81.0
-  solana-program@3.0.0 requires rustc 1.81.0
-  solana-program-entrypoint@3.1.0 requires rustc 1.81.0
-  solana-program-error@3.0.0 requires rustc 1.81.0
-  solana-pubkey@3.0.0 requires rustc 1.81.0
-  solana-sanitize@3.0.1 requires rustc 1.81.0
-3. Cargo.lock 版本问题
-error: failed to parse lock file at: &#x2F;Users&#x2F;tinachan&#x2F;temple&#x2F;anchor&#x2F;Cargo.lock
-
-Caused by:
-  lock file version 4 requires &#96;-Znext-lockfile-bump&#96;
-问题根源分析
-
-栈内存溢出：Anchor 程序中的账户结构体过大，超过了 Solana 的 4096 字节栈限制
-工具链版本过旧：当前使用的 Solana CLI (v2.1.21) 内置的 rustc 版本为 1.79.0-dev，无法满足新版本依赖的要求
-依赖版本冲突：项目依赖的包需要更新的 Rust 编译器版本
-Cargo.lock 格式问题：使用了实验性功能生成的锁文件版本与稳定工具链不兼容
-
-解决方案
-第一阶段：修复栈内存溢出
-对大型账户结构体应用 Box&lt;Account&lt;'info, T&gt;&gt; 包装：
-第二阶段：清理构建缓存
-cd anchor
-rm -rf target
-rm Cargo.lock
-cargo clean
-第三阶段：降级不兼容依赖
-尝试降级特定包版本以匹配当前工具链：
-cargo update base64ct@1.7.3 --precise 1.6.0
-...
-没用，好像因为某个依赖一直都没法编译成功，所以准备重装solana
-第四阶段：重装 Solana 工具链
-调用
-sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
-会报错，无法连接。。。
-使用 Anza 官方的最新稳定版本：
-
-# 安装新工具链
-sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
-
-➜  anchor git:(main) ✗ solana --version                                                                           
-solana-cli 2.3.10 (src:b3ae6759; feat:2142755730, client:Agave)
-成功兼容所有依赖！！
-参考
-https://solana.stackexchange.com/questions/19629/anchor-build-error-solana-program-requires-rust-1-79-0-but-solana-tools-use-1
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Bug</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Solidity基础[part1]</title>
     <url>/2025/06/17/Solidity%E5%9F%BA%E7%A1%80%5Bpart1%5D/</url>
     <content><![CDATA[Solidity 基础[part1]
@@ -11939,62 +11939,6 @@ contract SimpleStorage &#123;
       </tags>
   </entry>
   <entry>
-    <title>Solidity基础[part2]</title>
-    <url>/2025/06/26/WEB3%20Day3%20%E2%80%94%E2%80%94%20Solidity%E5%9F%BA%E7%A1%80%5Bpart2%5D/</url>
-    <content><![CDATA[WEB3 Day3 — Solidity基础[part2]
-存储位置
-solidity里面有六种存储位置。
-
-Calldata
-Memory
-Storage
-Stack
-Code
-Logs
-
-calldata和memory是函数执行期间变量的临时存储位置，calldata只读，用于不可修改的函数输入。
-相比之下，memory允许读写访问，使变量能在函数内部被修改。
-要修改calldata变量，必须先讲它们加载到memory中。
-Calldata
-只读的， 比storage更经济，主要用于输入。
-下面函数中_name 用calldata关键字，就会收到错误提示，因为不可修改。
-
-Memory
-可读可修改，大多数的变量默认自动使用memory，但是字符串不能默认，需要明确指定memory或者calldata
-string memory variableName = "someValue";
-下面会讲到为什么会这么特殊
-storage
-存储在storage的变量在区块链上是持久化的，其值在函数调用和交易之间保持不变。
-比如下面这个变量 favoriteNumber ，声明在函数外部，会被隐式转换为存储变量。
-contract MyContract &#123;
-    uint256 favoriteNumber; // this is a storage variable
-&#125;;
-
-⚠️ 同理，在函数内部也不能使用storage，因为函数中的变量都是临时存在。
-
-字符串和基本类型的特殊存储
-在Solidity中，string是字节数据，arrays of bytes，在上文中提过需要指定确切的存储位置；
-另一方面，uint256基本类型有内置机制，用于规定它们的存储、访问和操作方式及位置。
-所以，在函数给uint256指定关键字就会报错
-
-mapping类型
-遍历过于消耗资源，所以我们使用mapping结构
-mapping (string => uint256) public nameToFavoriteNumber;
-🧑‍💻 Test yourself
-
-📕 How does the Solidity compiler handle primitive types and strings in terms of memory management?
-📕 Why can’t the storage keyword be used for variables inside a function?
-🧑‍💻 Write a smart contract that uses storage, memory and calldata keywords for its variables.
-
-]]></content>
-      <categories>
-        <category>Solidity</category>
-      </categories>
-      <tags>
-        <tag>Solidity</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>BlockChain Basic 1</title>
     <url>/2025/06/17/WEB3%20Day1%20%E2%80%94%E2%80%94%20BlockChain%20Basic%201/</url>
     <content><![CDATA[WEB3 Day1—BlockChain Basic 1
@@ -12056,137 +12000,6 @@ Transaction fee =  gasPrice * gasUsed
       <tags>
         <tag>Web3</tag>
         <tag>BlockChain</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solidity基础[part3]</title>
-    <url>/2025/07/01/WEB3%20Day4%20%E2%80%94%20Solidity%E5%9F%BA%E7%A1%80%5Bpart3%5D/</url>
-    <content><![CDATA[WEB3 Day4—Solidity基础[part3]
-智能合约部署 Smart Contracts Deploying
-Sepolia TestNet deploying
-我们可以通过进入部署选项卡，从本地虚拟环境（Remix VM）切换到注入的提供者 - MetaMask 来开始部署过程。这一操作将允许Remix发送请求并与您的MetaMask账户进行交互。
-
-随后系统会提示你去选择一个账号。 在你成功连接到remix之后，你会看到账号已经成功链接到并且正在使用sepolia网络的信息。
-
-注意，需要你的测试网络里面必须有足够的 sepolia ETH，如果没有需要从水龙头获取，免费的水龙头我这边会集中收集一次，后续可点击这篇文章：【TODO 挖个坑】；
-暂时可以去这里faucet， 但是还是需要主账户里面要有ether。
-随后，MetaMask就会要求你在测试网站上签署发送：
-
-交易执行之后，合约地址会将交易详情一同显示在已部署的合约列表下面。这就是Eherscan上部署交易的显示方式。
-
-合约交互 Contract interaction
-合约部署完成以后，我们可以与之交互并更新区块链。例如，如果想存储一个数字，可以通过点击store按钮实现；MetaMask会要求再次确认交易。然后更行您设置的数字。这些交易都可以通过部署地址在etherscan上面查询查看。
-Zksync部署
-由于以太坊主网合约部署成本比较高昂，所以RollUp和Layer2网络等扩容解决方案更佳，需要掌握部署在Zksync的流程。
-首先需要Zksync的测试网基金以及zkSync的跨链桥
-可参照之前的笔记
-然后步骤和上面主网的测试网络部署相似，只不过需要跨链
-
-连接钱包
-需要将Sepolia ETH跨链到zkSync，Zksync Bridge地址
-
-连接钱包，保证网络在sepolia
-从sepolia测试网发送eth到zksync
-
-
-
-
-​	
-
-
-有测试基金以后，需要将remixIDE 下载zksync的插件
-
-
-
-⚠️ zkSync部署版本要求 ‘0.8.24’，并且合约*.sol文件必须放在一个contracts文件夹中，不然Zksyn插件的deploy标签页可能会显示空白
-
-
-编译——&gt;连接钱包——&gt; 部署
-
-
-
-合约之间如何相互部署以及交互
-通过import进行导入另一个合约
-// SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.18;
-
-import "./SimpleStorage.sol";
-
-contract StorageFacotory &#123;
-
-    SimpleStorage public simpleStorage;
-
-
-    function createSimpleStorageContract() public  &#123;
-        simpleStorage = new SimpleStorage();
-    &#125;
-&#125;
-如果导入文件有多个合约，一般import最好声明具体的名称，可以不用导入该文件的所有合约
-import &#123;SimpleStorage, SimpleStorage2&#125; from "./SimpleStorage.sol";
-调用另外一个合约的ABI[application binary interface]
-可以创造一个SimpleStorage的数组来存储所有创建的simpleStorage的地址，然后通过地址去调用特定的simplestorage的函数
-
-pragma solidity ^0.8.19;
-
-import &#123;SimpleStorage&#125; from "./SimpleStorage.sol";
-contract StorageFacotory &#123;
-
-    SimpleStorage[] public listOfSimpleStorage;
-
-
-    // 创建需要的SimpleStorage
-    function createSimpleStorageContract() public  &#123;
-        SimpleStorage simpleStorage = new SimpleStorage();
-        listOfSimpleStorage.push(simpleStorage);
-    &#125;
-
-    // 调用simpleStorage的store函数
-    function sfStore(uint256 _index, uint256 myFavoriteNumber) public&#123;
-        listOfSimpleStorage[_index].store(myFavoriteNumber);
-    &#125;
-
-    // 调用simpleStorage里面的recive函数
-    function sfRecive(uint256 _index) public view returns (uint256) &#123;
-        return listOfSimpleStorage[_index].recive();
-    &#125;
-
-&#125;
-
-继承和重写
-创建继承自 SimpleStorage.sol 的新合约 AddFiveStorage.sol，并通过重写函数实现功能扩展。
-SimpleStorage.sol代码
-
-virtual 表示原函数可以被继承
-
-function store(uint256 favoriteNumber) public virtual  &#123;// 存储
-     myFavoriteNumber = favoriteNumber;
- &#125;
-AddFiveStorage.sol代码
-// SPDX-License-Identifier:MIT
-
-pragma solidity ^0.8.18;
-
-import &#123;SimpleStorage&#125; from "./SimpleStorage.sol";
-
-contract AddFiveStorage is SimpleStorage &#123;
-
-
-    // 需要override关键字 原函数需要加上virtual函数
-   function store(uint256 favoriteNumber) public override &#123;// 存储
-        myFavoriteNumber = favoriteNumber + 5;
-    &#125;
-&#125;
-
-is 表示继承
-override 关键字表示重写
-
-]]></content>
-      <categories>
-        <category>Solidity</category>
-      </categories>
-      <tags>
-        <tag>Solidity</tag>
       </tags>
   </entry>
   <entry>
@@ -12536,6 +12349,193 @@ contract SimpleStorage &#123;
       </tags>
   </entry>
   <entry>
+    <title>Solidity基础[part2]</title>
+    <url>/2025/06/26/WEB3%20Day3%20%E2%80%94%E2%80%94%20Solidity%E5%9F%BA%E7%A1%80%5Bpart2%5D/</url>
+    <content><![CDATA[WEB3 Day3 — Solidity基础[part2]
+存储位置
+solidity里面有六种存储位置。
+
+Calldata
+Memory
+Storage
+Stack
+Code
+Logs
+
+calldata和memory是函数执行期间变量的临时存储位置，calldata只读，用于不可修改的函数输入。
+相比之下，memory允许读写访问，使变量能在函数内部被修改。
+要修改calldata变量，必须先讲它们加载到memory中。
+Calldata
+只读的， 比storage更经济，主要用于输入。
+下面函数中_name 用calldata关键字，就会收到错误提示，因为不可修改。
+
+Memory
+可读可修改，大多数的变量默认自动使用memory，但是字符串不能默认，需要明确指定memory或者calldata
+string memory variableName = "someValue";
+下面会讲到为什么会这么特殊
+storage
+存储在storage的变量在区块链上是持久化的，其值在函数调用和交易之间保持不变。
+比如下面这个变量 favoriteNumber ，声明在函数外部，会被隐式转换为存储变量。
+contract MyContract &#123;
+    uint256 favoriteNumber; // this is a storage variable
+&#125;;
+
+⚠️ 同理，在函数内部也不能使用storage，因为函数中的变量都是临时存在。
+
+字符串和基本类型的特殊存储
+在Solidity中，string是字节数据，arrays of bytes，在上文中提过需要指定确切的存储位置；
+另一方面，uint256基本类型有内置机制，用于规定它们的存储、访问和操作方式及位置。
+所以，在函数给uint256指定关键字就会报错
+
+mapping类型
+遍历过于消耗资源，所以我们使用mapping结构
+mapping (string => uint256) public nameToFavoriteNumber;
+🧑‍💻 Test yourself
+
+📕 How does the Solidity compiler handle primitive types and strings in terms of memory management?
+📕 Why can’t the storage keyword be used for variables inside a function?
+🧑‍💻 Write a smart contract that uses storage, memory and calldata keywords for its variables.
+
+]]></content>
+      <categories>
+        <category>Solidity</category>
+      </categories>
+      <tags>
+        <tag>Solidity</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solidity基础[part3]</title>
+    <url>/2025/07/01/WEB3%20Day4%20%E2%80%94%20Solidity%E5%9F%BA%E7%A1%80%5Bpart3%5D/</url>
+    <content><![CDATA[WEB3 Day4—Solidity基础[part3]
+智能合约部署 Smart Contracts Deploying
+Sepolia TestNet deploying
+我们可以通过进入部署选项卡，从本地虚拟环境（Remix VM）切换到注入的提供者 - MetaMask 来开始部署过程。这一操作将允许Remix发送请求并与您的MetaMask账户进行交互。
+
+随后系统会提示你去选择一个账号。 在你成功连接到remix之后，你会看到账号已经成功链接到并且正在使用sepolia网络的信息。
+
+注意，需要你的测试网络里面必须有足够的 sepolia ETH，如果没有需要从水龙头获取，免费的水龙头我这边会集中收集一次，后续可点击这篇文章：【TODO 挖个坑】；
+暂时可以去这里faucet， 但是还是需要主账户里面要有ether。
+随后，MetaMask就会要求你在测试网站上签署发送：
+
+交易执行之后，合约地址会将交易详情一同显示在已部署的合约列表下面。这就是Eherscan上部署交易的显示方式。
+
+合约交互 Contract interaction
+合约部署完成以后，我们可以与之交互并更新区块链。例如，如果想存储一个数字，可以通过点击store按钮实现；MetaMask会要求再次确认交易。然后更行您设置的数字。这些交易都可以通过部署地址在etherscan上面查询查看。
+Zksync部署
+由于以太坊主网合约部署成本比较高昂，所以RollUp和Layer2网络等扩容解决方案更佳，需要掌握部署在Zksync的流程。
+首先需要Zksync的测试网基金以及zkSync的跨链桥
+可参照之前的笔记
+然后步骤和上面主网的测试网络部署相似，只不过需要跨链
+
+连接钱包
+需要将Sepolia ETH跨链到zkSync，Zksync Bridge地址
+
+连接钱包，保证网络在sepolia
+从sepolia测试网发送eth到zksync
+
+
+
+
+​	
+
+
+有测试基金以后，需要将remixIDE 下载zksync的插件
+
+
+
+⚠️ zkSync部署版本要求 ‘0.8.24’，并且合约*.sol文件必须放在一个contracts文件夹中，不然Zksyn插件的deploy标签页可能会显示空白
+
+
+编译——&gt;连接钱包——&gt; 部署
+
+
+
+合约之间如何相互部署以及交互
+通过import进行导入另一个合约
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.18;
+
+import "./SimpleStorage.sol";
+
+contract StorageFacotory &#123;
+
+    SimpleStorage public simpleStorage;
+
+
+    function createSimpleStorageContract() public  &#123;
+        simpleStorage = new SimpleStorage();
+    &#125;
+&#125;
+如果导入文件有多个合约，一般import最好声明具体的名称，可以不用导入该文件的所有合约
+import &#123;SimpleStorage, SimpleStorage2&#125; from "./SimpleStorage.sol";
+调用另外一个合约的ABI[application binary interface]
+可以创造一个SimpleStorage的数组来存储所有创建的simpleStorage的地址，然后通过地址去调用特定的simplestorage的函数
+
+pragma solidity ^0.8.19;
+
+import &#123;SimpleStorage&#125; from "./SimpleStorage.sol";
+contract StorageFacotory &#123;
+
+    SimpleStorage[] public listOfSimpleStorage;
+
+
+    // 创建需要的SimpleStorage
+    function createSimpleStorageContract() public  &#123;
+        SimpleStorage simpleStorage = new SimpleStorage();
+        listOfSimpleStorage.push(simpleStorage);
+    &#125;
+
+    // 调用simpleStorage的store函数
+    function sfStore(uint256 _index, uint256 myFavoriteNumber) public&#123;
+        listOfSimpleStorage[_index].store(myFavoriteNumber);
+    &#125;
+
+    // 调用simpleStorage里面的recive函数
+    function sfRecive(uint256 _index) public view returns (uint256) &#123;
+        return listOfSimpleStorage[_index].recive();
+    &#125;
+
+&#125;
+
+继承和重写
+创建继承自 SimpleStorage.sol 的新合约 AddFiveStorage.sol，并通过重写函数实现功能扩展。
+SimpleStorage.sol代码
+
+virtual 表示原函数可以被继承
+
+function store(uint256 favoriteNumber) public virtual  &#123;// 存储
+     myFavoriteNumber = favoriteNumber;
+ &#125;
+AddFiveStorage.sol代码
+// SPDX-License-Identifier:MIT
+
+pragma solidity ^0.8.18;
+
+import &#123;SimpleStorage&#125; from "./SimpleStorage.sol";
+
+contract AddFiveStorage is SimpleStorage &#123;
+
+
+    // 需要override关键字 原函数需要加上virtual函数
+   function store(uint256 favoriteNumber) public override &#123;// 存储
+        myFavoriteNumber = favoriteNumber + 5;
+    &#125;
+&#125;
+
+is 表示继承
+override 关键字表示重写
+
+]]></content>
+      <categories>
+        <category>Solidity</category>
+      </categories>
+      <tags>
+        <tag>Solidity</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Solidity基础[part4]</title>
     <url>/2025/07/01/WEB3-Day5%E2%80%94Solidity%E5%9F%BA%E7%A1%80-part4/</url>
     <content><![CDATA[WEB3-Day5—Solidity基础[part4]
@@ -12643,100 +12643,6 @@ contract FundMe&#123;
       </categories>
       <tags>
         <tag>BlockChain</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solidity基础[part6]</title>
-    <url>/2025/07/04/WEB3-Day7%E2%80%94Solidity%E5%9F%BA%E7%A1%80-part6/</url>
-    <content><![CDATA[WEB3-Day7—Solidity基础[part6]
-变量优化
-优化仅设置一次的变量的燃气消耗（gas usage）
-变量 owner 和 minimumUSD 仅设置一次且永不改变：owner 在合约创建时赋值，minimumUSD 在合约初始化时设定。
-评估 FundMe 合约
-我们可以通过部署合约并在终端中观察交易来评估创建合约所需的燃气量。在原始合约配置中，我们消耗了近 859,000 单位燃气。
-常量（Constant）
-为减少燃气消耗，我们可以使用 constant 和 immutable 关键字。这些关键字确保变量值保持不变。更多信息可参考 Solidity 文档。
-对于仅赋值一次且永不改变的变量，我们可以应用这些关键字。
-对于编译时已知的值，使用 constant 关键字。它会避免变量占用存储槽位，从而使读取更便宜、更快速。
-使用 constant 关键字可节省约 19,000 单位燃气，这接近在两个账户之间发送 ETH 的成本。
-
-📝 注意：
-constant 变量的命名约定为全大写并以下划线分隔（例如 MINIMUM_USD）。
-
-
-⚠️ 警告：
-将当前 ETH 燃气成本转换为美元时可见，当 ETH 价格为 3000 美元时，将 MINIMUM_USD 定义为常量需花费 9 美元，比其公开变量（public）的等效实现多近 1 美元。
-
-不可变（Immutable）
-constant 变量适用于编译时已知的值，而 immutable 适用于部署时设置且不再改变的变量。immutable 变量的命名约定是在变量名前添加前缀 i_（例如 i_owner）。
-将 owner 设为 immutable 变量后，观察到其燃气节省效果与 constant 关键字类似。
-
-💡 提示：
-在学习的早期阶段，不必过于关注燃气优化。先保证合约能够完整写出来先。
-
-自定义错误
-需求检查（Require）
-提升燃气效率的一种方式是优化 require 语句。当前，require 语句强制我们存储字符串 'sender is not an owner'，该字符串中的每个字符都会单独存储，导致管理逻辑复杂且成本高昂。
-自定义错误（Custom Errors）
-自 Solidity 0.8.4 版本引入的自定义错误可用于 revert 语句中。这些错误需在代码顶部声明，并在 if 语句中使用。相较于之前的错误消息字符串，调用更轻量的错误代码可降低燃气成本。
-我们可以先创建一个自定义错误：
-error NotOwner();
-然后用 if 语句替换 require 函数，并通过 revert 调用新创建的错误：
-if (msg.sender != i_owner) &#123;
-    revert NotOwner();
-&#125;
-通过实现自定义错误，我们既能降低燃气消耗，又能简化智能合约中的错误处理。
-结论
-本节课中，我们学习了如何通过使用自定义错误替代传统含字符串的 require 语句，进一步优化 Solidity 合约的燃气效率。
-receive和fallback函数
-receive和fallback是特殊函数，当用户直接向合约发送以太币或调用不存在的函数时会触发。这些函数不返回任何值，且必须声明为external。
-为了说明这一点，我们创建一个简单的合约：
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
-
-contract FallbackExample &#123;
-    uint256 public result;
-
-    receive() external payable &#123;
-        result = 1;
-    &#125;
-
-    fallback() external payable &#123;
-        result = 2;
-    &#125;
-&#125;
-在这个合约中，result初始化为0。当以太币发送到合约时，receive函数会被触发，将result设为1。如果交易包含数据但指定的函数不存在，则会触发fallback函数，将result设为2。
-如需全面解释，请参考SolidityByExample。
-发送以太币的逻辑流程
-向合约发送以太币
-        |
-        ↓
-    msg.data为空吗？
-      &#x2F;        \
-     是          否
-    &#x2F;            \
-  receive()存在？   fallback()
-    &#x2F;      \
-   是        否
-  &#x2F;          \
-receive()     fallback()
-向fundMe合约发送以太币
-当用户直接向fundMe合约发送以太币而不调用fund函数时，可以使用receive函数将交易重定向到fund函数：
-receive() external payable &#123;
-    fund();
-&#125;
-
-fallback() external payable &#123;
-    fund();
-&#125;
-要测试此功能，可使用MetaMask向fundMe合约发送一些Sepolia测试网以太币。此时并未直接调用fund函数，但receive函数会触发它。确认交易后，检查funders数组，会发现其已更新，表明receive函数成功调用了fund函数。
-这种方法确保所有交易按预期处理。尽管直接调用fund函数消耗的Gas更少，但此方法能确保用户的贡献被正确确认和记录。
-]]></content>
-      <categories>
-        <category>Solidity</category>
-      </categories>
-      <tags>
-        <tag>Solidity</tag>
       </tags>
   </entry>
   <entry>
@@ -13051,6 +12957,381 @@ contract FundMe&#123;
       </categories>
       <tags>
         <tag>BlockChain</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solidity基础[part6]</title>
+    <url>/2025/07/04/WEB3-Day7%E2%80%94Solidity%E5%9F%BA%E7%A1%80-part6/</url>
+    <content><![CDATA[WEB3-Day7—Solidity基础[part6]
+变量优化
+优化仅设置一次的变量的燃气消耗（gas usage）
+变量 owner 和 minimumUSD 仅设置一次且永不改变：owner 在合约创建时赋值，minimumUSD 在合约初始化时设定。
+评估 FundMe 合约
+我们可以通过部署合约并在终端中观察交易来评估创建合约所需的燃气量。在原始合约配置中，我们消耗了近 859,000 单位燃气。
+常量（Constant）
+为减少燃气消耗，我们可以使用 constant 和 immutable 关键字。这些关键字确保变量值保持不变。更多信息可参考 Solidity 文档。
+对于仅赋值一次且永不改变的变量，我们可以应用这些关键字。
+对于编译时已知的值，使用 constant 关键字。它会避免变量占用存储槽位，从而使读取更便宜、更快速。
+使用 constant 关键字可节省约 19,000 单位燃气，这接近在两个账户之间发送 ETH 的成本。
+
+📝 注意：
+constant 变量的命名约定为全大写并以下划线分隔（例如 MINIMUM_USD）。
+
+
+⚠️ 警告：
+将当前 ETH 燃气成本转换为美元时可见，当 ETH 价格为 3000 美元时，将 MINIMUM_USD 定义为常量需花费 9 美元，比其公开变量（public）的等效实现多近 1 美元。
+
+不可变（Immutable）
+constant 变量适用于编译时已知的值，而 immutable 适用于部署时设置且不再改变的变量。immutable 变量的命名约定是在变量名前添加前缀 i_（例如 i_owner）。
+将 owner 设为 immutable 变量后，观察到其燃气节省效果与 constant 关键字类似。
+
+💡 提示：
+在学习的早期阶段，不必过于关注燃气优化。先保证合约能够完整写出来先。
+
+自定义错误
+需求检查（Require）
+提升燃气效率的一种方式是优化 require 语句。当前，require 语句强制我们存储字符串 'sender is not an owner'，该字符串中的每个字符都会单独存储，导致管理逻辑复杂且成本高昂。
+自定义错误（Custom Errors）
+自 Solidity 0.8.4 版本引入的自定义错误可用于 revert 语句中。这些错误需在代码顶部声明，并在 if 语句中使用。相较于之前的错误消息字符串，调用更轻量的错误代码可降低燃气成本。
+我们可以先创建一个自定义错误：
+error NotOwner();
+然后用 if 语句替换 require 函数，并通过 revert 调用新创建的错误：
+if (msg.sender != i_owner) &#123;
+    revert NotOwner();
+&#125;
+通过实现自定义错误，我们既能降低燃气消耗，又能简化智能合约中的错误处理。
+结论
+本节课中，我们学习了如何通过使用自定义错误替代传统含字符串的 require 语句，进一步优化 Solidity 合约的燃气效率。
+receive和fallback函数
+receive和fallback是特殊函数，当用户直接向合约发送以太币或调用不存在的函数时会触发。这些函数不返回任何值，且必须声明为external。
+为了说明这一点，我们创建一个简单的合约：
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
+
+contract FallbackExample &#123;
+    uint256 public result;
+
+    receive() external payable &#123;
+        result = 1;
+    &#125;
+
+    fallback() external payable &#123;
+        result = 2;
+    &#125;
+&#125;
+在这个合约中，result初始化为0。当以太币发送到合约时，receive函数会被触发，将result设为1。如果交易包含数据但指定的函数不存在，则会触发fallback函数，将result设为2。
+如需全面解释，请参考SolidityByExample。
+发送以太币的逻辑流程
+向合约发送以太币
+        |
+        ↓
+    msg.data为空吗？
+      &#x2F;        \
+     是          否
+    &#x2F;            \
+  receive()存在？   fallback()
+    &#x2F;      \
+   是        否
+  &#x2F;          \
+receive()     fallback()
+向fundMe合约发送以太币
+当用户直接向fundMe合约发送以太币而不调用fund函数时，可以使用receive函数将交易重定向到fund函数：
+receive() external payable &#123;
+    fund();
+&#125;
+
+fallback() external payable &#123;
+    fund();
+&#125;
+要测试此功能，可使用MetaMask向fundMe合约发送一些Sepolia测试网以太币。此时并未直接调用fund函数，但receive函数会触发它。确认交易后，检查funders数组，会发现其已更新，表明receive函数成功调用了fund函数。
+这种方法确保所有交易按预期处理。尽管直接调用fund函数消耗的Gas更少，但此方法能确保用户的贡献被正确确认和记录。
+]]></content>
+      <categories>
+        <category>Solidity</category>
+      </categories>
+      <tags>
+        <tag>Solidity</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Foundry框架[part1]</title>
+    <url>/2025/07/06/WEB3-Day8%E2%80%94Foundry%E6%A1%86%E6%9E%B6-part1/</url>
+    <content><![CDATA[WEB3-Day8—Foundry框架[part1]
+简介
+Foundry Fundamentals
+Foundry 是一个相对较新但发展迅猛的智能合约开发框架，以高效性和模块化设计著称。关于这个强大工具的最佳简介可查阅 《Foundry 官方手册》：
+Foundry 可管理项目依赖、编译工程、运行测试、部署合约，并支持通过命令行及 Solidity 脚本与区块链交互。
+请务必收藏 《Foundry 官方手册》—— 它是最全面的资源，可解答您的所有疑问，在学习过程中会持续提供帮助。
+Foundry 的核心优势包括：
+
+借助 Rust 进行编译，相比 Hardhat 或 Brownie 等框架，构建速度显著提升；
+完全基于 Solidity 开发，无需学习其他编程语言；
+文档体系极为完善。
+
+推荐代码编辑器：Visual Studio Code
+在本课程中，我们将使用 Visual Studio Code 完成智能合约的 编写、测试、部署 及 交互。这款轻量级代码编辑器功能强大，支持 Windows、macOS 和 Linux 系统，其丰富的扩展生态系统使其成为智能合约开发的首选工具之一。
+安装Foundry
+curl -L https://foundry.paradigm.xyz | bash
+source /Users/tinachan/.zshenv
+foundryup
+创建文件夹和初始化
+创建文件夹
+mkdir foundry-f23  
+cd foundry-f23  
+现在输入以下命令：
+mkdir foundry-simple-storage-f23  
+cd foundry-simple-storage-f23  
+技巧：输入目标路径的前几个字母后按 Tab 键可快速补全 cd 命令——Tab 键能自动补全大部分命令/路径。
+若输入 code .，将打开新的 VS Code 实例，并默认以 foundry-simple-storage-f23 为工作路径。
+可通过左侧边栏查看该文件夹内容。尝试执行以下命令：
+touch randomFile.txt  
+这将创建一个 randomFile.txt 文件。
+若需删除该文件，输入：
+rm randomFile.txt  
+终端在移动/打开/创建目录/文件、切换路径及运行程序方面非常便捷。若想提升操作效率，推荐阅读 此教程。
+创建新项目
+创建新Foundry项目 的方式是执行 forge init 命令，这将在当前工作目录生成一个新的Foundry项目。
+若希望Foundry在新文件夹中创建项目，输入：forge init 新文件夹名称。
+注意：forge init 默认要求目标文件夹为空。若文件夹非空，需执行 forge init --force .。
+若遇到Git配置相关错误，需先配置用户名和邮箱：
+git config --global user.email "你的邮箱@提供商.com"  
+git config --global user.name "你的用户名"  
+完成后，文件夹结构应如下所示：
+
+各文件夹含义说明：
+
+
+lib：存放所有依赖项，例如：
+
+forge-std（用于测试和脚本的forge库）
+openzeppelin-contracts（经过大量实践验证的智能合约库）
+其他按需安装的依赖
+
+
+
+scripts：存放所有脚本文件
+
+
+src：存放所有智能合约源文件
+
+
+test：存放所有测试文件
+
+
+foundry.toml：Foundry的配置参数文件
+
+
+后续将详细介绍这些文件夹和文件。
+现在请右键点击 src 文件夹，选择 New File 并命名为 SimpleStorage.sol。将 此链接 中的代码复制到该文件中。
+最后一步：请删除 Counter.s.sol、Counter.sol 和 Counter.t.sol。这些是Foundry创建新项目时默认提供的基础智能合约文件。
+VSCode插件
+刚开始编写代码时，界面可能只是一片单调、缺乏格式的白色文本。
+通过安装 Solidity 扩展可轻松解决这个问题。在扩展选项卡（按 CTRL/CMD + SHIFT + X）中，以下几个 Solidity 扩展值得关注：
+
+Solidity by Juan Blanco —— 最常用的 Solidity 扩展。
+Solidity by Nomic Foundation —— Patrick 最推荐的 Solidity 扩展，本课程将使用此扩展演示。
+Solidity Visual Developer —— 另一款热门选择。
+
+注意：若安装扩展后代码仍无高亮，可按以下步骤解决：
+按下 Command + Shift + P（macOS）或 Control + Shift + P（Windows）打开命令面板，输入“Settings”并选择 “Preferences: Open User Settings (JSON)”。
+若文件为空，添加以下设置：
+&#123;
+  "editor.defaultFormatter": "NomicFoundation.hardhat"
+&#125;
+
+若使用 Solidity Visual Developer，设置为：
+&quot;editor.defaultFormatter&quot;: &quot;tintinweb.solidity-visual-auditor&quot;
+若使用 Solidity by Juan Blanco，设置为：
+&quot;editor.defaultFormatter&quot;: &quot;JuanBlanco.solidity&quot;
+
+其他实用扩展
+上一课提到的 foundry.toml 配置文件也有对应的格式化扩展，推荐安装 Even Better TOML，提升 TOML 文件的可读性。
+另一款必备扩展是 Inline Bookmarks，其功能如下：
+该插件支持在代码中添加书签，适用于文档评审、安全审计、日志分析及记录开发笔记和待办事项。书签会随文件保存，可轻松与他人共享。
+默认预设的触发标签/关键词如下：
+
+@todo（蓝色）：常规待办事项标记
+@note（蓝色）：常规注释
+@remind（蓝色）：提醒事项
+@follow-up（蓝色）：待跟进事项
+@audit（红色）：潜在问题标记
+@audit-info（蓝色）：待后续处理的信息标记
+@audit-ok（绿色）：标记某行代码无问题（即使看似有问题）
+@audit-issue（紫色）：标记已记录问题的代码位置
+
+提示：这些标签的颜色可完全自定义！它们在开发尤其是项目审计中非常实用，更多细节可查阅 官方文档。
+编译合约
+复制之前Solidity基础课程中的 SimpleStorage.sol合约
+然后打开新终端。输入 forge build 或 forge compile 来编译项目中的智能合约。
+
+部署合约
+Anvil
+部署智能合约有多种方式和平台。使用Foundry框架开发时，最简单且现成的部署环境是Anvil。
+Anvil是Foundry自带的本地测试网络节点，可用于从前端测试合约或通过RPC交互。在终端输入anvil即可运行：
+
+此时会生成10个测试地址，每个地址预存10_000 ETH及对应的私钥。该测试节点默认监听127.0.0.1:8545，此地址将作为部署合约时的RPC_URL参数（后续会详细说明）。更多Anvil相关信息可查阅 官方文档。
+如需关闭Anvil，按Ctrl/CMD + C即可。本课程将全程使用Anvil部署和测试合约，在此之前先了解一个中间步骤。
+Ganache
+Ganache通常指糕点酱，由等量奶油和碎巧克力加热制成，先温热奶油再浇在巧克力上。
+等等，这里说的不是糕点酱！另一个Ganache：
+Ganache是用于快速开发以太坊和Filecoin分布式应用的个人区块链，可在整个开发生命周期中使用，支持在安全且确定的环境中开发、部署和测试dApp。
+请从 此处 下载Ganache。
+使用Windows WSL的用户请阅读 此文档——在该环境中配置Ganache并非易事，且后续不会使用，因此配置失败无需担心。
+点击Quickstart Ethereum，即可生成全新区块链，包含带余额的地址和私钥。
+配置MetaMask
+若需部署到自定义网络（如本地节点），需使用MetaMask——这是一款流行的加密货币钱包和浏览器扩展，支持与以太坊区块链及其生态交互。尚未安装者可从 此处 下载。
+配置步骤如下：
+
+打开MetaMask，点击三点图标并选择Expand View；
+进入Settings→Networks，查看网络列表及详情，重点关注RPC URL；
+RPC URL本质上是发送交易时调用API的端点，每次执行区块链交易都会向该地址发送API请求。
+
+添加自定义区块链网络的步骤：
+
+点击Add a Network，滚动至列表底部；
+选择Add a Network manually，输入本地网络信息：
+
+网络名称：Localhost
+新RPC URL：Ganache为http://127.0.0.1:7545，Anvil为http://127.0.0.1:8545（需确保添加http://，具体URL以Ganache界面或Anvil终端显示为准）
+链ID：Ganache通常为5777（或1337），Anvil为31337（具体ID以工具显示为准）
+货币符号：ETH
+区块浏览器URL：留空（本地区块链无区块浏览器，关闭VS Code/Ganache后数据通常会丢失）
+
+
+
+配置完本地网络后，需将Ganache或Anvil中的账户导入MetaMask，步骤如下 点击查看详情：
+
+点击钱包顶部的账户选择器，点击Add account or hardware wallet；
+选择Import account，粘贴Ganache/Anvil的私钥并点击Import。
+
+重要提示：此账户仅限本地测试使用，切勿在主网或其他真实区块链中使用，所有人均可访问该账户！
+接下来将进一步讲解在MetaMask中添加新网络的细节。
+命令行部署
+forge create SimpleStorage --interactive
+
+脚本部署
+通过脚本部署智能合约特别实用，因为它提供了一致且可重复的可靠部署方式，其特性还能增强对部署流程和代码本身的测试。
+你可能喜欢命令行方式，但脚本会丰富整个部署流程，带来无可比拟的功能扩展和易用性。
+Foundry基于Solidity开发，这意味着我们的部署脚本也将使用Solidity编写。必须明确区分作为合约语言的Solidity和作为脚本语言的Solidity——Foundry还整合了扩展功能，让Solidity的应用超出智能合约范畴。现在开始创建部署简单存储合约的脚本。
+在Foundry中，脚本存放在script文件夹下
+
+创建新文件DeploySimpleStorage.s.sol
+
+.s.sol是Foundry脚本的命名规范，后续编写测试时会使用.t.sol后缀。
+更多脚本最佳实践可查阅 此处。
+
+
+
+编写Solidity部署脚本
+
+
+初始代码框架：
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.19;
+
+contract DeploySimpleStorage &#123;
+&#125;
+
+前两行分别声明许可证和Solidity版本。
+
+
+
+导入依赖并继承Script：
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.19;
+
+import &#123;Script&#125; from "forge-std/Script.sol";
+import &#123;SimpleStorage&#125; from "../src/SimpleStorage.sol";
+
+contract DeploySimpleStorage is Script &#123;
+&#125;
+
+注：forge-std（Forge标准库）包含预写的Solidity合约，用于简化和增强Foundry中的脚本与测试。
+
+
+
+添加run主函数：
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.19;
+
+import &#123;Script&#125; from "forge-std/Script.sol";
+import &#123;SimpleStorage&#125; from "../src/SimpleStorage.sol";
+
+contract DeploySimpleStorage is Script &#123;
+    function run() external returns (SimpleStorage) &#123;
+        vm.startBroadcast();
+
+        SimpleStorage simpleStorage = new SimpleStorage();
+
+        vm.stopBroadcast();
+        return simpleStorage;
+    &#125;
+&#125;
+
+vm是Foundry的“作弊码”（cheat codes），仅在Foundry环境中生效：
+
+vm.startBroadcast()标记发送到RPC URL的交易开始；
+vm.stopBroadcast()标记交易结束；
+
+
+new SimpleStorage()通过Solidity的new关键字创建合约实例。
+
+
+
+执行部署脚本
+
+
+停止正在运行的Anvil（按CTRL(CMD) + C），运行：
+forge script script/DeploySimpleStorage.s.sol
+
+若遇“文件中Solidity版本不兼容”错误，确保SimpleStorage.sol和部署脚本均使用pragma solidity 0.8.19;。
+
+
+
+典型输出：
+[⠆] Compiling...
+[⠔] Compiling 2 files with 0.8.19
+[⠒] Solc 0.8.19 finished in 1.08s
+Compiler run successful!
+Script ran successfully.
+Gas used: 338569
+
+== Return ==
+0: contract SimpleStorage 0x90193C961A926261B756D1E5bb255e67ff9498A1
+
+关键问题：未指定RPC URL时，Foundry会自动启动并终止Anvil实例完成部署。
+
+
+
+指定RPC URL模拟部署：
+# 先启动Anvil
+anvil
+# 新开终端执行
+forge script script/DeploySimpleStorage.s.sol --rpc-url http://127.0.0.1:8545
+
+输出中的SIMULATION COMPLETE表示这是模拟部署，生成的broadcast文件夹记录脚本运行信息。
+
+
+
+广播部署（添加私钥）：
+forge script script/DeploySimpleStorage.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+Anvil终端将显示成功部署的交易信息：Transaction: 0x73eb9fb4ef7b159e03c50d669c42e2ec4eeaa9358bea0a710cb07168e5192570
+Contract created: 0x5fbdb2315678afecb367f032d93f642f64180aa3
+Gas used: 357088
+
+
+
+
+]]></content>
+      <categories>
+        <category>Solidity</category>
+      </categories>
+      <tags>
+        <tag>Foundry</tag>
       </tags>
   </entry>
   <entry>
@@ -13369,287 +13650,6 @@ PicGo + Typora 图床写作：Typora 上传图片设置、PicGo 图床配置。
         <tag>Typora</tag>
         <tag>hexo</tag>
         <tag>PicGo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Foundry框架[part1]</title>
-    <url>/2025/07/06/WEB3-Day8%E2%80%94Foundry%E6%A1%86%E6%9E%B6-part1/</url>
-    <content><![CDATA[WEB3-Day8—Foundry框架[part1]
-简介
-Foundry Fundamentals
-Foundry 是一个相对较新但发展迅猛的智能合约开发框架，以高效性和模块化设计著称。关于这个强大工具的最佳简介可查阅 《Foundry 官方手册》：
-Foundry 可管理项目依赖、编译工程、运行测试、部署合约，并支持通过命令行及 Solidity 脚本与区块链交互。
-请务必收藏 《Foundry 官方手册》—— 它是最全面的资源，可解答您的所有疑问，在学习过程中会持续提供帮助。
-Foundry 的核心优势包括：
-
-借助 Rust 进行编译，相比 Hardhat 或 Brownie 等框架，构建速度显著提升；
-完全基于 Solidity 开发，无需学习其他编程语言；
-文档体系极为完善。
-
-推荐代码编辑器：Visual Studio Code
-在本课程中，我们将使用 Visual Studio Code 完成智能合约的 编写、测试、部署 及 交互。这款轻量级代码编辑器功能强大，支持 Windows、macOS 和 Linux 系统，其丰富的扩展生态系统使其成为智能合约开发的首选工具之一。
-安装Foundry
-curl -L https://foundry.paradigm.xyz | bash
-source /Users/tinachan/.zshenv
-foundryup
-创建文件夹和初始化
-创建文件夹
-mkdir foundry-f23  
-cd foundry-f23  
-现在输入以下命令：
-mkdir foundry-simple-storage-f23  
-cd foundry-simple-storage-f23  
-技巧：输入目标路径的前几个字母后按 Tab 键可快速补全 cd 命令——Tab 键能自动补全大部分命令/路径。
-若输入 code .，将打开新的 VS Code 实例，并默认以 foundry-simple-storage-f23 为工作路径。
-可通过左侧边栏查看该文件夹内容。尝试执行以下命令：
-touch randomFile.txt  
-这将创建一个 randomFile.txt 文件。
-若需删除该文件，输入：
-rm randomFile.txt  
-终端在移动/打开/创建目录/文件、切换路径及运行程序方面非常便捷。若想提升操作效率，推荐阅读 此教程。
-创建新项目
-创建新Foundry项目 的方式是执行 forge init 命令，这将在当前工作目录生成一个新的Foundry项目。
-若希望Foundry在新文件夹中创建项目，输入：forge init 新文件夹名称。
-注意：forge init 默认要求目标文件夹为空。若文件夹非空，需执行 forge init --force .。
-若遇到Git配置相关错误，需先配置用户名和邮箱：
-git config --global user.email "你的邮箱@提供商.com"  
-git config --global user.name "你的用户名"  
-完成后，文件夹结构应如下所示：
-
-各文件夹含义说明：
-
-
-lib：存放所有依赖项，例如：
-
-forge-std（用于测试和脚本的forge库）
-openzeppelin-contracts（经过大量实践验证的智能合约库）
-其他按需安装的依赖
-
-
-
-scripts：存放所有脚本文件
-
-
-src：存放所有智能合约源文件
-
-
-test：存放所有测试文件
-
-
-foundry.toml：Foundry的配置参数文件
-
-
-后续将详细介绍这些文件夹和文件。
-现在请右键点击 src 文件夹，选择 New File 并命名为 SimpleStorage.sol。将 此链接 中的代码复制到该文件中。
-最后一步：请删除 Counter.s.sol、Counter.sol 和 Counter.t.sol。这些是Foundry创建新项目时默认提供的基础智能合约文件。
-VSCode插件
-刚开始编写代码时，界面可能只是一片单调、缺乏格式的白色文本。
-通过安装 Solidity 扩展可轻松解决这个问题。在扩展选项卡（按 CTRL/CMD + SHIFT + X）中，以下几个 Solidity 扩展值得关注：
-
-Solidity by Juan Blanco —— 最常用的 Solidity 扩展。
-Solidity by Nomic Foundation —— Patrick 最推荐的 Solidity 扩展，本课程将使用此扩展演示。
-Solidity Visual Developer —— 另一款热门选择。
-
-注意：若安装扩展后代码仍无高亮，可按以下步骤解决：
-按下 Command + Shift + P（macOS）或 Control + Shift + P（Windows）打开命令面板，输入“Settings”并选择 “Preferences: Open User Settings (JSON)”。
-若文件为空，添加以下设置：
-&#123;
-  "editor.defaultFormatter": "NomicFoundation.hardhat"
-&#125;
-
-若使用 Solidity Visual Developer，设置为：
-&quot;editor.defaultFormatter&quot;: &quot;tintinweb.solidity-visual-auditor&quot;
-若使用 Solidity by Juan Blanco，设置为：
-&quot;editor.defaultFormatter&quot;: &quot;JuanBlanco.solidity&quot;
-
-其他实用扩展
-上一课提到的 foundry.toml 配置文件也有对应的格式化扩展，推荐安装 Even Better TOML，提升 TOML 文件的可读性。
-另一款必备扩展是 Inline Bookmarks，其功能如下：
-该插件支持在代码中添加书签，适用于文档评审、安全审计、日志分析及记录开发笔记和待办事项。书签会随文件保存，可轻松与他人共享。
-默认预设的触发标签/关键词如下：
-
-@todo（蓝色）：常规待办事项标记
-@note（蓝色）：常规注释
-@remind（蓝色）：提醒事项
-@follow-up（蓝色）：待跟进事项
-@audit（红色）：潜在问题标记
-@audit-info（蓝色）：待后续处理的信息标记
-@audit-ok（绿色）：标记某行代码无问题（即使看似有问题）
-@audit-issue（紫色）：标记已记录问题的代码位置
-
-提示：这些标签的颜色可完全自定义！它们在开发尤其是项目审计中非常实用，更多细节可查阅 官方文档。
-编译合约
-复制之前Solidity基础课程中的 SimpleStorage.sol合约
-然后打开新终端。输入 forge build 或 forge compile 来编译项目中的智能合约。
-
-部署合约
-Anvil
-部署智能合约有多种方式和平台。使用Foundry框架开发时，最简单且现成的部署环境是Anvil。
-Anvil是Foundry自带的本地测试网络节点，可用于从前端测试合约或通过RPC交互。在终端输入anvil即可运行：
-
-此时会生成10个测试地址，每个地址预存10_000 ETH及对应的私钥。该测试节点默认监听127.0.0.1:8545，此地址将作为部署合约时的RPC_URL参数（后续会详细说明）。更多Anvil相关信息可查阅 官方文档。
-如需关闭Anvil，按Ctrl/CMD + C即可。本课程将全程使用Anvil部署和测试合约，在此之前先了解一个中间步骤。
-Ganache
-Ganache通常指糕点酱，由等量奶油和碎巧克力加热制成，先温热奶油再浇在巧克力上。
-等等，这里说的不是糕点酱！另一个Ganache：
-Ganache是用于快速开发以太坊和Filecoin分布式应用的个人区块链，可在整个开发生命周期中使用，支持在安全且确定的环境中开发、部署和测试dApp。
-请从 此处 下载Ganache。
-使用Windows WSL的用户请阅读 此文档——在该环境中配置Ganache并非易事，且后续不会使用，因此配置失败无需担心。
-点击Quickstart Ethereum，即可生成全新区块链，包含带余额的地址和私钥。
-配置MetaMask
-若需部署到自定义网络（如本地节点），需使用MetaMask——这是一款流行的加密货币钱包和浏览器扩展，支持与以太坊区块链及其生态交互。尚未安装者可从 此处 下载。
-配置步骤如下：
-
-打开MetaMask，点击三点图标并选择Expand View；
-进入Settings→Networks，查看网络列表及详情，重点关注RPC URL；
-RPC URL本质上是发送交易时调用API的端点，每次执行区块链交易都会向该地址发送API请求。
-
-添加自定义区块链网络的步骤：
-
-点击Add a Network，滚动至列表底部；
-选择Add a Network manually，输入本地网络信息：
-
-网络名称：Localhost
-新RPC URL：Ganache为http://127.0.0.1:7545，Anvil为http://127.0.0.1:8545（需确保添加http://，具体URL以Ganache界面或Anvil终端显示为准）
-链ID：Ganache通常为5777（或1337），Anvil为31337（具体ID以工具显示为准）
-货币符号：ETH
-区块浏览器URL：留空（本地区块链无区块浏览器，关闭VS Code/Ganache后数据通常会丢失）
-
-
-
-配置完本地网络后，需将Ganache或Anvil中的账户导入MetaMask，步骤如下 点击查看详情：
-
-点击钱包顶部的账户选择器，点击Add account or hardware wallet；
-选择Import account，粘贴Ganache/Anvil的私钥并点击Import。
-
-重要提示：此账户仅限本地测试使用，切勿在主网或其他真实区块链中使用，所有人均可访问该账户！
-接下来将进一步讲解在MetaMask中添加新网络的细节。
-命令行部署
-forge create SimpleStorage --interactive
-
-脚本部署
-通过脚本部署智能合约特别实用，因为它提供了一致且可重复的可靠部署方式，其特性还能增强对部署流程和代码本身的测试。
-你可能喜欢命令行方式，但脚本会丰富整个部署流程，带来无可比拟的功能扩展和易用性。
-Foundry基于Solidity开发，这意味着我们的部署脚本也将使用Solidity编写。必须明确区分作为合约语言的Solidity和作为脚本语言的Solidity——Foundry还整合了扩展功能，让Solidity的应用超出智能合约范畴。现在开始创建部署简单存储合约的脚本。
-在Foundry中，脚本存放在script文件夹下
-
-创建新文件DeploySimpleStorage.s.sol
-
-.s.sol是Foundry脚本的命名规范，后续编写测试时会使用.t.sol后缀。
-更多脚本最佳实践可查阅 此处。
-
-
-
-编写Solidity部署脚本
-
-
-初始代码框架：
-// SPDX-License-Identifier: MIT
-
-pragma solidity 0.8.19;
-
-contract DeploySimpleStorage &#123;
-&#125;
-
-前两行分别声明许可证和Solidity版本。
-
-
-
-导入依赖并继承Script：
-// SPDX-License-Identifier: MIT
-
-pragma solidity 0.8.19;
-
-import &#123;Script&#125; from "forge-std/Script.sol";
-import &#123;SimpleStorage&#125; from "../src/SimpleStorage.sol";
-
-contract DeploySimpleStorage is Script &#123;
-&#125;
-
-注：forge-std（Forge标准库）包含预写的Solidity合约，用于简化和增强Foundry中的脚本与测试。
-
-
-
-添加run主函数：
-// SPDX-License-Identifier: MIT
-
-pragma solidity 0.8.19;
-
-import &#123;Script&#125; from "forge-std/Script.sol";
-import &#123;SimpleStorage&#125; from "../src/SimpleStorage.sol";
-
-contract DeploySimpleStorage is Script &#123;
-    function run() external returns (SimpleStorage) &#123;
-        vm.startBroadcast();
-
-        SimpleStorage simpleStorage = new SimpleStorage();
-
-        vm.stopBroadcast();
-        return simpleStorage;
-    &#125;
-&#125;
-
-vm是Foundry的“作弊码”（cheat codes），仅在Foundry环境中生效：
-
-vm.startBroadcast()标记发送到RPC URL的交易开始；
-vm.stopBroadcast()标记交易结束；
-
-
-new SimpleStorage()通过Solidity的new关键字创建合约实例。
-
-
-
-执行部署脚本
-
-
-停止正在运行的Anvil（按CTRL(CMD) + C），运行：
-forge script script/DeploySimpleStorage.s.sol
-
-若遇“文件中Solidity版本不兼容”错误，确保SimpleStorage.sol和部署脚本均使用pragma solidity 0.8.19;。
-
-
-
-典型输出：
-[⠆] Compiling...
-[⠔] Compiling 2 files with 0.8.19
-[⠒] Solc 0.8.19 finished in 1.08s
-Compiler run successful!
-Script ran successfully.
-Gas used: 338569
-
-== Return ==
-0: contract SimpleStorage 0x90193C961A926261B756D1E5bb255e67ff9498A1
-
-关键问题：未指定RPC URL时，Foundry会自动启动并终止Anvil实例完成部署。
-
-
-
-指定RPC URL模拟部署：
-# 先启动Anvil
-anvil
-# 新开终端执行
-forge script script/DeploySimpleStorage.s.sol --rpc-url http://127.0.0.1:8545
-
-输出中的SIMULATION COMPLETE表示这是模拟部署，生成的broadcast文件夹记录脚本运行信息。
-
-
-
-广播部署（添加私钥）：
-forge script script/DeploySimpleStorage.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
-Anvil终端将显示成功部署的交易信息：Transaction: 0x73eb9fb4ef7b159e03c50d669c42e2ec4eeaa9358bea0a710cb07168e5192570
-Contract created: 0x5fbdb2315678afecb367f032d93f642f64180aa3
-Gas used: 357088
-
-
-
-
-]]></content>
-      <categories>
-        <category>Solidity</category>
-      </categories>
-      <tags>
-        <tag>Foundry</tag>
       </tags>
   </entry>
   <entry>
@@ -14029,9 +14029,9 @@ DLMM通过自动化和智能化，降低了用户使用门槛
       <tags>
         <tag>Solana</tag>
         <tag>DeFi</tag>
-        <tag>AMM</tag>
         <tag>Meteora</tag>
         <tag>DLMM</tag>
+        <tag>AMM</tag>
         <tag>CPMM</tag>
         <tag>CLMM</tag>
         <tag>Uniswap</tag>
