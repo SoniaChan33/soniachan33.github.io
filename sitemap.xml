@@ -694,14 +694,7 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/Meteora/</loc>
-    <lastmod>2025-10-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://blog.soniachen.com/tags/DLMM/</loc>
+    <loc>https://blog.soniachen.com/tags/Orca/</loc>
     <lastmod>2025-10-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -715,6 +708,13 @@
   </url>
   
   <url>
+    <loc>https://blog.soniachen.com/tags/Whirlpool/</loc>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://blog.soniachen.com/tags/Rust/</loc>
     <lastmod>2025-10-18</lastmod>
     <changefreq>weekly</changefreq>
@@ -722,14 +722,14 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/Orca/</loc>
+    <loc>https://blog.soniachen.com/tags/Meteora/</loc>
     <lastmod>2025-10-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/Whirlpool/</loc>
+    <loc>https://blog.soniachen.com/tags/DLMM/</loc>
     <lastmod>2025-10-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -785,14 +785,14 @@
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/Web3/</loc>
+    <loc>https://blog.soniachen.com/tags/BlockChain/</loc>
     <lastmod>2025-10-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://blog.soniachen.com/tags/BlockChain/</loc>
+    <loc>https://blog.soniachen.com/tags/Web3/</loc>
     <lastmod>2025-10-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
