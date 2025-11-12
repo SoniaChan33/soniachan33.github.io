@@ -316,178 +316,6 @@ Orca开发者文档：https://www.orca.so/docs
       </tags>
   </entry>
   <entry>
-    <title>Docker + Rust 构建问题分析</title>
-    <url>/2025/11/04/Docker%20+%20Rust%20%E6%9E%84%E5%BB%BA%E8%B8%A9%E5%9D%91%E8%A1%80%E6%B3%AA%E5%8F%B2/</url>
-    <content><![CDATA[Docker + Rust 构建问题分析
-问题
-
-容器启动后立即退出 (exited with code 0)
-完全没有任何日志输出（连 main() 第一行都没打印）
-改小版本号无效 (v3.1.9 → v3.2.0 都失败)
-改大版本号就好了 (v3.x → v4.0.0 突然成功)
-不同机器构建结果不一致（本地失败，服务器成功）
-
-关键线索：二进制文件大小
-正常启动的：22MB ~ 24MB
-启动失败的：443KB ~ 450KB  ← 这是损坏的！
-
-根本原因
-Cargo 增量编译 + Docker 缓存的潜在问题
-Dockerfile 中常见的&quot;依赖缓存优化&quot;会导致问题：
-# 步骤 1：缓存依赖
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src &amp;&amp; echo "fn main() &#123;&#125;" > src/main.rs &amp;&amp; cargo build --release
-# ↑ 这里生成了一个 450KB 的 dummy 二进制
-
-# 步骤 2：删除假源码
-RUN rm -rf src
-
-# 步骤 3：复制真实源码
-COPY . .
-
-# 步骤 4：真正构建
-RUN cargo build --release
-# ↑ 问题出现在这里！
-关键问题
-
-Cargo 检测到 target/release/ 已存在 dummy 二进制
-增量编译判断：源码没变化（因为 Docker 缓存）
-Cargo 决定：不需要重新编译，直接复用旧二进制
-结果：最终镜像里是那个 450KB 的废物二进制！
-
-
-为什么版本号变更有时能解决问题？
-v3.1.9 → v3.2.0 无效
-Docker 认为这是&quot;小改动&quot;
-→ 继续使用缓存层
-→ 继续使用损坏的二进制
-v3.x → v4.0.0 有效
-Docker 认为这是&quot;重大变更&quot;（主版本号变化）
-→ 某些缓存策略被重置
-→ 意外触发了完全重新构建
-→ 生成了正确的 24MB 二进制
-但这不是可靠的修复！下次 v4.1.0 可能又会失败！
-
-为什么这个问题如此隐蔽？
-1. 编译成功，没有错误
-[builder 8/8] RUN cargo build --release   ✓ 0.6s
-2. 容器启动成功，立即退出
-solji_indexer_sonia exited with code 0
-
-exit 0 = “正常退出”（误导性结果！）
-实际：二进制损坏，连 main() 都没执行
-
-3. 完全没有日志
-fn main() &#123;
-    println!("Starting..."); // ← 这行永远不会执行
-&#125;
-因为二进制根本就是假的 fn main() &#123;&#125;
-4. 本地和服务器表现不一致
-
-本地 Mac (arm64)：缓存污染，生成 450KB
-服务器 (amd64)：重新构建，生成 107MB
-造成错觉：“是不是架构问题？”
-
-
-最终解决方案
-核心思路：强制清理旧二进制，禁止增量编译复用
-FROM rust:1.83-bookworm AS builder
-
-RUN apt-get update &amp;&amp; apt-get install -y \
-    pkg-config libssl-dev build-essential ca-certificates \
-    &amp;&amp; rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# ===== 步骤 1：缓存依赖（这个没问题）=====
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src &amp;&amp; \
-    echo "fn main() &#123;&#125;" > src/main.rs &amp;&amp; \
-    cargo build --release --locked
-
-# ===== 步骤 2：清理旧二进制（关键！）=====
-RUN rm -rf target/release/solji-indexer \
-           target/release/deps/solji_indexer* \
-           target/release/.fingerprint/solji-indexer-*
-
-# ===== 步骤 3：复制真实代码 =====
-COPY . .
-
-# ===== 步骤 4：完整构建 =====
-RUN cargo build --release --locked
-
-# ===== 步骤 5：验证二进制大小（重要！）=====
-RUN SIZE=$(stat -c%s target/release/solji-indexer 2>/dev/null || stat -f%z target/release/solji-indexer) &amp;&amp; \
-    echo "Binary size: $SIZE bytes" &amp;&amp; \
-    if [ $SIZE -lt 5000000 ]; then \
-        echo "ERROR: Binary too small ($SIZE bytes), build failed!" &amp;&amp; exit 1; \
-    fi
-
-# ===== Runtime 镜像 =====
-FROM debian:bookworm-slim
-
-RUN apt-get update &amp;&amp; apt-get install -y \
-    libssl3 ca-certificates \
-    &amp;&amp; rm -rf /var/lib/apt/lists/*
-
-COPY --from=builder /app/target/release/solji-indexer /usr/local/bin/solji-indexer
-COPY .env /usr/local/bin/.env
-
-WORKDIR /usr/local/bin
-EXPOSE 8080
-
-CMD ["/usr/local/bin/solji-indexer"]
-
-防御措施
-1. 构建时验证二进制大小
-RUN SIZE=$(stat -c%s target/release/solji-indexer) &amp;&amp; \
-    [ $SIZE -gt 5000000 ] || (echo "Build failed: binary too small" &amp;&amp; exit 1)
-2. 使用 --locked 参数
-RUN cargo build --release --locked
-确保使用 Cargo.lock 中的精确版本
-3. 构建后立即测试
-# 在 builder 阶段测试二进制能否运行
-RUN ./target/release/solji-indexer --version || \
-    (echo "Binary is broken!" &amp;&amp; exit 1)
-4. 清理 Docker 缓存
-# 每次重要构建前执行
-docker builder prune -af
-docker build --no-cache -t myimage:tag .
-5. CI/CD 中固定构建环境
-# GitHub Actions
-- name: Build Docker Image
-  run: |
-    docker build --no-cache \
-      --build-arg BUILDKIT_INLINE_CACHE=1 \
-      -t sonia831/solji-indexer:$&#123;&#123; github.sha &#125;&#125; .
-
-检测清单
-# 1. 检查镜像大小
-docker images | grep solji-indexer
-# 应该 > 100MB
-
-# 2. 检查二进制大小
-docker run --rm --entrypoint ls myimage:tag -lh /usr/local/bin/solji-indexer
-# 应该 > 20MB
-
-# 3. 测试启动
-docker run --rm myimage:tag --version
-# 应该有输出
-
-# 4. 查看依赖库
-docker run --rm --entrypoint ldd myimage:tag /usr/local/bin/solji-indexer
-# 应该能看到 libssl, libc 等
-]]></content>
-      <categories>
-        <category>Rust</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-        <tag>Docker</tag>
-        <tag>Bug</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Meteora技术深潜：Solana生态的下一代动态AMM协议</title>
     <url>/2025/10/12/Meteora-Solana%E4%B8%8A%E7%9A%84%E4%B8%8B%E4%B8%80%E4%BB%A3%E5%8A%A8%E6%80%81%E6%B5%81%E5%8A%A8%E6%80%A7AMM/</url>
     <content><![CDATA[Meteora技术深潜：Solana生态的下一代动态AMM协议
@@ -903,11 +731,544 @@ Meteora作为Solana生态的下一代动态AMM协议，不仅继承了CLMM的高
       <tags>
         <tag>Solana</tag>
         <tag>DEX</tag>
-        <tag>Rust</tag>
         <tag>DeFi</tag>
         <tag>Meteora</tag>
         <tag>DLMM</tag>
         <tag>AMM</tag>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Move语言入门教程Part1：Sui开发环境搭建与项目实践</title>
+    <url>/2025/11/11/Move%E5%AD%A6%E4%B9%A0-%E5%9F%BA%E7%A1%80part1/</url>
+    <content><![CDATA[Move语言入门教程Part1：Sui开发环境搭建与项目实践
+简介
+Move是一种为区块链设计的编程语言，由Facebook（现Meta）开发，主要用于Diem项目，后来被Sui区块链采用。本教程将带你从零开始搭建Sui开发环境，并通过一个简单的todo_list项目来实践Move语言的基本语法和概念。
+官方中文文档：https://docs-zh.sui-book.com/guides/developer/getting-started/get-address
+参考：https://blog.csdn.net/gitblog_00307/article/details/148465079
+环境配置
+➜  ~ curl -sSfL https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;Mystenlabs&#x2F;suiup&#x2F;main&#x2F;install.sh | sh
+
+➜  ~ export PATH&#x3D;&quot;&#x2F;Users&#x2F;tinachan&#x2F;.local&#x2F;bin:$PATH&quot;
+安装sui devnet
+➜  ~ suiup install sui@devnet
+安装svr
+suiup install mvr
+安装walrus
+➜  ~ suiup install walrus -y
+其他指令
+➜  ~ suiup list 
+新建项目
+~ sui move new todo_list
+todo_list.move 文件添加：
+&#x2F;&#x2F;&#x2F; Module: todo_list
+module todo_list::todo_list;
+
+use std::string::String;
+
+&#x2F;&#x2F;&#x2F; List of todos. Can be managed by the owner and shared with others.
+public struct TodoList has key, store &#123;
+    id: UID,
+    items: vector&lt;String&gt;
+&#125;
+
+&#x2F;&#x2F;&#x2F; Create a new todo list.
+public fun new(ctx: &amp;mut TxContext): TodoList &#123;
+    let list &#x3D; TodoList &#123;
+        id: object::new(ctx),
+        items: vector[]
+    &#125;;
+
+    (list)
+&#125;
+
+&#x2F;&#x2F;&#x2F; Add a new todo item to the list.
+public fun add(list: &amp;mut TodoList, item: String) &#123;
+    list.items.push_back(item);
+&#125;
+
+&#x2F;&#x2F;&#x2F; Remove a todo item from the list by index.
+public fun remove(list: &amp;mut TodoList, index: u64): String &#123;
+    list.items.remove(index)
+&#125;
+
+&#x2F;&#x2F;&#x2F; Delete the list and the capability to manage it.
+public fun delete(list: TodoList) &#123;
+    let TodoList &#123; id, items: _ &#125; &#x3D; list;
+    id.delete();
+&#125;
+
+&#x2F;&#x2F;&#x2F; Get the number of items in the list.
+public fun length(list: &amp;TodoList): u64 &#123;
+    list.items.length()
+&#125;
+构建
+➜  todo_list sui move build                                                                    
+INCLUDING DEPENDENCY Bridge
+INCLUDING DEPENDENCY SuiSystem
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING todo_list
+
+配置Sui CLI
+sui client new-env --alias local --rpc http://127.0.0.1:9000
+sui client switch --env local  #切换本地环境
+启动网络
+➜  ~ RUST_LOG&#x3D;&quot;off,sui_node&#x3D;info&quot; sui start --with-faucet --force-regenesis
+如果不使用–force-regenesis参数，下次启动时会恢复之前的网络状态
+账户地址
+sui client active-address
+测试代币
+sui client faucet # 获取测试代币
+sui client gas #查看账户gas余额
+连接全节点
+可以通过RPC接口与本地网络交互：
+curl --location --request POST 'http://127.0.0.1:9000' \
+--header 'Content-Type: application/json' \
+--data-raw '&#123;
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "sui_getTotalTransactionBlocks",
+  "params": []
+&#125;'
+项目打包
+➜  todo_list sui client publish --gas-budget 100000000
+]]></content>
+      <categories>
+        <category>Sui</category>
+      </categories>
+      <tags>
+        <tag>Sui</tag>
+        <tag>Move</tag>
+        <tag>区块链</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Move语言入门教程Part2：所有权、能力和数据类型详解</title>
+    <url>/2025/11/11/Move%E5%AD%A6%E4%B9%A0-%E5%9F%BA%E7%A1%80part2/</url>
+    <content><![CDATA[Move语言入门教程Part2：所有权、能力和数据类型详解
+简介
+本教程是Move语言入门系列的第二部分，重点介绍Move的核心概念和数据类型。Move作为区块链安全的编程语言，通过独特的所有权系统和能力机制确保资产安全。我们将详细讲解所有权规则、四大能力（copy、drop、store、key）、各种数据类型的使用方法，以及Move的控制流和表达式特性。
+命名规则
+别名必须遵循与模块成员同样的命名规则：对结构体（与常量）的别名必须以大写 A…Z 开头。
+所有权
+copy
+任何具有 copy 能力（ability）的值都可以这样拷贝；若未显式写 move，编译器通常会隐式地执行拷贝。
+let x &#x3D; 0;
+let y &#x3D; copy x + 1;
+let z &#x3D; copy x + 2;
+move
+局部变量
+move 则取走（移动）局部变量中的值，而不复制数据。发生 move 之后，即使该值的类型具备 copy 能力，该局部变量本身也不再可用，此时所有权已经被转移，因此该局部变量已经失效。
+let x &#x3D; 1;
+let y &#x3D; move x + 1;
+&#x2F;&#x2F;      ------ 此处发生了 move
+let z &#x3D; move x + 2; &#x2F;&#x2F; 错误！
+&#x2F;&#x2F;      ^^^^^^ 局部变量 &#96;x&#96; 已被移动，无法再用
+y + z
+函数返回和入参
+如果函数返回局部变量a，那么a的所有权就转移给调用者
+module book::ownership;
+
+public fun owner(): u8 &#123;
+    let a &#x3D; 1; &#x2F;&#x2F; a 在此定义
+    a &#x2F;&#x2F; 作用域结束，a 被返回
+&#125;
+
+#[test]
+fun test_owner() &#123;
+    let a &#x3D; owner();
+    &#x2F;&#x2F; 此处 a 有效
+&#125; &#x2F;&#x2F; a 在此被丢弃
+如果变量a被传值到另外的函数，所有权也会被转移
+module book::ownership;
+
+public fun owner(): u8 &#123;
+    let a &#x3D; 10;
+    a
+&#125; &#x2F;&#x2F; a 被返回
+
+public fun take_ownership(v: u8) &#123;
+    &#x2F;&#x2F; v 归 &#96;take_ownership&#96; 所有
+&#125; &#x2F;&#x2F; v 在此被丢弃
+
+#[test]
+fun test_owner() &#123;
+    let a &#x3D; owner();
+    &#x2F;&#x2F; &#96;u8&#96; 是可复制类型；调用时传 &#96;move a&#96; 可显式转移其所有权
+    take_ownership(move a);
+    &#x2F;&#x2F; 此处 a 已无效
+&#125;
+推断
+未指明 copy / move，编译器会进行推断。规则很简单：
+l 具有 copy 能力的值 → 推断为 copy；
+l 所有引用（不可变 &amp; 与可变 &amp;mut）→ 推断为 copy；
+n 但在某些特殊情形下，为避免可预期的借用检查错误，编译器会把该处改判为 move（发生在引用不再被使用之后）。
+其他一切值 → 推断为 move。
+能力
+copy
+允许具有该能力的类型的值被拷贝（copy）。
+public struct Copyable has copy &#123;&#125;
+
+let a &#x3D; Copyable &#123;&#125;; &#x2F;&#x2F; 允许：因为 Copyable 具有 &#96;copy&#96;
+let b &#x3D; a;           &#x2F;&#x2F; 隐式拷贝：把 a 拷贝到 b
+let c &#x3D; *&b;         &#x2F;&#x2F; 显式拷贝：通过解引用获得一份拷贝
+
+&#x2F;&#x2F; Copyable 不具有 &#96;drop&#96;，因此每个实例（a、b、c）都必须被使用
+&#x2F;&#x2F; 或显式析构；下面用解构来“消耗”它们（防止未使用报错）
+let Copyable &#123;&#125; &#x3D; a;
+let Copyable &#123;&#125; &#x3D; b;
+let Copyable &#123;&#125; &#x3D; c;
+在 Move 中，使用“空花括号的解构”常被用来消费未使用变量，尤其是对不具备 drop 的类型，以避免值在离开作用域时未被显式使用而触发编译错误。同时，Move 在解构时要求写出类型名（如 let Copyable &#123;&#125; = a;），以强化严格的类型与所有权规则。
+所有原生类型（native types）都具备 copy，包括：
+
+bool
+无符号整数
+vector
+address
+
+标准库（std）中的类型也具备 copy，包括：
+
+Option
+String
+TypeName
+
+drop
+允许具有该能力的类型的值被丢弃/弹出（pop/drop）。
+没有drop的话，如果你后续不使用这个结构的变量 ，后续就会报错。所以需要进行解包。
+let Copyable &#123;&#125; &#x3D; a; 
+store
+允许具有该能力的类型的值存在于存储中的某个值内部。
+结构体所有的字段都需要具备store能力，然后具有store能力的结构内所有字段也必须要具备store
+key
+具有 key 能力的 struct 被视为对象，可用于各类存储函数。
+Sui Verifier 要求该 struct 的第一个字段必须命名为 id，类型为 UID。此外，它还要求所有字段都具备 store 能力。
+&#x2F;&#x2F; &#96;User&#96; 对象定义。
+public struct User has key &#123;
+    id: UID,      &#x2F;&#x2F; Sui 字节码验证器要求
+    name: String, &#x2F;&#x2F; 各字段类型须具备 &#96;store&#96;
+&#125;
+
+&#x2F;&#x2F;&#x2F; 创建一个新的 &#96;User&#96; 实例。
+&#x2F;&#x2F;&#x2F; 使用特殊结构体 &#96;TxContext&#96; 派生唯一 ID（UID）。
+public fun new(name: String, ctx: &amp;mut TxContext): User &#123;
+    User &#123;
+        id: object::new(ctx), &#x2F;&#x2F; 生成新的 UID
+        name,
+    &#125;
+&#125;
+UID 类型不具备 drop 或 copy。而任何具备 key 的类型都必须含有一个 UID 字段，因此：具有 key 的类型永远不可能拥有 drop 或 copy。这一性质可用于能力约束：
+
+若约束要求 drop 或 copy，就自动排除了 key；
+反之，若要求 key，就排除了具有 drop 或 copy 的类型。
+
+由于 key 类型强制需要 UID 字段，所有原生类型与标准库类型都不可能具备 key。key 只出现在部分 Sui Framework 类型以及自定义类型中。
+内建类型具有的能力如下所示：
+
+所有原始/内建类型都具有 copy、drop、store：
+bool, u8, u16, u32, u64, u128, u256, address → 具备 copy、drop、store。
+vector 是否具备 copy、drop、store 取决于 T 的能力。
+不可变引用 &amp; 与可变引用 &amp;mut 都具有 copy、drop（指拷贝/丢弃引用自身，而非其指向的值）。
+引用不能出现在全局存储中，因此它们没有 store。
+注意：无原始类型具有 key，也就是说它们不能直接参与顶层存储操作。
+
+Struct/Enum
+因此，当为 struct 声明能力时，所有字段都必须满足下列要求，以确保可达性（reachability）规则成立：
+
+l 若声明 copy，则所有字段都必须具有 copy。
+l 若声明 drop，则所有字段都必须具有 drop。
+l 若声明 store，则所有字段都必须具有 store。
+l 若声明 key，则所有字段都必须具有 store（注意 key 本身对字段不要求 key）。
+
+对 enum，除 key 外，其余能力都可声明（enum 不能作为存储顶层值/对象，因此不能有 key）。同样的字段规则适用于枚举的各变体字段：
+
+l 若枚举声明了 copy，则所有变体的所有字段都必须具有 copy；
+l 声明了 drop → 所有字段都必须有 drop；
+l 声明了 store → 所有字段都必须有 store；
+l key → 不允许用于 enum。
+
+泛型
+当对泛型类型注解能力时，并不保证该类型的所有实例都具备这些能力。考虑如下定义：
+public struct Cup has copy, drop, store, key { item: T }
+我们希望 Cup 能容纳任意类型（不受其能力限制）。类型系统在实例化时可见类型参数，因此当遇到会破坏能力保证的类型实参时，应当“移除”相应能力。
+数据类型
+
+Integer
+
+Move 不支持溢出/下溢
+数值字面量可以直接写成数字序列（如 112），也可以写成十六进制字面量（如 0xFF）。
+
+数字字面量可以使用下划线分组以增强可读性（例如 1_234_5678、1_000u128、0xAB_CD_12_35）。
+
+
+
+Address
+&#x2F;&#x2F; address 字面量
+let value: address &#x3D; @0x1;
+
+&#x2F;&#x2F; 在 Move.toml 中注册过的命名地址
+let value &#x3D; @std;
+let other &#x3D; @sui;
+Struct
+定义结构体
+结构体使用
+
+
+销毁结构体：
+Move 的哲学是安全第一：如果你要拆开一个结构体，就默认是想移动（销毁）它，以确保原结构体不再持有任何悬空的数据。
+module a::m;
+
+public struct Foo &#123; x: u64, y: bool &#125;
+public struct Bar(Foo)
+public struct Baz &#123;&#125;
+public struct Qux()
+
+fun example_destroy_foo() &#123;
+    let foo &#x3D; Foo &#123; x: 3, y: false &#125;;
+    let Foo &#123; x, y: foo_y &#125; &#x3D; foo;
+    &#x2F;&#x2F;        ^ 等价于 &#96;x: x&#96;
+    &#x2F;&#x2F; 新绑定：x: u64 &#x3D; 3, foo_y: bool &#x3D; false
+&#125;
+
+
+这里因为Foo没有实现copy能力，所以在这个解构的过程中会被move
+
+
+字段读：
+let foo &#x3D; Foo &#123; x: 3, y: true &#125;;
+let bar &#x3D; Bar(copy foo);
+let x: u64 &#x3D; *&amp;foo.x;
+let y: bool &#x3D; *&amp;foo.y;
+let foo2: Foo &#x3D; *&amp;bar.0;
+直接使用点号需要字段有copy能力,
+let foo &#x3D; Foo &#123; x: 3, y: true &#125;;
+let x &#x3D; foo.x;
+let y &#x3D; foo.y;
+没有或者字段是非原始类型（结构体或者vec），就会报错
+let foo &#x3D; Foo &#123; x: 3, y: true &#125;;
+let bar &#x3D; Bar(foo);
+let foo2: Foo &#x3D; *&amp;bar.0; &#x2F;&#x2F; OK
+let foo3: Foo &#x3D; bar.0;   &#x2F;&#x2F; 错误：应显式复制 *&amp;
+
+
+字段写：
+需要可变借用后赋值
+let mut foo &#x3D; Foo &#123; x: 3, y: true &#125;;
+*&amp;mut foo.x &#x3D; 42;     &#x2F;&#x2F; Foo &#123; x: 42, y: true &#125;
+*&amp;mut foo.y &#x3D; !foo.y; &#x2F;&#x2F; Foo &#123; x: 42, y: false &#125;
+let mut bar &#x3D; Bar(foo);               &#x2F;&#x2F; Bar(Foo &#123; x: 42, y: false &#125;)
+*&amp;mut bar.0.x &#x3D; 52;                   &#x2F;&#x2F; Bar(Foo &#123; x: 52, y: false &#125;)
+*&amp;mut bar.0 &#x3D; Foo &#123; x: 62, y: true &#125;; &#x2F;&#x2F; Bar(Foo &#123; x: 62, y: true &#125;)
+直接使用点号修改需要字段有drop能力
+let mut foo &#x3D; Foo &#123; x: 3, y: true &#125;;
+foo.x &#x3D; 42;
+foo.y &#x3D; !foo.y;
+let mut bar &#x3D; Bar(foo);
+bar.0.x &#x3D; 52;
+bar.0 &#x3D; Foo &#123; x: 62, y: true &#125;;
+或者结构体的可变引用
+let mut foo &#x3D; Foo &#123; x: 3, y: true &#125;;
+let foo_ref &#x3D; &amp;mut foo;
+foo_ref.x &#x3D; foo_ref.x +1;
+
+
+枚举
+枚举（enum）是包含一个或多个变体（variant）的用户自定义数据结构。每个变体可可选地携带带类型的字段；不同变体的字段数量与类型彼此可以不同。枚举中的字段可以存放除“引用”和“元组”以外的任何类型，包括其他结构体或枚举。
+与结构体类似，枚举也可以带有能力（abilities）来控制其可执行的操作。但需要注意：枚举不能拥有 key 能力（因为它们不能作为顶层对象存在）。
+枚举不允许递归
+覆盖枚举值
+只要枚举具备 drop 能力，就可以像其他值一样，用同类型的新值覆盖它：
+module a::m;
+
+public enum X has drop &#123;
+    A(u64),
+    B(u64),
+&#125;
+
+public fun overwrite_enum(x: &amp;mut X) &#123;
+    *x &#x3D; X::A(10);
+&#125;
+
+let mut x &#x3D; X::B(20);
+overwrite_enum(&amp;mut x);
+assert!(x &#x3D;&#x3D; X::A(10));
+引用
+不可变引用与可变引用都可以读取，读取将产生其指向值的一份拷贝。为了允许读取引用，底层类型必须具备 copy 能力，因为读取会创建一份新拷贝。该规则可防止资产被复制。
+所有权与复制
+不可变引用与可变引用都可以用来复制与拓展，只是已经存在其他副本或拓展
+fun reference_copies(s: &amp;mut S) &#123;
+  let s_copy1 &#x3D; s;        &#x2F;&#x2F; OK：复制引用
+  let s_extension &#x3D; &amp;mut s.f; &#x2F;&#x2F; OK：在引用上扩展字段引用
+  let s_copy2 &#x3D; s;        &#x2F;&#x2F; 仍然 OK
+  ...
+&#125;
+引用不可存储
+和rust不一样，引用和元祖是不能作为结构体字段存储的类型
+Option
+表示值可能存在也可能不存在的类型
+String
+Move 没有内建的字符串类型，但标准库提供了两种实现：
+
+std::string 模块中的 String（UTF-8 字符串）；
+std::ascii 模块中的 ASCII 字符串。
+
+在 Sui 执行环境中，交易输入里的字节向量会自动转换为 String。因此，在许多场景下无需在交易块中手动构造 String。
+std::string
+虽然有 string 与 ascii 两种字符串，默认推荐使用 std::string。它的许多操作由底层原生实现，性能更好；而 std::ascii 完全用 Move 实现，更偏高层抽象，不太适合性能敏感场景。
+创建 String
+常用操作
+let mut str &#x3D; b&quot;Hello,&quot;.to_string();
+let another &#x3D; b&quot; World!&quot;.to_string();
+
+&#x2F;&#x2F; 追加：把另一字符串接到末尾
+str.append(another);
+
+&#x2F;&#x2F; 切片拷贝：sub_string(start, end)
+str.sub_string(0, 5);         &#x2F;&#x2F; &quot;Hello&quot;
+
+&#x2F;&#x2F; 字节长度（注意：是字节数而非“字符数”）
+str.length();                  &#x2F;&#x2F; 12
+
+&#x2F;&#x2F; 链式调用：取子串再看长度
+str.sub_string(0, 5).length(); &#x2F;&#x2F; 5
+
+&#x2F;&#x2F; 判空
+str.is_empty();                &#x2F;&#x2F; false
+
+&#x2F;&#x2F; 取底层字节向量做自定义处理
+let bytes: &amp;vector&lt;u8&gt; &#x3D; str.bytes();
+强制类型转换
+move支持在整数类型之间进行显式类型转换：
+let x: u8 &#x3D; 42;
+let y: u16 &#x3D; x as u16;
+let z &#x3D; 2 * (x as u16); &#x2F;&#x2F; ambiguous, requires parentheses
+一个更复杂的示例，可以用于防止溢出：
+let x: u8 &#x3D; 255;
+let y: u8 &#x3D; 255;
+let z: u16 &#x3D; (x as u16) + ((y as u16) * 2);
+泛型
+声明类型参数
+类型实参
+类型参数约束
+变量
+Move 使用 let 将变量名与值绑定：不能以大写字母开头。局部变量的类型通常可由 Move 的类型系统自动推断。但你也可以显式标注以提升可读性/可调试性。
+当类型实参无法被推断时需要注解。最常见的是泛型类型的类型参数无法推断：
+let _v1 = vector[];       // ERROR!//     ^^^^^^^^ 无法推断元素类型；需要添加注解let v2: vector = vector[]; // OK
+解构
+元组解构
+let 可以通过元组一次引入多个局部变量。括号内的各局部变量会以元组右侧对应位置的值初始化：
+常量
+常量是在模块内部为共享的静态值起名的一种方式。
+常量的取值必须在编译期可知。该值被存入已编译模块中；每次使用常量都会拷贝一份该值。
+public 或 public(package) 暂不支持用于常量。const 值仅能在其声明的模块内使用。不过，作为便利，在单元测试属性（unit test attributes）中可以跨模块使用。
+声明
+const :  = ;
+流程控制
+循环
+循环允许你为函数体中的某个位置定义标签并转移控制流。例如，我们可以嵌套两个循环，并通过带标签的 break/continue 精确指定控制流。给任意 loop 或 while 前加 'label: 前缀，就可以直接跳转到该处进行 break 或 continue。
+ fun sum_until_threshold(input: &amp;vector&lt;vector&lt;u64&gt;&gt;, threshold: u64): u64 &#123;
+    let mut sum &#x3D; 0;
+    let mut i &#x3D; 0;
+    let input_size &#x3D; input.length();
+
+    &#39;outer: loop &#123;
+        &#x2F;&#x2F; 跳出到 outer，因为它是最近的包围循环
+        if (i &gt;&#x3D; input_size) break sum;
+
+        let vec &#x3D; &amp;input[i];
+        let size &#x3D; vec.length();
+        let mut j &#x3D; 0;
+
+        while (j &lt; size) &#123;
+            let v_entry &#x3D; vec[j];
+            if (sum + v_entry &lt; threshold) &#123;
+                sum &#x3D; sum + v_entry;
+            &#125; else &#123;
+                &#x2F;&#x2F; 下一个元素会使总和越过阈值，
+                &#x2F;&#x2F; 因此返回当前 sum
+                break &#39;outer sum
+            &#125;;
+            j &#x3D; j + 1;
+        &#125;;
+        i &#x3D; i + 1;
+    &#125;
+&#125;
+也适用于更大的代码中的多层循环
+let x &#x3D; &#39;outer: loop &#123;
+    ...
+    &#39;inner: while (cond) &#123;
+        ...
+        if (cond0) &#123; break &#39;outer value &#125;;
+        ...
+        if (cond1) &#123; continue &#39;inner &#125;
+        else if (cond2) &#123; continue &#39;outer &#125;
+        ...
+    &#125;
+        ...
+&#125;;
+表达式
+1. 表达式的本质与串联
+
+Move 的哲学： 在 Move 中，几乎一切都是表达式（let 语句除外，它是声明）。这意味着大多数代码片段都会产生一个值。
+代码块与分号： 代码块 &#123;&#125; 的值是块内 最后一个 表达式的值（不能以分号 ; 结尾）。如果用分号串联表达式，或块内以分号结束，则该表达式/块的值为 单位值 ()。
+
+2. 算术运算的安全性（Abort 优先）
+
+严格类型一致： 算术运算（+, -, *, %, /）的操作数必须是相同类型，否则需要显式转换（cast）。
+强制中止（Abort）： Move 不会产生未定义或环绕结果。任何不符合“数学意义上的整数”的结果（例如 溢出、下溢、被零除）都会触发 中止（Abort），即交易失败并回滚。这是 Move 安全性的重要体现。
+
+3. 位运算和位移运算的特点
+
+位运算（&amp;, |, ^）： 纯粹的比特序列操作，不会触发中止。
+位移运算（&lt;&lt;, &gt;&gt;）： 右操作数（位移位数）必须是 u8。当位移位数 大于等于 该整数类型的位宽时，会触发 中止（例如 u64 位移 ≥ 64 位时中止）。
+
+4. 相等性（== / !=）的核心约束
+
+类型严格一致： 相等运算要求两侧操作数的 类型必须完全相同。
+资源的“销毁”语义： 直接对 值 进行相等比较（例如 c1 == c2，而不是引用）会消耗掉这两个值（类似于被 销毁）。因此，被比较的类型必须具备 drop 能力，否则会报错。
+引用比较的宽松性： 在比较引用时，引用的 可变性（&amp; 或 &amp;mut）不影响比较结果，行为等价于对 &amp;mut 显式应用 freeze（前提是底层类型一致）。
+自动借用（Move 2024+）： 当一侧是引用而另一侧不是时，编译器会自动将非引用一侧 不可变借用（&amp;） 后再进行比较。
+
+5. 地址字面量和数值推断
+
+地址字面量（@）： 在表达式中使用地址时，必须以 @ 开头（例如 @0x1, @std）。在非表达式上下文（如模块声明）中则不用 @。
+数值类型推断： 未显式标注类型后缀的数字字面量，编译器会尝试从上下文推断；如果无法推断，默认视为 u64。
+
+6. 避免不必要的拷贝（性能优化）
+
+最佳实践： 尽管拥有 drop 能力的值可以直接比较，但对于大型数据结构（如 vector&lt;u8&gt; 或大型 struct），为了避免昂贵的 copy 操作，强烈建议使用引用（&amp;）进行比较。
+
+函数
+若要允许从其他模块访问，需将函数声明为 public 或 public(package)。与可见性相关的，还有 entry 修饰符：它决定函数是否能作为执行入口被调用。
+entry 修饰符
+除了 public 函数外，有些函数希望作为执行入口触发。entry 允许模块函数作为程序的起始点，而无需对其他模块公开。
+本质上，public 与 entry 的组合定义了模块的“主函数”（可作为程序起点）。注意：entry 函数依旧可以被其他 Move 函数调用，它并不只限于“起点”用途。
+macro 修饰符
+宏函数不同于普通函数：它们在编译期于调用点内联展开，不存在于运行时。
+macro fun n_times($n: u64, $body: |u64| -&gt; ()) &#123;
+    let n &#x3D; $n;
+    let mut i &#x3D; 0;
+    while (i &lt; n) &#123;
+        $body(i);
+        i &#x3D; i + 1;
+    &#125;
+&#125;
+
+fun example() &#123;
+    let mut sum &#x3D; 0;
+    n_times!(10, |x| sum &#x3D; sum + x );
+&#125; 
+方法函数
+方法函数
+索引语法
+]]></content>
+      <categories>
+        <category>Sui</category>
+      </categories>
+      <tags>
+        <tag>Sui</tag>
+        <tag>Move</tag>
+        <tag>区块链</tag>
       </tags>
   </entry>
   <entry>
@@ -1185,9 +1546,9 @@ Orca作为Solana生态的核心基础设施，不仅展示了Rust在高性能DeF
       <tags>
         <tag>Solana</tag>
         <tag>DEX</tag>
-        <tag>Rust</tag>
         <tag>DeFi</tag>
         <tag>AMM</tag>
+        <tag>Rust</tag>
         <tag>Orca</tag>
         <tag>Whirlpool</tag>
       </tags>
@@ -3782,342 +4143,6 @@ pub fn take_ownership(s: &amp;String) -> &amp;String &#123;
       </tags>
   </entry>
   <entry>
-    <title>Rust进阶[part1]_智能指针概述&amp;box指针</title>
-    <url>/2025/07/18/Rust%E8%BF%9B%E9%98%B6-part1-%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E6%A6%82%E8%BF%B0-box%E6%8C%87%E9%92%88/</url>
-    <content><![CDATA[Rust进阶[part1]_智能指针概述&amp;box指针
-智能指针概述
-在Rust中，智能指针是一类特殊的数据结构，它们不仅像普通指针一样可以引用数据，还带有额外的元数据和功能。与普通指针不同，智能指针通常使用结构体实现，并且会实现 Deref 和 Drop 等特定的trait，以提供更强大的功能和更安全的内存管理。
-智能指针在Rust编程中扮演着重要的角色，它们能够帮助开发者处理复杂的内存管理场景，确保程序的安全性和性能。例如，在处理动态大小的数据、递归数据结构或者需要自定义资源释放逻辑时，智能指针就显得尤为重要。
-Box指针
-内存分配到堆上
-在Rust中，栈内存的分配和释放是自动且高效的，但栈空间是有限的。对于一些大型的数据结构或者需要在运行时动态确定大小的数据，将其存储在栈上可能会导致栈溢出。这时，我们可以使用 Box 指针将数据分配到堆上。
-Box 是Rust标准库中最基本的智能指针之一，它允许我们在堆上分配内存，并将数据存储在其中。通过 Box 指针，我们可以在栈上存储一个指向堆上数据的引用，从而实现对堆上数据的访问。
-以下是一个简单的示例，展示了如何使用 Box 将一个整数分配到堆上：
-fn main() &#123;
-    let boxed_int = Box::new(42);
-    println!("The value inside the box is: &#123;&#125;", *boxed_int);
-&#125;
-在这个示例中，Box::new(42) 创建了一个 Box 指针，它指向堆上存储的整数 42。
-通过解引用运算符 *，我们可以访问堆上的数据。
-允许处理动态大小类型（DST）
-Rust中的动态大小类型（DST）是指在编译时无法确定大小的数据类型，例如切片（[T]）和特征对象（dyn Trait）。
-由于栈上的内存分配需要在编译时确定大小，因此无法直接将DST存储在栈上。而 Box 指针可以用于存储DST，因为它会在堆上分配内存，从而避免了栈上内存分配的限制。
-以下是一个使用 Box 存储切片的示例：
-fn main() &#123;
-    let slice: &amp;[i32] = &amp;[1, 2, 3];
-    let boxed_slice: Box&lt;[i32]> = Box::from(slice);
-    println!("The boxed slice contains: &#123;:?&#125;", boxed_slice);
-&#125;
-在这个示例中，我们首先创建了一个切片 slice，然后使用 Box::from 方法将其转换为 Box&lt;[i32]&gt; 类型，从而将切片存储在堆上。
-
-// 允许处理动态大小类型，比如结构体和元组
-let boxed_tuple = Box::new((String::from("hello"), 5));
-println!("Boxed tuple: &#123;:?&#125;", boxed_tuple);
-
-递归数据结构
-递归数据结构是指包含自身类型的成员的结构体或枚举。由于递归数据结构的大小在编译时无法确定，因此无法直接将其存储在栈上。Box 指针可以用于解决这个问题，通过在递归数据结构中使用 Box 指针，我们可以将递归成员存储在堆上，从而避免栈溢出的问题。
-以下是一个使用 Box 实现链表节点的示例：
-#[derive(Debug)]
-enum List &#123;
-    Cons(i32, Box&lt;List>),
-    Nil,
-&#125;
-
-fn main() &#123;
-    let list = List::Cons(1, Box::new(List::Cons(2, Box::new(List::Nil))));
-    println!("The list is: &#123;:?&#125;", list);
-&#125;
-在这个示例中，List 枚举表示一个链表，其中 Cons 变体包含一个整数和一个指向另一个 List 节点的 Box 指针。通过使用 Box 指针，我们可以创建一个递归的链表结构。
-类型擦除
-类型擦除是指在编译时隐藏具体的类型信息，只保留类型的共性。在Rust中，我们可以使用 Box&lt;dyn Trait&gt; 来实现类型擦除。Box&lt;dyn Trait&gt; 是一个特征对象，它可以存储任何实现了指定特征的类型的值。
-以下是一个使用 Box&lt;dyn Trait&gt; 实现类型擦除的示例：
-trait Draw &#123;
-    fn draw(&amp;self);
-&#125;
-
-struct Circle;
-impl Draw for Circle &#123;
-    fn draw(&amp;self) &#123;
-        println!("Drawing a circle");
-    &#125;
-&#125;
-
-struct Square;
-impl Draw for Square &#123;
-    fn draw(&amp;self) &#123;
-        println!("Drawing a square");
-    &#125;
-&#125;
-
-fn main() &#123;
-    let shapes: Vec&lt;Box&lt;dyn Draw>> = vec![
-        Box::new(Circle),
-        Box::new(Square),
-    ];
-
-    for shape in shapes &#123;
-        shape.draw();
-    &#125;
-&#125;
-在这个示例中，我们定义了一个 Draw 特征，并为 Circle 和 Square 结构体实现了该特征。然后，我们创建了一个 Vec&lt;Box&lt;dyn Draw&gt;&gt; 类型的向量，其中存储了 Circle 和 Square 的实例。通过使用 Box&lt;dyn Draw&gt;，我们实现了类型擦除，使得向量可以存储不同类型的形状。
-内存管理和性能优化
-Box 指针在内存管理方面具有重要的作用。当 Box 指针离开作用域时，Rust会自动调用其 Drop 实现，从而释放堆上分配的内存。这种自动内存管理机制确保了内存的安全性，避免了内存泄漏的问题。
-在性能方面，由于 Box 指针涉及到堆上的内存分配和释放，因此会比栈上的内存分配和释放稍微慢一些。但是，对于需要动态分配内存或者处理动态大小类型的场景，使用 Box 指针是必要的。在实际编程中，我们应该根据具体的需求和性能要求来选择合适的内存分配方式。
-box的优缺点
-优点
-
-动态内存分配：允许在运行时动态分配内存，处理大型数据结构和动态大小类型。
-递归数据结构支持：可以用于实现递归数据结构，避免栈溢出的问题。
-类型擦除：支持类型擦除，使得代码更加灵活和可复用。
-自动内存管理：Rust的所有权系统确保了 Box 指针离开作用域时，堆上的内存会被自动释放，避免了内存泄漏。
-
-缺点
-
-性能开销：堆上的内存分配和释放比栈上的内存分配和释放稍微慢一些，可能会影响性能。
-额外的间接访问：使用 Box 指针需要通过指针进行间接访问，可能会增加一定的开销。
-
-Drop Trait
-Drop trait 用于自定义当值离开作用域时执行的代码，通常用于释放资源，例如内存、文件句柄、网络连接等。当一个实现了 Drop trait 的值离开作用域时，Rust会自动调用其 drop 方法。
-以下是一个简单的示例，展示了如何实现 Drop trait：
-struct CustomSmartPointer &#123;
-    data: String,
-&#125;
-
-impl Drop for CustomSmartPointer &#123;
-    fn drop(&amp;mut self) &#123;
-        println!("Dropping CustomSmartPointer with data `&#123;&#125;`!", self.data);
-    &#125;
-&#125;
-
-fn main() &#123;
-    let c = CustomSmartPointer &#123; data: String::from("my stuff") &#125;;
-    let d = CustomSmartPointer &#123; data: String::from("other stuff") &#125;;
-    println!("CustomSmartPointers created.");
-&#125;
-在这个示例中，我们定义了一个 CustomSmartPointer 结构体，并为其实现了 Drop trait。当 c 和 d 离开作用域时，Rust会自动调用它们的 drop 方法，打印出相应的信息。
-Deref Trait
-Deref trait 用于重载解引用运算符（*），允许我们自定义指针类型的解引用行为。通过实现 Deref trait，我们可以让自定义的智能指针像普通指针一样使用解引用运算符。
-Deref trait 定义了一个 deref 方法，该方法返回一个指向内部数据的引用。
-以下是一个简单的示例，展示了如何实现 Deref trait：
-use std::ops::Deref;
-
-struct MyBox&lt;T>(T);
-
-impl&lt;T> MyBox&lt;T> &#123;
-    fn new(x: T) -> MyBox&lt;T> &#123;
-        MyBox(x)
-    &#125;
-&#125;
-
-impl&lt;T> Deref for MyBox&lt;T> &#123;
-    type Target = T;
-
-    fn deref(&amp;self) -> &amp;Self::Target &#123;
-        &amp;self.0
-    &#125;
-&#125;
-
-fn main() &#123;
-    let x = 5;
-    let y = MyBox::new(x);
-
-    assert_eq!(5, x);
-    assert_eq!(5, *y);
-&#125;
-在这个示例中，我们定义了一个 MyBox 结构体，并为其实现了 Deref trait。通过实现 deref 方法，我们可以使用解引用运算符 * 来访问 MyBox 内部的数据。
-练习
-1. 创建一个大型数组并将其分配在堆上，然后测量和比较分配在堆和栈上的性能差异。
-使用instant::now() ; 以及elapsed()
-use std::time::Instant;
-
-const ARRAY_SIZE: usize = 1000000;
-
-fn main() &#123;
-    // 测量栈上分配的时间
-    let start_stack = Instant::now();
-    let _stack_array: [i32; ARRAY_SIZE] = [0; ARRAY_SIZE];
-    let stack_duration = start_stack.elapsed();
-
-    // 测量堆上分配的时间
-    let start_heap = Instant::now();
-    let _heap_array: Box&lt;[i32]> = vec![0; ARRAY_SIZE].into_boxed_slice();
-    let heap_duration = start_heap.elapsed();
-
-    println!("Stack allocation time: &#123;:?&#125;", stack_duration);
-    println!("Heap allocation time: &#123;:?&#125;", heap_duration);
-&#125;
-2. 创建一个包含1_000_000个元素的数据，分别将其分配在堆和栈上。使用std::time::Instant来测量分配和访问时间。
-use std::time::Instant;
-
-const ELEMENT_COUNT: usize = 1_000_000;
-
-fn main() &#123;
-    // 栈上分配
-    let start_stack_alloc = Instant::now();
-    let stack_data: [i32; ELEMENT_COUNT] = [0; ELEMENT_COUNT];
-    let stack_alloc_time = start_stack_alloc.elapsed();
-
-    let start_stack_access = Instant::now();
-    for i in 0..ELEMENT_COUNT &#123;
-        let _ = stack_data[i];
-    &#125;
-    let stack_access_time = start_stack_access.elapsed();
-
-    // 堆上分配
-    let start_heap_alloc = Instant::now();
-    let heap_data: Box&lt;[i32]> = vec![0; ELEMENT_COUNT].into_boxed_slice();
-    let heap_alloc_time = start_heap_alloc.elapsed();
-
-    let start_heap_access = Instant::now();
-    for i in 0..ELEMENT_COUNT &#123;
-        let _ = heap_data[i];
-    &#125;
-    let heap_access_time = start_heap_access.elapsed();
-
-    println!("Stack allocation time: &#123;:?&#125;", stack_alloc_time);
-    println!("Stack access time: &#123;:?&#125;", stack_access_time);
-    println!("Heap allocation time: &#123;:?&#125;", heap_alloc_time);
-    println!("Heap access time: &#123;:?&#125;", heap_access_time);
-&#125;
-通过以上练习，我们可以更深入地了解 Box 指针在堆上分配内存的性能特点，以及与栈上分配的差异。
-3. 实现一个简单的文件系统模拟
-目标
-实现一个简单的文件系统模拟，其中包含文件和文件夹的概念。文件夹可以包含文件和其他文件夹。使用 Box 来管理内存，并实现对文件系统的基本操作（如创建文件、创建文件夹、列出文件和文件夹）。
-作业要求
-
-
-定义 FileSystem trait 和 Node 枚举
-
-FileSystem trait 包含 create_file、create_folder 和 list_contents 方法。
-Node 枚举包含 File 和 Folder 变体。
-
-
-
-实现 FolderNode 结构体
-
-FolderNode 实现 FileSystem trait，包含 name 和 contents 字段。
-使用 Box 管理 contents 中的子节点。
-
-
-
-实现文件系统的基本操作
-
-create_file 方法在文件夹中创建文件。
-create_folder 方法在文件夹中创建子文件夹。
-list_contents 方法列出文件夹的所有内容。
-
-
-
-测试文件系统的操作
-
-创建根文件夹并添加文件和文件夹。
-创建子文件夹并添加文件。
-列出文件夹的内容并输出文件系统结构。
-
-
-
-提示
-
-使用 Box 来管理 Folder 中的子节点。
-使用递归方法来遍历和列出文件和文件夹的内容。
-考虑使用 Vec 来存储文件夹的子节点。
-
-/**
- * ---------------文件系统----------------------------
- */
-// 节点枚举 用来区分文件夹还是文件，文件夹通过box包装来避免递归类型的大小歧义
-// 定义 Node 枚举：包含文件（File）和文件夹（Folder）两种变体
-#[derive(Debug)]
-enum Node &#123;
-    File(String),            // 文件：存储文件名
-    Folder(Box&lt;FolderNode>), // 文件夹：存储 FolderNode 的 Box（避免递归结构的大小问题）
-&#125;
-
-// 定义 FileSystem trait：包含文件系统的核心操作
-trait FileSystem &#123;
-    fn create_file(&amp;mut self, name: String); // 在当前文件夹创建文件
-    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self; // 在当前文件夹创建子文件夹（返回子文件夹引用以便链式操作）
-    fn list_contents(&amp;self, indent: &amp;str); // 列出当前文件夹内容（带缩进，方便展示结构）
-&#125;
-
-// 定义 FolderNode 结构体：表示文件夹节点
-#[derive(Debug)]
-struct FolderNode &#123;
-    name: String,        // 文件夹名称
-    contents: Vec&lt;Node>, // 存储子节点（文件或文件夹）
-&#125;
-
-// 为 FolderNode 实现 FileSystem trait
-impl FileSystem for FolderNode &#123;
-    // 1. 创建文件：向 contents 添加 File 节点
-    fn create_file(&amp;mut self, name: String) &#123;
-        self.contents.push(Node::File(name));
-    &#125;
-
-    // 2. 创建子文件夹：向 contents 添加 Folder 节点，并返回子文件夹的可变引用
-    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self &#123;
-        // 新建子文件夹节点
-        let new_folder = FolderNode &#123;
-            name: name.clone(),
-            contents: Vec::new(),
-        &#125;;
-        // 将子文件夹包装为 Box 并加入 contents
-        self.contents.push(Node::Folder(Box::new(new_folder)));
-
-        // 找到刚添加的子文件夹并返回其可变引用（通过 last_mut 确保是最后一个元素）
-        match self.contents.last_mut() &#123;
-            Some(Node::Folder(folder_box)) => &amp;mut **folder_box,
-            _ => panic!("创建文件夹失败：逻辑错误"), // 理论上不会触发
-        &#125;
-    &#125;
-
-    // 3. 列出内容：递归遍历子节点，带缩进展示结构
-    fn list_contents(&amp;self, indent: &amp;str) &#123;
-        // 打印当前文件夹名称
-        println!("&#123;&#125;&#123;&#125;", indent, self.name);
-        // 遍历子节点
-        for node in &amp;self.contents &#123;
-            match node &#123;
-                Node::File(file_name) => println!("&#123;&#125;&#123;&#125;", indent, file_name), // 打印文件
-                Node::Folder(folder) => folder.list_contents(&amp;format!("&#123;&#125;  ", indent)), // 递归打印子文件夹（增加缩进）
-            &#125;
-        &#125;
-    &#125;
-&#125;
-
-// 测试代码：创建文件系统并执行操作
-#[test]
-fn test_file_system() &#123;
-    // 1. 创建根文件夹
-    let mut root = FolderNode &#123;
-        name: "Root".to_string(),
-        contents: Vec::new(),
-    &#125;;
-
-    // 2. 根文件夹操作：创建文件 + 子文件夹
-    root.create_file("file1.txt".to_string()); // 根目录创建文件
-    let mut sub1 = root.create_folder("sub1".to_string()); // 根目录创建子文件夹 sub1
-    sub1.create_file("subfile1.txt".to_string()); // 在 sub1 中创建文件
-
-    // 3. 子文件夹嵌套操作
-    let mut sub2 = root.create_folder("sub2".to_string()); // 根目录创建子文件夹 sub2
-    let mut subsub2 = sub2.create_folder("subsub2".to_string()); // 在 sub2 中创建子文件夹 subsub2
-    subsub2.create_file("deepfile.txt".to_string()); // 在 subsub2 中创建文件
-
-    // 4. 列出根文件夹内容（从空缩进开始）
-    println!("文件系统结构：");
-    root.list_contents("");
-&#125;
-
-]]></content>
-      <categories>
-        <category>Rust</category>
-      </categories>
-      <tags>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Rust基础[part9]_返回值和错误处理、模块化</title>
     <url>/2025/07/16/Rust%E5%9F%BA%E7%A1%80%5Bpart9%5D_%E8%BF%94%E5%9B%9E%E5%80%BC%E5%92%8C%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86%E3%80%81%E6%A8%A1%E5%9D%97%E5%8C%96/</url>
     <content><![CDATA[Rust基础[part9]_返回值和错误处理、模块化
@@ -4624,591 +4649,333 @@ members = ["course","lib_add","lib_divide"]
       </tags>
   </entry>
   <entry>
-    <title>Rust进阶[part10]_并发-概念、线程、通信、共享内存</title>
-    <url>/2025/08/01/Rust%E8%BF%9B%E9%98%B6-part10-%E5%B9%B6%E5%8F%91-%E6%A6%82%E5%BF%B5%E3%80%81%E7%BA%BF%E7%A8%8B%E3%80%81%E9%80%9A%E4%BF%A1/</url>
-    <content><![CDATA[Rust进阶[part10]_并发
-基本概述
-在Rust中，通过std::thread::spawn函数可以创建新线程，该函数接收一个闭包作为参数，闭包中包含线程要执行的代码。
-基础线程创建
-子线程的生命周期依赖于主线程：当主线程结束时，无论子线程是否执行完毕，都会被强制终止。
-use std::thread;
-use std::time::Duration;
+    <title>Rust进阶[part1]_智能指针概述&amp;box指针</title>
+    <url>/2025/07/18/Rust%E8%BF%9B%E9%98%B6-part1-%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E6%A6%82%E8%BF%B0-box%E6%8C%87%E9%92%88/</url>
+    <content><![CDATA[Rust进阶[part1]_智能指针概述&amp;box指针
+智能指针概述
+在Rust中，智能指针是一类特殊的数据结构，它们不仅像普通指针一样可以引用数据，还带有额外的元数据和功能。与普通指针不同，智能指针通常使用结构体实现，并且会实现 Deref 和 Drop 等特定的trait，以提供更强大的功能和更安全的内存管理。
+智能指针在Rust编程中扮演着重要的角色，它们能够帮助开发者处理复杂的内存管理场景，确保程序的安全性和性能。例如，在处理动态大小的数据、递归数据结构或者需要自定义资源释放逻辑时，智能指针就显得尤为重要。
+Box指针
+内存分配到堆上
+在Rust中，栈内存的分配和释放是自动且高效的，但栈空间是有限的。对于一些大型的数据结构或者需要在运行时动态确定大小的数据，将其存储在栈上可能会导致栈溢出。这时，我们可以使用 Box 指针将数据分配到堆上。
+Box 是Rust标准库中最基本的智能指针之一，它允许我们在堆上分配内存，并将数据存储在其中。通过 Box 指针，我们可以在栈上存储一个指向堆上数据的引用，从而实现对堆上数据的访问。
+以下是一个简单的示例，展示了如何使用 Box 将一个整数分配到堆上：
+fn main() &#123;
+    let boxed_int = Box::new(42);
+    println!("The value inside the box is: &#123;&#125;", *boxed_int);
+&#125;
+在这个示例中，Box::new(42) 创建了一个 Box 指针，它指向堆上存储的整数 42。
+通过解引用运算符 *，我们可以访问堆上的数据。
+允许处理动态大小类型（DST）
+Rust中的动态大小类型（DST）是指在编译时无法确定大小的数据类型，例如切片（[T]）和特征对象（dyn Trait）。
+由于栈上的内存分配需要在编译时确定大小，因此无法直接将DST存储在栈上。而 Box 指针可以用于存储DST，因为它会在堆上分配内存，从而避免了栈上内存分配的限制。
+以下是一个使用 Box 存储切片的示例：
+fn main() &#123;
+    let slice: &amp;[i32] = &amp;[1, 2, 3];
+    let boxed_slice: Box&lt;[i32]> = Box::from(slice);
+    println!("The boxed slice contains: &#123;:?&#125;", boxed_slice);
+&#125;
+在这个示例中，我们首先创建了一个切片 slice，然后使用 Box::from 方法将其转换为 Box&lt;[i32]&gt; 类型，从而将切片存储在堆上。
+
+// 允许处理动态大小类型，比如结构体和元组
+let boxed_tuple = Box::new((String::from("hello"), 5));
+println!("Boxed tuple: &#123;:?&#125;", boxed_tuple);
+
+递归数据结构
+递归数据结构是指包含自身类型的成员的结构体或枚举。由于递归数据结构的大小在编译时无法确定，因此无法直接将其存储在栈上。Box 指针可以用于解决这个问题，通过在递归数据结构中使用 Box 指针，我们可以将递归成员存储在堆上，从而避免栈溢出的问题。
+以下是一个使用 Box 实现链表节点的示例：
+#[derive(Debug)]
+enum List &#123;
+    Cons(i32, Box&lt;List>),
+    Nil,
+&#125;
 
 fn main() &#123;
-    // 创建子线程
-    thread::spawn(|| &#123;
-        for i in 1..10 &#123;
-            println!("spawn thread: &#123;&#125;", i);
-            thread::sleep(Duration::from_millis(1)); // 模拟耗时操作
-        &#125;
-    &#125;);
-
-    // 主线程逻辑
-    for i in 1..5 &#123;
-        println!("main thread: &#123;&#125;", i);
-        thread::sleep(Duration::from_millis(1));
-    &#125;
+    let list = List::Cons(1, Box::new(List::Cons(2, Box::new(List::Nil))));
+    println!("The list is: &#123;:?&#125;", list);
 &#125;
-输出结果（可能因调度顺序略有不同）：
-main thread: 1
-spawn thread: 1
-main thread: 2
-spawn thread: 2
-main thread: 3
-spawn thread: 3
-main thread: 4
-spawn thread: 4
-spawn thread: 5  &#x2F;&#x2F; 主线程已结束，子线程可能被中断
-等待线程完成：JoinHandle
-通过thread::spawn返回的JoinHandle类型，可以让主线程等待子线程执行完毕。调用join方法会阻塞当前线程，直到子线程完成。
-use std::thread;
-use std::time::Duration;
-
-fn main() &#123;
-    // 获取子线程的JoinHandle
-    let handle = thread::spawn(|| &#123;
-        for i in 1..10 &#123;
-            println!("spawn thread: &#123;&#125;", i);
-            thread::sleep(Duration::from_millis(1));
-        &#125;
-    &#125;);
-
-    // 主线程逻辑
-    for i in 1..5 &#123;
-        println!("main thread: &#123;&#125;", i);
-        thread::sleep(Duration::from_millis(1));
-    &#125;
-
-    // 等待子线程完成（阻塞主线程）
-    handle.join().unwrap(); // join返回Result，unwrap处理成功情况
+在这个示例中，List 枚举表示一个链表，其中 Cons 变体包含一个整数和一个指向另一个 List 节点的 Box 指针。通过使用 Box 指针，我们可以创建一个递归的链表结构。
+类型擦除
+类型擦除是指在编译时隐藏具体的类型信息，只保留类型的共性。在Rust中，我们可以使用 Box&lt;dyn Trait&gt; 来实现类型擦除。Box&lt;dyn Trait&gt; 是一个特征对象，它可以存储任何实现了指定特征的类型的值。
+以下是一个使用 Box&lt;dyn Trait&gt; 实现类型擦除的示例：
+trait Draw &#123;
+    fn draw(&amp;self);
 &#125;
-输出结果：主线程会等待子线程打印到9后再结束。
-使用move闭包
-move闭包用于将外部变量的所有权转移到子线程中，解决多线程中变量生命周期的问题（避免子线程访问已被释放的变量）。
-示例：不使用move导致的错误
-use std::thread;
 
-fn main() &#123;
-    let s = String::from("hello");
-    // 错误：子线程可能比主线程生命周期长，s可能被提前释放
-    thread::spawn(|| &#123;
-        println!("&#123;&#125;", s); // 编译错误：`s` does not live long enough
-    &#125;);
-&#125;
-使用move闭包解决
-use std::thread;
-
-fn main() &#123;
-    let s = String::from("hello");
-    // move闭包将s的所有权转移到子线程
-    thread::spawn(move || &#123;
-        println!("&#123;&#125;", s); // 正确：子线程拥有s的所有权
-    &#125;).join().unwrap();
-&#125;
-多线程通信
-Rust推荐通过消息传递实现安全并发，标准库提供的channel（通道）是实现这一机制的核心工具。
-Channel（通道）基础
-通道由发送端（Sender） 和接收端（Receiver） 组成，数据从发送端发送，接收端接收，实现线程间通信。
-
-导入：use std::sync::mpsc;（mpsc：多生产者单消费者，支持多个发送端向一个接收端发送数据）
-创建：let (tx, rx) = mpsc::channel();（返回包含发送端和接收端的元组）
-
-基本使用示例
-use std::sync::mpsc;
-use std::thread;
-use std::time::Duration;
-
-fn main() &#123;
-    let (tx, rx) = mpsc::channel();
-
-    // 子线程发送数据
-    thread::spawn(move || &#123;
-        let vals = vec![
-            String::from("hi"),
-            String::from("from"),
-            String::from("the"),
-            String::from("thread"),
-        ];
-        for val in vals &#123;
-            tx.send(val).unwrap(); // 发送数据，失败时unwrap panic
-            thread::sleep(Duration::from_millis(500)); // 模拟间隔发送
-        &#125;
-    &#125;);
-
-    // 主线程接收数据
-    for received in rx &#123; // 迭代接收，直到发送端全部关闭
-        println!("Got: &#123;&#125;", received);
-    &#125;
-&#125;
-输出结果：
-Got: hi
-Got: from
-Got: the
-Got: thread
-发送端与接收端方法
-
-
-发送端（Sender）：
-
-send(T) -&gt; Result&lt;(), SendError&lt;T&gt;&gt;：发送数据，成功返回Ok(())，失败（如接收端已关闭）返回Err。
-
-
-
-接收端（Receiver）：
-
-recv() -&gt; Result&lt;T, RecvError&gt;：阻塞当前线程，直到收到数据或发送端关闭（返回Err）。
-try_recv() -&gt; Result&lt;T, TryRecvError&gt;：非阻塞，立即返回：
-
-有数据：Ok(T)
-无数据：Err(TryRecvError::Empty)
-发送端关闭：Err(TryRecvError::Disconnected)
-
-
-
-
-
-多生产者示例
-通过Sender::clone可以创建多个发送端，实现多线程向同一接收端发送数据。
-use std::sync::mpsc;
-use std::thread;
-use std::time::Duration;
-
-fn main() &#123;
-    let (tx, rx) = mpsc::channel();
-    let tx2 = tx.clone(); // 克隆发送端
-
-    // 线程1发送数据
-    thread::spawn(move || &#123;
-        let vals = vec![
-            String::from("thread1: hi"),
-            String::from("thread1: hello"),
-        ];
-        for val in vals &#123;
-            tx.send(val).unwrap();
-            thread::sleep(Duration::from_millis(500));
-        &#125;
-    &#125;);
-
-    // 线程2发送数据
-    thread::spawn(move || &#123;
-        let vals = vec![
-            String::from("thread2: bye"),
-            String::from("thread2: goodbye"),
-        ];
-        for val in vals &#123;
-            tx2.send(val).unwrap();
-            thread::sleep(Duration::from_millis(500));
-        &#125;
-    &#125;);
-
-    // 接收数据
-    for received in rx &#123;
-        println!("Got: &#123;&#125;", received);
-    &#125;
-&#125;
-练习
-练习1——实现多线程文件处理器
-任务描述
-你需要编写一个多线程文件处理器，它从一个通道（channel）中接收文件路径，并在线程池中处理这些文件。文件处理的具体任务可以是读取文件内容并打印到控制台。你需要使用 Rust 的带缓冲区的 channel 来控制并发线程的数量，从而限制同时处理的文件数量。
-具体要求
-1.文件处理任务：定义一个函数process_file，该函数接受一个文件路径，读取文件内容，并将内容打印到控制台。
-2.多线程控制：
-
-创建一个带缓冲区的channel，用于在主线程和工作线程之间传递文件路径。
-使用多线程来实现文件处理的并发性，限制线程的并发数量（例如，最多同时处理 4 个文件）。
-
-3.主线程作为生产者：主线程负责向通道发送文件路径。假设我们有 10 个文件路径要处理。
-4.工作线程作为消费者：创建多个工作线程，每个线程从通道中接收文件路径，并调用process_file函数来处理文件。
-use crossbeam_channel::bounded;
-use std::fs;
-use std::path::Path;
-
-// 实现多线程文件处理器,同时可以处理4个文件读取，说明有四个接受端 ，一个发送端
-/* */
-fn process_file(filename: &amp;str) &#123;
-    match fs::read_to_string(filename) &#123;
-        Ok(content) => &#123;
-            println!("Processing file: &#123;&#125;", filename);
-            println!("Content: &#123;&#125;", content);
-        &#125;
-        Err(error) => &#123;
-            eprintln!("Error reading file &#123;&#125;: &#123;&#125;", filename, error);
-        &#125;
+struct Circle;
+impl Draw for Circle &#123;
+    fn draw(&amp;self) &#123;
+        println!("Drawing a circle");
     &#125;
 &#125;
 
-#[test]
-fn test_thread_file_processor() &#123;
-    let (tx, rx) = bounded(4);
-    let num_threads = 4;
-    let file_paths = vec![
-        "file1.txt",
-        "file2.txt",
-        "file3.txt",
-        "file4.txt",
-        "file5.txt",
-        "file6.txt",
-        "file7.txt",
-        "file8.txt",
-        "file9.txt",
-        "file10.txt",
+struct Square;
+impl Draw for Square &#123;
+    fn draw(&amp;self) &#123;
+        println!("Drawing a square");
+    &#125;
+&#125;
+
+fn main() &#123;
+    let shapes: Vec&lt;Box&lt;dyn Draw>> = vec![
+        Box::new(Circle),
+        Box::new(Square),
     ];
 
-    let mut handles = vec![];
-    // 启动 4 个工作线程
-    for i in 0..num_threads &#123;
-        let rx: crossbeam_channel::Receiver&lt;String> = rx.clone();
-        let handle: thread::JoinHandle&lt;()> = thread::spawn(move || &#123;
-            for path in rx &#123;
-                let content = fs::read_to_string(path).unwrap_or_else(|e| format!("Error: &#123;&#125;", e));
-                println!("Worker &#123;&#125;: &#123;&#125;", i, content);
-            &#125;
-        &#125;);
-        handles.push(handle);
-    &#125;
-
-    // 发送文件路径
-    for path in file_paths &#123;
-        tx.send(path.to_string()).unwrap();
-    &#125;
-  
-    
-    drop(tx);
-
-    for h in handles &#123;
-        h.join().unwrap()
+    for shape in shapes &#123;
+        shape.draw();
     &#125;
 &#125;
+在这个示例中，我们定义了一个 Draw 特征，并为 Circle 和 Square 结构体实现了该特征。然后，我们创建了一个 Vec&lt;Box&lt;dyn Draw&gt;&gt; 类型的向量，其中存储了 Circle 和 Square 的实例。通过使用 Box&lt;dyn Draw&gt;，我们实现了类型擦除，使得向量可以存储不同类型的形状。
+内存管理和性能优化
+Box 指针在内存管理方面具有重要的作用。当 Box 指针离开作用域时，Rust会自动调用其 Drop 实现，从而释放堆上分配的内存。这种自动内存管理机制确保了内存的安全性，避免了内存泄漏的问题。
+在性能方面，由于 Box 指针涉及到堆上的内存分配和释放，因此会比栈上的内存分配和释放稍微慢一些。但是，对于需要动态分配内存或者处理动态大小类型的场景，使用 Box 指针是必要的。在实际编程中，我们应该根据具体的需求和性能要求来选择合适的内存分配方式。
+box的优缺点
+优点
 
+动态内存分配：允许在运行时动态分配内存，处理大型数据结构和动态大小类型。
+递归数据结构支持：可以用于实现递归数据结构，避免栈溢出的问题。
+类型擦除：支持类型擦除，使得代码更加灵活和可复用。
+自动内存管理：Rust的所有权系统确保了 Box 指针离开作用域时，堆上的内存会被自动释放，避免了内存泄漏。
 
-坑⚠️：
-需要使用use crossbeam_channel::bounded; 才能满足接收者可以克隆，mpsc::channel()不能克隆接收者，只能克隆发送者
-let (tx, rx) = bounded(4);
-需要 drop(tx);来显式关闭发送端，使接收端退出 for path in rx 循环
-for path in rx这是一个阻塞循环，只有在发送端关闭时才会退出
+缺点
 
-练习2——使用 Channel 实现程序的优雅停止
-任务描述
+性能开销：堆上的内存分配和释放比栈上的内存分配和释放稍微慢一些，可能会影响性能。
+额外的间接访问：使用 Box 指针需要通过指针进行间接访问，可能会增加一定的开销。
 
-任务描述
-○ 在这道练习中，你需要编写一个多线程程序，该程序会创建多个工作线程，持续处理任务。在接收到停止信号时，所有工作线程应该优雅地停止工作，并确保所有未完成的任务都被处理完毕。
-○ 你将使用 Rust 的 channel 来实现任务的调度和优雅停止机制。
+Drop Trait
+Drop trait 用于自定义当值离开作用域时执行的代码，通常用于释放资源，例如内存、文件句柄、网络连接等。当一个实现了 Drop trait 的值离开作用域时，Rust会自动调用其 drop 方法。
+以下是一个简单的示例，展示了如何实现 Drop trait：
+struct CustomSmartPointer &#123;
+    data: String,
+&#125;
 
-具体要求
-
-工作线程：
-○ 创建一个工作线程池，工作线程从通道接收任务并处理。
-○ 工作线程应能够响应停止信号，并在完成当前任务后优雅地退出。
-任务结构：
-○ 任务可以是简单的打印操作，模拟一些耗时工作，例如打印任务 ID 并暂停一段时间。
-优雅停止：
-○ 通过发送一个特殊的停止信号，通知所有工作线程停止接收新的任务，并在完成当前任务后退出。
-○ 确保所有已接收的任务都被处理完毕。
-主线程控制：
-○ 主线程应当能够发送任务，也能够在适当的时候发送停止信号，触发工作线程的优雅停止。
-
-答案：
-
-优雅停止：工作线程处理完当前任务后退出，不中断正在执行的任务。
-实现：通过特殊信号（如Option::None）通知线程停止，或关闭发送端触发接收端退出。
-
-实现代码
-use std::sync::mpsc;
-use std::thread;
-use std::time::Duration;
-
-// 任务类型：包含任务ID和模拟耗时
-type Task = Option&lt;u32>; // None作为停止信号
-
-// 处理任务
-fn process_task(task_id: u32) &#123;
-    println!("处理任务&#123;&#125;...", task_id);
-    thread::sleep(Duration::from_secs(1)); // 模拟耗时1秒
-    println!("任务&#123;&#125;处理完成", task_id);
+impl Drop for CustomSmartPointer &#123;
+    fn drop(&amp;mut self) &#123;
+        println!("Dropping CustomSmartPointer with data `&#123;&#125;`!", self.data);
+    &#125;
 &#125;
 
 fn main() &#123;
-    let (tx, rx) = bounded(4);
-    let num_workers = 3;
-    let mut handles = vec![];
-
-    // 创建工作线程
-    for i in 0..num_workers &#123;
-        let rx = rx.clone();
-        let handle = thread::spawn(move || &#123;
-            println!("工作线程&#123;&#125;启动", i);
-            // 循环接收任务，直到收到None（停止信号）
-            while let Ok(task) = rx.recv() &#123;
-                match task &#123;
-                    Some(task_id) => process_task(task_id),
-                    None => &#123;
-                        println!("工作线程&#123;&#125;收到停止信号，退出", i);
-                        break; // 退出循环，线程结束
-                    &#125;
-                &#125;
-            &#125;
-        &#125;);
-        handles.push(handle);
-    &#125;
-
-    // 主线程发送任务
-    for task_id in 1..=5 &#123;
-        tx.send(Some(task_id)).unwrap();
-    &#125;
-
-    // 发送停止信号（每个线程一个）
-    for _ in 0..num_workers &#123;
-        tx.send(None).unwrap();
-    &#125;
-
-    // 等待所有工作线程退出
-    for handle in handles &#123;
-        handle.join().unwrap();
-    &#125;
-    println!("所有线程已优雅退出");
+    let c = CustomSmartPointer &#123; data: String::from("my stuff") &#125;;
+    let d = CustomSmartPointer &#123; data: String::from("other stuff") &#125;;
+    println!("CustomSmartPointers created.");
 &#125;
-✅ 总结
+在这个示例中，我们定义了一个 CustomSmartPointer 结构体，并为其实现了 Drop trait。当 c 和 d 离开作用域时，Rust会自动调用它们的 drop 方法，打印出相应的信息。
+Deref Trait
+Deref trait 用于重载解引用运算符（*），允许我们自定义指针类型的解引用行为。通过实现 Deref trait，我们可以让自定义的智能指针像普通指针一样使用解引用运算符。
+Deref trait 定义了一个 deref 方法，该方法返回一个指向内部数据的引用。
+以下是一个简单的示例，展示了如何实现 Deref trait：
+use std::ops::Deref;
 
+struct MyBox&lt;T>(T);
 
+impl&lt;T> MyBox&lt;T> &#123;
+    fn new(x: T) -> MyBox&lt;T> &#123;
+        MyBox(x)
+    &#125;
+&#125;
 
-方案
-支持克隆 Receiver
-是否推荐
-说明
+impl&lt;T> Deref for MyBox&lt;T> &#123;
+    type Target = T;
 
-
-
-
-mpsc::sync_channel
-❌
-❌
-不支持克隆 Receiver
-
-
-mpsc::channel
-❌
-✅
-可克隆 Sender，适合多发送者单接收者
-
-
-crossbeam-channel
-✅
-✅✅
-支持克隆 Receiver，适合多消费者
-
-
-Arc&lt;Mutex&lt;Receiver&gt;&gt;
-❌
-❌
-不推荐，性能差，易出错
-
-
-select! + bounded
-✅
-✅
-适合多线程监听同一通道
-
-
-
-
-📌 推荐方案
-优先使用 crossbeam-channel 的 bounded 或 unbounded 通道，它不仅支持克隆 Receiver，还提供了更强大的功能，如 select!、try_recv、recv_timeout 等
-共享内存实现并发
-除了消息传递，还可以通过共享内存实现并发。Rust通过Mutex（互斥锁）和Arc（原子引用计数）保证共享内存的线程安全。
-Mutex&lt;T&gt;（互斥锁）
-Mutex确保同一时间只有一个线程能访问共享数据，通过“锁”机制实现：
-
-访问数据前需调用lock()获取锁（返回MutexGuard，智能指针）。
-MutexGuard离开作用域时自动释放锁，避免死锁。
-
-基本使用
-use std::sync::Mutex;
+    fn deref(&amp;self) -> &amp;Self::Target &#123;
+        &amp;self.0
+    &#125;
+&#125;
 
 fn main() &#123;
-    let m = Mutex::new(5); // 创建包含i32的Mutex
+    let x = 5;
+    let y = MyBox::new(x);
 
-    &#123;
-        let mut num = m.lock().unwrap(); // 获取锁，返回MutexGuard
-        *num = 6; // 通过解引用修改数据
-    &#125; // MutexGuard离开作用域，自动释放锁
-
-    println!("m = &#123;:?&#125;", m.lock().unwrap()); // 输出：m = 6
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
 &#125;
-Arc&lt;T&gt;（原子引用计数）
-Rc&lt;T&gt;不适合多线程（非线程安全），Arc&lt;T&gt;是线程安全版本的引用计数指针，通过原子操作保证计数的线程安全。常与Mutex配合，实现多线程共享数据。
-多线程共享计数器示例
-use std::sync::&#123;Arc, Mutex&#125;;
-use std::thread;
+在这个示例中，我们定义了一个 MyBox 结构体，并为其实现了 Deref trait。通过实现 deref 方法，我们可以使用解引用运算符 * 来访问 MyBox 内部的数据。
+练习
+1. 创建一个大型数组并将其分配在堆上，然后测量和比较分配在堆和栈上的性能差异。
+使用instant::now() ; 以及elapsed()
+use std::time::Instant;
+
+const ARRAY_SIZE: usize = 1000000;
 
 fn main() &#123;
-    let counter = Arc::new(Mutex::new(0)); // Arc包裹Mutex，实现多线程共享
-    let mut handles = vec![];
+    // 测量栈上分配的时间
+    let start_stack = Instant::now();
+    let _stack_array: [i32; ARRAY_SIZE] = [0; ARRAY_SIZE];
+    let stack_duration = start_stack.elapsed();
 
-    for _ in 0..10 &#123;
-        let counter = Arc::clone(&amp;counter); // 克隆Arc，增加引用计数
-        let handle = thread::spawn(move || &#123;
-            let mut num = counter.lock().unwrap(); // 获取锁
-            *num += 1; // 修改计数器
-        &#125;);
-        handles.push(handle);
-    &#125;
+    // 测量堆上分配的时间
+    let start_heap = Instant::now();
+    let _heap_array: Box&lt;[i32]> = vec![0; ARRAY_SIZE].into_boxed_slice();
+    let heap_duration = start_heap.elapsed();
 
-    // 等待所有线程完成
-    for handle in handles &#123;
-        handle.join().unwrap();
-    &#125;
-
-    println!("Result: &#123;&#125;", *counter.lock().unwrap()); // 输出：Result: 10
+    println!("Stack allocation time: &#123;:?&#125;", stack_duration);
+    println!("Heap allocation time: &#123;:?&#125;", heap_duration);
 &#125;
-Send 和 Sync  trait
-Rust通过这两个标记 trait 保证线程安全：
+2. 创建一个包含1_000_000个元素的数据，分别将其分配在堆和栈上。使用std::time::Instant来测量分配和访问时间。
+use std::time::Instant;
 
-Send：标记类型可以安全地转移到另一个线程（所有权转移）。
-Sync：标记类型可以安全地被多个线程共享（即&amp;T是Send的）。
+const ELEMENT_COUNT: usize = 1_000_000;
 
-默认实现：
+fn main() &#123;
+    // 栈上分配
+    let start_stack_alloc = Instant::now();
+    let stack_data: [i32; ELEMENT_COUNT] = [0; ELEMENT_COUNT];
+    let stack_alloc_time = start_stack_alloc.elapsed();
 
-基本类型（i32、bool等）和大多数标准库类型（String、Vec等）都实现了Send和Sync。
-Rc&lt;T&gt;不实现Send和Sync（非线程安全）。
-Arc&lt;T&gt;实现Send和Sync（线程安全）。
-Mutex&lt;T&gt;当T是Send时，Mutex&lt;T&gt;实现Sync。
+    let start_stack_access = Instant::now();
+    for i in 0..ELEMENT_COUNT &#123;
+        let _ = stack_data[i];
+    &#125;
+    let stack_access_time = start_stack_access.elapsed();
 
-练习3——实现多线程任务调度器
-任务描述
-你需要编写一个简单的多线程任务调度器，它能够接收多个任务，并将这些任务分发到多个工作线程中执行。调度器使用 Channel 进行任务的分发和结果的收集。你需要使用 Rust 的Send和Sync特性来确保任务调度器在多线程环境中的安全性。
-具体要求
-定义一个Task结构体，表示需要执行的任务。任务包含一个唯一的id和一个用于执行的闭包。
-调度器结构：
-创建一个Scheduler结构体，包含一个任务队列和一个线程池。调度器应当使用channel来分发任务到不同的工作线程。
-功能实现：
-调度器应当具有以下功能：
+    // 堆上分配
+    let start_heap_alloc = Instant::now();
+    let heap_data: Box&lt;[i32]> = vec![0; ELEMENT_COUNT].into_boxed_slice();
+    let heap_alloc_time = start_heap_alloc.elapsed();
 
-添加任务：向调度器添加一个任务。
-启动调度器：启动多个线程，开始从任务队列中获取任务并执行。
-获取结果：在所有任务完成后，收集并打印每个任务的执行结果。
+    let start_heap_access = Instant::now();
+    for i in 0..ELEMENT_COUNT &#123;
+        let _ = heap_data[i];
+    &#125;
+    let heap_access_time = start_heap_access.elapsed();
 
-多线程安全：
+    println!("Stack allocation time: &#123;:?&#125;", stack_alloc_time);
+    println!("Stack access time: &#123;:?&#125;", stack_access_time);
+    println!("Heap allocation time: &#123;:?&#125;", heap_alloc_time);
+    println!("Heap access time: &#123;:?&#125;", heap_access_time);
+&#125;
+通过以上练习，我们可以更深入地了解 Box 指针在堆上分配内存的性能特点，以及与栈上分配的差异。
+3. 实现一个简单的文件系统模拟
+目标
+实现一个简单的文件系统模拟，其中包含文件和文件夹的概念。文件夹可以包含文件和其他文件夹。使用 Box 来管理内存，并实现对文件系统的基本操作（如创建文件、创建文件夹、列出文件和文件夹）。
+作业要求
 
-通过使用Arc和Mutex确保任务队列在多个线程之间的安全访问。
-确保任务的结果能够正确地在线程之间传递和收集。
 
-任务分析
+定义 FileSystem trait 和 Node 枚举
 
-核心：用channel分发任务，用Arc+Mutex管理任务队列和结果收集。
-结构：Scheduler包含任务发送端、结果接收端和工作线程句柄。
+FileSystem trait 包含 create_file、create_folder 和 list_contents 方法。
+Node 枚举包含 File 和 Folder 变体。
 
-实现代码
-use crossbeam_channel as channel;
-use std::sync::Mutex;
-use std::thread;
-use std::time::Duration;
 
-// ------------------实现多线程任务调度器------------------------
+
+实现 FolderNode 结构体
+
+FolderNode 实现 FileSystem trait，包含 name 和 contents 字段。
+使用 Box 管理 contents 中的子节点。
+
+
+
+实现文件系统的基本操作
+
+create_file 方法在文件夹中创建文件。
+create_folder 方法在文件夹中创建子文件夹。
+list_contents 方法列出文件夹的所有内容。
+
+
+
+测试文件系统的操作
+
+创建根文件夹并添加文件和文件夹。
+创建子文件夹并添加文件。
+列出文件夹的内容并输出文件系统结构。
+
+
+
+提示
+
+使用 Box 来管理 Folder 中的子节点。
+使用递归方法来遍历和列出文件和文件夹的内容。
+考虑使用 Vec 来存储文件夹的子节点。
+
 /**
- * 多线程任务调度器，能够接收多个任务，并将多个任务分配给多个线程执行。需要使用send和sync trait
- * 来确保任务调度器可以安全地被多个线程访问。
+ * ---------------文件系统----------------------------
  */
-use std::sync::Arc;
-// 任务结构体：包含ID和执行闭包（返回结果）
-struct Task &#123;
-    id: u32,
-    func: Box&lt;dyn FnOnce() -> String + Send + 'static>, // 闭包需实现Send
+// 节点枚举 用来区分文件夹还是文件，文件夹通过box包装来避免递归类型的大小歧义
+// 定义 Node 枚举：包含文件（File）和文件夹（Folder）两种变体
+#[derive(Debug)]
+enum Node &#123;
+    File(String),            // 文件：存储文件名
+    Folder(Box&lt;FolderNode>), // 文件夹：存储 FolderNode 的 Box（避免递归结构的大小问题）
 &#125;
 
-// 调度器结构体
-struct Scheduler &#123;
-    task_tx: Option&lt;channel::Sender&lt;Task>>, // 任务发送端 (使用Option便于take)
-    result_rx: Arc&lt;Mutex&lt;channel::Receiver&lt;String>>>, // 结果接收端（共享）
-    workers: Option&lt;Vec&lt;thread::JoinHandle&lt;()>>>, // 工作线程句柄队列 (使用Option便于take)
+// 定义 FileSystem trait：包含文件系统的核心操作
+trait FileSystem &#123;
+    fn create_file(&amp;mut self, name: String); // 在当前文件夹创建文件
+    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self; // 在当前文件夹创建子文件夹（返回子文件夹引用以便链式操作）
+    fn list_contents(&amp;self, indent: &amp;str); // 列出当前文件夹内容（带缩进，方便展示结构）
 &#125;
 
-impl Scheduler &#123;
-    // 创建新调度器
-    fn new(num_workers: usize) -> Self &#123;
-        let (task_tx, task_rx) = channel::unbounded();
-        let (result_tx, result_rx) = channel::unbounded();
-        let result_rx = Arc::new(Mutex::new(result_rx));
-        let mut workers = vec![];
+// 定义 FolderNode 结构体：表示文件夹节点
+#[derive(Debug)]
+struct FolderNode &#123;
+    name: String,        // 文件夹名称
+    contents: Vec&lt;Node>, // 存储子节点（文件或文件夹）
+&#125;
 
-        // 创建工作线程
-        for _ in 0..num_workers &#123;
-            // 注意：crossbeam-channel的Receiver支持clone
-            let task_rx_clone: channel::Receiver&lt;Task> = task_rx.clone();
-            let result_tx: channel::Sender&lt;String> = result_tx.clone();
+// 为 FolderNode 实现 FileSystem trait
+impl FileSystem for FolderNode &#123;
+    // 1. 创建文件：向 contents 添加 File 节点
+    fn create_file(&amp;mut self, name: String) &#123;
+        self.contents.push(Node::File(name));
+    &#125;
 
-            let handle = thread::spawn(move || &#123;
-                // 循环接收任务并执行
-                while let Ok(task) = task_rx_clone.recv() &#123;
-                    println!("执行任务&#123;&#125;", task.id);
-                    let result = (task.func)(); // 执行任务
-                    result_tx.send(result).unwrap(); // 发送结果
-                &#125;
-            &#125;);
-            workers.push(handle);
-        &#125;
+    // 2. 创建子文件夹：向 contents 添加 Folder 节点，并返回子文件夹的可变引用
+    fn create_folder(&amp;mut self, name: String) -> &amp;mut Self &#123;
+        // 新建子文件夹节点
+        let new_folder = FolderNode &#123;
+            name: name.clone(),
+            contents: Vec::new(),
+        &#125;;
+        // 将子文件夹包装为 Box 并加入 contents
+        self.contents.push(Node::Folder(Box::new(new_folder)));
 
-        Scheduler &#123;
-            task_tx: Some(task_tx),
-            result_rx,
-            workers: Some(workers),
+        // 找到刚添加的子文件夹并返回其可变引用（通过 last_mut 确保是最后一个元素）
+        match self.contents.last_mut() &#123;
+            Some(Node::Folder(folder_box)) => &amp;mut **folder_box,
+            _ => panic!("创建文件夹失败：逻辑错误"), // 理论上不会触发
         &#125;
     &#125;
 
-    // 添加任务
-    fn add_task(&amp;self, id: u32, func: Box&lt;dyn FnOnce() -> String + Send + 'static>) &#123;
-        if let Some(ref tx) = self.task_tx &#123;
-            tx.send(Task &#123; id, func &#125;).unwrap();
-        &#125;
-    &#125;
-
-    // 等待所有任务完成并收集结果
-    fn wait_and_collect_results(&amp;mut self) -> Vec&lt;String> &#123;
-        // 关闭任务发送端，让工作线程接收完毕后退出
-        self.task_tx.take(); // 使用take获取所有权并使原位置为None
-
-        // 等待所有工作线程完成
-        if let Some(workers) = self.workers.take() &#123;
-            // 使用take获取所有权
-            for handle in workers &#123;
-                handle.join().unwrap();
+    // 3. 列出内容：递归遍历子节点，带缩进展示结构
+    fn list_contents(&amp;self, indent: &amp;str) &#123;
+        // 打印当前文件夹名称
+        println!("&#123;&#125;&#123;&#125;", indent, self.name);
+        // 遍历子节点
+        for node in &amp;self.contents &#123;
+            match node &#123;
+                Node::File(file_name) => println!("&#123;&#125;&#123;&#125;", indent, file_name), // 打印文件
+                Node::Folder(folder) => folder.list_contents(&amp;format!("&#123;&#125;  ", indent)), // 递归打印子文件夹（增加缩进）
             &#125;
         &#125;
-
-        // 收集结果
-        let mut results = vec![];
-        let result_rx = self.result_rx.lock().unwrap();
-        // 使用try_iter()来获取已有的结果，避免阻塞
-        for result in result_rx.try_iter() &#123;
-            results.push(result);
-        &#125;
-        results
     &#125;
 &#125;
 
-fn main() &#123;
-    let mut scheduler = Scheduler::new(2); // 创建2个工作线程
+// 测试代码：创建文件系统并执行操作
+#[test]
+fn test_file_system() &#123;
+    // 1. 创建根文件夹
+    let mut root = FolderNode &#123;
+        name: "Root".to_string(),
+        contents: Vec::new(),
+    &#125;;
 
-    // 添加任务
-    for i in 1..=5 &#123;
-        scheduler.add_task(
-            i,
-            Box::new(move || &#123;
-                thread::sleep(Duration::from_secs(1)); // 模拟耗时
-                format!("任务&#123;&#125;执行完成", i)
-            &#125;),
-        );
-    &#125;
+    // 2. 根文件夹操作：创建文件 + 子文件夹
+    root.create_file("file1.txt".to_string()); // 根目录创建文件
+    let mut sub1 = root.create_folder("sub1".to_string()); // 根目录创建子文件夹 sub1
+    sub1.create_file("subfile1.txt".to_string()); // 在 sub1 中创建文件
 
-    // 收集结果
-    let results = scheduler.wait_and_collect_results();
-    println!("所有任务结果：");
-    for res in results &#123;
-        println!("&#123;&#125;", res);
-    &#125;
+    // 3. 子文件夹嵌套操作
+    let mut sub2 = root.create_folder("sub2".to_string()); // 根目录创建子文件夹 sub2
+    let mut subsub2 = sub2.create_folder("subsub2".to_string()); // 在 sub2 中创建子文件夹 subsub2
+    subsub2.create_file("deepfile.txt".to_string()); // 在 subsub2 中创建文件
+
+    // 4. 列出根文件夹内容（从空缩进开始）
+    println!("文件系统结构：");
+    root.list_contents("");
 &#125;
 
-总结
-Rust通过所有权系统、Send/Sync trait、channel和Mutex/Arc等工具，在编译期保证并发安全，避免数据竞争。开发中应根据场景选择消息传递（channel）或共享内存（Mutex+Arc）模式，优先使用消息传递（更易保证安全）。
 ]]></content>
       <categories>
         <category>Rust</category>
@@ -6890,171 +6657,6 @@ JUP Token 与治理： JUP 代币不仅是激励机制的一部分，更是平�
       </tags>
   </entry>
   <entry>
-    <title>Solana[part1]_SOL基础</title>
-    <url>/2025/08/04/Solana-part1-SOL%E4%B8%AD%E7%9A%84Rust%E6%BA%90%E7%A0%81%E6%A6%82%E8%A7%88%EF%BC%8C%E4%BB%A5%E5%8F%8ARust%E5%9C%A8%E5%8C%BA%E5%9D%97%E9%93%BE%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8/</url>
-    <content><![CDATA[Solana[part1]_SOL基础
-一、Solana概述
-Solana是一个高性能的公链系统，核心特点体现在以下几个方面：
-
-共识协议：采用独特的历史证明（POH）与权益证明（PoS）结合的共识机制，兼顾安全性与高效性。
-高性能架构：通过优化数据传输、并行处理等技术，支持每秒数万笔交易（TPS），远超传统公链。
-高并发处理：采用账户模型与事务隔离设计，实现多笔交易的并行验证与执行。
-低延迟：得益于POH的时间戳机制，交易确认延迟可低至秒级。
-
-1.1 核心模块
-
-Runtime模块：作为Solana的运行时核心，负责管理所有账户的状态（包括余额、数据存储等），并调度智能合约的执行流程，确保交易按规则有序处理。
-Programs模块：即Solana的智能合约层，包含多个核心程序：
-
-Token Program：Solana生态中代币发行、转账、授权的基础程序，兼容SPL标准代币（类似以太坊的ERC-20）。
-Stake Program：用于验证节点的质押管理，支持SOL代币质押、解除质押及收益分配等操作。
-
-
-
-1.2 Rust在Solana中的应用
-Rust是Solana智能合约开发的首选语言，核心原因包括：
-
-内存安全性：Rust的所有权机制和借用检查器可避免空指针、缓冲区溢出等内存错误，确保智能合约在去中心化环境中稳定运行。
-高性能：编译型语言特性使Rust代码执行效率接近C/C++，适配Solana高TPS的性能需求。
-类型安全：强类型系统减少运行时错误，降低智能合约漏洞风险（如逻辑漏洞、重入攻击等）。
-生态适配：Solana提供了完整的Rust开发工具链（如Anchor框架），简化合约编写、测试与部署流程。
-
-二、SOL在区块链生态系统中的地位
-
-高性能标杆：Solana以高TPS和低延迟成为去中心化应用（dAPP）的重要载体，尤其适合高频交易、游戏、DeFi等对性能敏感的场景。
-生态扩展性：支持NFT、DeFi、Web3应用等多元场景，拥有大量开发者工具（如Phantom钱包、Solscan区块浏览器）和基础设施。
-市场认可度：SOL作为其原生代币，是市值排名前列的加密资产，广泛用于支付手续费、质押验证节点及生态内价值流转。
-
-三、SOL的历史、未来及发展
-
-历史里程碑：
-
-2017年由Anatoly Yakovenko创立，核心团队多来自高通、英特尔等科技公司。
-2020年主网上线，凭借POH技术迅速获得关注。
-2021-2022年生态爆发，NFT和DeFi项目快速增长，成为主流公链之一。
-
-
-未来方向：
-
-进一步优化共识机制，提升去中心化程度（如减少验证节点门槛）。
-扩展跨链互操作性，支持与以太坊、Avalanche等公链的资产与数据交互。
-降低开发门槛，吸引更多开发者参与生态建设。
-
-
-
-四、SOL的架构和常见名词概念
-4.1 常见概念
-
-accounts（账户）：Solana中数据存储的基本单元，不仅包含钱包地址（如solfare、Backpack等钱包管理的账户），还存储智能合约数据、代币余额等信息。每个账户有唯一的公钥（address），需支付租约费用以维持存储。
-合约（Programs）：即智能合约，由Rust编写并编译为字节码，部署后通过交易触发执行，修改账户状态。
-验证器（Validator）：维护Solana网络的节点，负责验证交易、生成区块并参与共识，通过质押SOL获得出块权限和奖励。
-区块浏览器：用于查询交易、账户、区块等信息的工具（如Solscan、Solana Explorer），支持主网、测试网（devnet/testnet）查询。
-address（地址）：账户的唯一标识符，由公钥生成（通常为Base58编码的字符串），用于接收转账或标识合约。
-transfer（转账）：通过交易将SOL或SPL代币从一个账户转移到另一个账户，需支付手续费（fee）。
-dAPP（去中心化应用）：基于Solana公链开发的应用，如去中心化交易所（DEX）、NFT市场等，依赖智能合约实现逻辑。
-fee（手续费）：用户发起交易时支付给验证节点的费用，取决于交易复杂度和网络拥堵程度。
-block（区块）：验证节点打包交易的集合，包含多个交易及POH时间戳，确保交易顺序可追溯。
-租约（rent）：Solana通过租约机制维持账户存储，账户余额高于阈值时可免租，否则会被回收。
-签名（signature）：交易发起者用私钥对交易进行签名，证明交易合法性，验证节点通过公钥验证签名。
-钱包（wallet）：管理账户私钥的工具，支持生成地址、签名交易、查询余额等功能（如Phantom、Solflare）。
-
-4.2 8大核心技术
-
-POH（历史证明）：Solana的创新时间戳机制，通过哈希链记录事件顺序，无需全节点同步即可确定交易先后，大幅提升共识效率。
-Turbine（涡轮机）：数据传输协议，将区块数据分片并通过节点网络并行传输，解决大区块同步瓶颈。
-Gulf Stream（湾流）：交易预执行机制，验证节点在收到交易前提前缓存并预执行，减少确认延迟。
-Sealevel：并行交易处理引擎，支持多笔不冲突的交易同时执行（基于账户隔离），提升TPS。
-Pipelining（流水线）：将交易处理拆分为“验证-执行-打包”等阶段，通过流水线并行处理，优化节点资源利用率。
-Cloudbreak：存储优化技术，将历史数据压缩并分布式存储，降低全节点存储成本。
-Reed-Solomon：数据冗余编码算法，通过纠错码确保数据在传输或存储中发生错误时可恢复，提升网络健壮性。
-Archivers（归档节点）：专门存储历史区块数据的节点，减轻验证节点的存储压力，确保链上数据可追溯。
-
-五、本地环境搭建
-5.1 环境准备
-
-
-安装依赖工具：
-
-macOS：安装Xcode命令行工具
-
-  xcode-select --install  # 安装工具链
-xcode-select -p  # 验证安装（输出路径即成功）
-
-Windows：通过WSL（Windows Subsystem for Linux）模拟Linux环境，再执行后续步骤。
-
-
-
-安装Rust：
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh  # 下载安装脚本
-source $HOME/.cargo/env  # 配置环境变量
-rustc --version  # 验证安装
-
-
-安装Solana CLI：
-参考官方文档：https://solana.com/zh/docs/intro/installation#安装-solana-cli
-sh -c "$(curl -sSfL https://release.solana.com/v1.18.4/install)"  # 安装指定版本
-solana --version  # 验证安装
-
-
-安装Anchor框架（智能合约开发工具）：
-参考官方文档：https://solana.com/zh/docs/intro/installation#安装-anchor-cli
-cargo install --git https://github.com/coral-xyz/anchor avm --locked --force  # 安装AVM（Anchor版本管理器）
-avm install latest  # 安装最新版Anchor
-avm use latest  # 启用最新版
-配置环境变量（以zsh为例）：
-echo 'export PATH="$HOME/.avm/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc  # 生效配置
-anchor --version  # 验证安装
-
-
-5.2 创建钱包
-solana-keygen new  # 创建默认钱包（路径：~/.config/solana/id.json）
-执行后输入密码（BIP39 Passphrase），完成后生成私钥文件（用于签名交易）和公钥（钱包地址）。
-5.3 切换至Devnet（测试网）
-Solana有主网（Mainnet）、测试网（Devnet）、开发网（Testnet），开发阶段建议使用Devnet：
-solana config set -ud  # 切换至Devnet
-solana config get  # 验证配置（RPC URL显示https://api.devnet.solana.com即为成功）
-5.4 获取测试SOL（空投）
-Devnet的SOL可通过空投获取，用于测试交易：
-solana airdrop 5  # 向默认钱包空投5个SOL
-若提示“rate limit reached”，可等待几分钟后重试，或指定其他钱包地址：
-solana airdrop 5 &lt;钱包公钥>  # 向指定钱包空投
-六、Solana CLI常见用法
-6.1 创建多个钱包
-# 创建钱包1（路径：~/wallets/wallet1.json）
-solana-keygen new -o ~/wallets/wallet1.json
-
-# 创建钱包2
-solana-keygen new -o ~/wallets/wallet2.json
-
-# 创建带密码的钱包3（--force强制覆盖同名文件，谨慎使用）
-solana-keygen new -o ~/wallets/wallet3.json --force
-6.2 领取空投至指定钱包
-# 向wallet2空投0.5个SOL（先通过pubkey命令获取钱包公钥）
-solana airdrop 0.5 $(solana-keygen pubkey ~/wallets/wallet2.json)
-6.3 钱包间转账
-# 从默认钱包向目标地址转账（示例）
-solana transfer --from ~/.config/solana/id.json &lt;目标钱包公钥> 0.3  # 转账0.3 SOL
-参数说明：--from指定转出钱包路径，最后一个数字为转账金额（SOL）。
-6.4 查看账户余额
-# 查看指定钱包余额
-solana balance &lt;钱包公钥>
-# 示例输出：0.9 SOL
-6.5 查询交易记录
-通过区块浏览器查询交易详情，例如Devnet的交易可访问：  https://solscan.io/tx/&lt;交易ID&gt;?cluster=devnet
-（将&lt;交易ID&gt;替换为实际交易哈希，可通过solana transfer命令的输出获取）
-https://solscan.io/tx/3pnyEXnDJcyCZo2VBzunRRveu1siXmAJmjpGrC4TdrkbAfvLGaioC7Amnum6YoorioBUVMxgQe3VcW3UGpoJskh6?cluster=devnet
-
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Solana</tag>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Solana[part10]_Anchor实战：创建用户profile</title>
     <url>/2025/08/14/Solana-part10-anchor%E5%AE%9E%E6%88%981/</url>
     <content><![CDATA[Solana[part10]_Anchor实战：创建用户profile
@@ -7372,6 +6974,171 @@ Transfer: &#96;from&#96; must not carry data
       </tags>
   </entry>
   <entry>
+    <title>Solana[part1]_SOL基础</title>
+    <url>/2025/08/04/Solana-part1-SOL%E4%B8%AD%E7%9A%84Rust%E6%BA%90%E7%A0%81%E6%A6%82%E8%A7%88%EF%BC%8C%E4%BB%A5%E5%8F%8ARust%E5%9C%A8%E5%8C%BA%E5%9D%97%E9%93%BE%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8/</url>
+    <content><![CDATA[Solana[part1]_SOL基础
+一、Solana概述
+Solana是一个高性能的公链系统，核心特点体现在以下几个方面：
+
+共识协议：采用独特的历史证明（POH）与权益证明（PoS）结合的共识机制，兼顾安全性与高效性。
+高性能架构：通过优化数据传输、并行处理等技术，支持每秒数万笔交易（TPS），远超传统公链。
+高并发处理：采用账户模型与事务隔离设计，实现多笔交易的并行验证与执行。
+低延迟：得益于POH的时间戳机制，交易确认延迟可低至秒级。
+
+1.1 核心模块
+
+Runtime模块：作为Solana的运行时核心，负责管理所有账户的状态（包括余额、数据存储等），并调度智能合约的执行流程，确保交易按规则有序处理。
+Programs模块：即Solana的智能合约层，包含多个核心程序：
+
+Token Program：Solana生态中代币发行、转账、授权的基础程序，兼容SPL标准代币（类似以太坊的ERC-20）。
+Stake Program：用于验证节点的质押管理，支持SOL代币质押、解除质押及收益分配等操作。
+
+
+
+1.2 Rust在Solana中的应用
+Rust是Solana智能合约开发的首选语言，核心原因包括：
+
+内存安全性：Rust的所有权机制和借用检查器可避免空指针、缓冲区溢出等内存错误，确保智能合约在去中心化环境中稳定运行。
+高性能：编译型语言特性使Rust代码执行效率接近C/C++，适配Solana高TPS的性能需求。
+类型安全：强类型系统减少运行时错误，降低智能合约漏洞风险（如逻辑漏洞、重入攻击等）。
+生态适配：Solana提供了完整的Rust开发工具链（如Anchor框架），简化合约编写、测试与部署流程。
+
+二、SOL在区块链生态系统中的地位
+
+高性能标杆：Solana以高TPS和低延迟成为去中心化应用（dAPP）的重要载体，尤其适合高频交易、游戏、DeFi等对性能敏感的场景。
+生态扩展性：支持NFT、DeFi、Web3应用等多元场景，拥有大量开发者工具（如Phantom钱包、Solscan区块浏览器）和基础设施。
+市场认可度：SOL作为其原生代币，是市值排名前列的加密资产，广泛用于支付手续费、质押验证节点及生态内价值流转。
+
+三、SOL的历史、未来及发展
+
+历史里程碑：
+
+2017年由Anatoly Yakovenko创立，核心团队多来自高通、英特尔等科技公司。
+2020年主网上线，凭借POH技术迅速获得关注。
+2021-2022年生态爆发，NFT和DeFi项目快速增长，成为主流公链之一。
+
+
+未来方向：
+
+进一步优化共识机制，提升去中心化程度（如减少验证节点门槛）。
+扩展跨链互操作性，支持与以太坊、Avalanche等公链的资产与数据交互。
+降低开发门槛，吸引更多开发者参与生态建设。
+
+
+
+四、SOL的架构和常见名词概念
+4.1 常见概念
+
+accounts（账户）：Solana中数据存储的基本单元，不仅包含钱包地址（如solfare、Backpack等钱包管理的账户），还存储智能合约数据、代币余额等信息。每个账户有唯一的公钥（address），需支付租约费用以维持存储。
+合约（Programs）：即智能合约，由Rust编写并编译为字节码，部署后通过交易触发执行，修改账户状态。
+验证器（Validator）：维护Solana网络的节点，负责验证交易、生成区块并参与共识，通过质押SOL获得出块权限和奖励。
+区块浏览器：用于查询交易、账户、区块等信息的工具（如Solscan、Solana Explorer），支持主网、测试网（devnet/testnet）查询。
+address（地址）：账户的唯一标识符，由公钥生成（通常为Base58编码的字符串），用于接收转账或标识合约。
+transfer（转账）：通过交易将SOL或SPL代币从一个账户转移到另一个账户，需支付手续费（fee）。
+dAPP（去中心化应用）：基于Solana公链开发的应用，如去中心化交易所（DEX）、NFT市场等，依赖智能合约实现逻辑。
+fee（手续费）：用户发起交易时支付给验证节点的费用，取决于交易复杂度和网络拥堵程度。
+block（区块）：验证节点打包交易的集合，包含多个交易及POH时间戳，确保交易顺序可追溯。
+租约（rent）：Solana通过租约机制维持账户存储，账户余额高于阈值时可免租，否则会被回收。
+签名（signature）：交易发起者用私钥对交易进行签名，证明交易合法性，验证节点通过公钥验证签名。
+钱包（wallet）：管理账户私钥的工具，支持生成地址、签名交易、查询余额等功能（如Phantom、Solflare）。
+
+4.2 8大核心技术
+
+POH（历史证明）：Solana的创新时间戳机制，通过哈希链记录事件顺序，无需全节点同步即可确定交易先后，大幅提升共识效率。
+Turbine（涡轮机）：数据传输协议，将区块数据分片并通过节点网络并行传输，解决大区块同步瓶颈。
+Gulf Stream（湾流）：交易预执行机制，验证节点在收到交易前提前缓存并预执行，减少确认延迟。
+Sealevel：并行交易处理引擎，支持多笔不冲突的交易同时执行（基于账户隔离），提升TPS。
+Pipelining（流水线）：将交易处理拆分为“验证-执行-打包”等阶段，通过流水线并行处理，优化节点资源利用率。
+Cloudbreak：存储优化技术，将历史数据压缩并分布式存储，降低全节点存储成本。
+Reed-Solomon：数据冗余编码算法，通过纠错码确保数据在传输或存储中发生错误时可恢复，提升网络健壮性。
+Archivers（归档节点）：专门存储历史区块数据的节点，减轻验证节点的存储压力，确保链上数据可追溯。
+
+五、本地环境搭建
+5.1 环境准备
+
+
+安装依赖工具：
+
+macOS：安装Xcode命令行工具
+
+  xcode-select --install  # 安装工具链
+xcode-select -p  # 验证安装（输出路径即成功）
+
+Windows：通过WSL（Windows Subsystem for Linux）模拟Linux环境，再执行后续步骤。
+
+
+
+安装Rust：
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh  # 下载安装脚本
+source $HOME/.cargo/env  # 配置环境变量
+rustc --version  # 验证安装
+
+
+安装Solana CLI：
+参考官方文档：https://solana.com/zh/docs/intro/installation#安装-solana-cli
+sh -c "$(curl -sSfL https://release.solana.com/v1.18.4/install)"  # 安装指定版本
+solana --version  # 验证安装
+
+
+安装Anchor框架（智能合约开发工具）：
+参考官方文档：https://solana.com/zh/docs/intro/installation#安装-anchor-cli
+cargo install --git https://github.com/coral-xyz/anchor avm --locked --force  # 安装AVM（Anchor版本管理器）
+avm install latest  # 安装最新版Anchor
+avm use latest  # 启用最新版
+配置环境变量（以zsh为例）：
+echo 'export PATH="$HOME/.avm/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc  # 生效配置
+anchor --version  # 验证安装
+
+
+5.2 创建钱包
+solana-keygen new  # 创建默认钱包（路径：~/.config/solana/id.json）
+执行后输入密码（BIP39 Passphrase），完成后生成私钥文件（用于签名交易）和公钥（钱包地址）。
+5.3 切换至Devnet（测试网）
+Solana有主网（Mainnet）、测试网（Devnet）、开发网（Testnet），开发阶段建议使用Devnet：
+solana config set -ud  # 切换至Devnet
+solana config get  # 验证配置（RPC URL显示https://api.devnet.solana.com即为成功）
+5.4 获取测试SOL（空投）
+Devnet的SOL可通过空投获取，用于测试交易：
+solana airdrop 5  # 向默认钱包空投5个SOL
+若提示“rate limit reached”，可等待几分钟后重试，或指定其他钱包地址：
+solana airdrop 5 &lt;钱包公钥>  # 向指定钱包空投
+六、Solana CLI常见用法
+6.1 创建多个钱包
+# 创建钱包1（路径：~/wallets/wallet1.json）
+solana-keygen new -o ~/wallets/wallet1.json
+
+# 创建钱包2
+solana-keygen new -o ~/wallets/wallet2.json
+
+# 创建带密码的钱包3（--force强制覆盖同名文件，谨慎使用）
+solana-keygen new -o ~/wallets/wallet3.json --force
+6.2 领取空投至指定钱包
+# 向wallet2空投0.5个SOL（先通过pubkey命令获取钱包公钥）
+solana airdrop 0.5 $(solana-keygen pubkey ~/wallets/wallet2.json)
+6.3 钱包间转账
+# 从默认钱包向目标地址转账（示例）
+solana transfer --from ~/.config/solana/id.json &lt;目标钱包公钥> 0.3  # 转账0.3 SOL
+参数说明：--from指定转出钱包路径，最后一个数字为转账金额（SOL）。
+6.4 查看账户余额
+# 查看指定钱包余额
+solana balance &lt;钱包公钥>
+# 示例输出：0.9 SOL
+6.5 查询交易记录
+通过区块浏览器查询交易详情，例如Devnet的交易可访问：  https://solscan.io/tx/&lt;交易ID&gt;?cluster=devnet
+（将&lt;交易ID&gt;替换为实际交易哈希，可通过solana transfer命令的输出获取）
+https://solscan.io/tx/3pnyEXnDJcyCZo2VBzunRRveu1siXmAJmjpGrC4TdrkbAfvLGaioC7Amnum6YoorioBUVMxgQe3VcW3UGpoJskh6?cluster=devnet
+
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Solana</tag>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Solana[part11]_Anchor实战：用户发帖&amp;点赞</title>
     <url>/2025/08/17/Solana-part11-Anchor%E5%AE%9E%E6%88%98%EF%BC%9A%E7%94%A8%E6%88%B7%E5%8F%91%E5%B8%96-%E7%82%B9%E8%B5%9E/</url>
     <content><![CDATA[Solana[part11]_Anchor实战：用户发帖&amp;点赞
@@ -7626,195 +7393,6 @@ import &#123; createTweet, getTweet, createLike &#125; from "./api/tweet";
 核心依赖Profile账户作为用户身份标识，所有操作均需验证账户存在性。
 
 理解上述逻辑有助于掌握Solana上的PDA设计、账户交互及状态更新模式。
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Solana</tag>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solana[part13]_Anchor实战：为用户Mint Spl TOKEN</title>
-    <url>/2025/08/19/Solana-part13-Anchor%E5%AE%9E%E6%88%98%EF%BC%9A%E4%B8%BA%E7%94%A8%E6%88%B7Mint-Spl-TOKEN/</url>
-    <content><![CDATA[Solana[part13]_Anchor实战：为用户Mint Spl TOKEN
-该部分代码见：https://github.com/SoniaChan33/anchor_social/commit/5abd954500f2926d999ac644c18a97c91cde9fb6
-createLike指令添加需要的account
-/anchor_social/src/instructions/tweet.rs
-#[derive(Accounts)]
-pub struct CreateLike&lt;'info> &#123;
-    #[account(
-        mut,
-        seeds = [b"mint_v3",],
-        bump,
-    )]
-    pub mint_account: Account&lt;'info, Mint>,
-
-    #[account(
-        init_if_needed,
-        payer = authority,
-        associated_token::mint = mint_account,
-        associated_token::authority = author_wallet,
-    )]
-    pub author_token_account: Account&lt;'info, TokenAccount>,
-
-    /// CHECK : THIS IS AUTHOR WALLET
-    pub author_wallet: AccountInfo&lt;'info>,
-
-    #[account(
-        init,
-        payer = authority,
-        space = 8 + Like::INIT_SPACE,
-        seeds = [
-            Like::SEED_PREFIX.as_bytes().as_ref(),
-            profile.key().as_ref(),
-            tweet.key().as_ref()
-        ],
-        bump
-    )]
-    pub like: Account&lt;'info, Like>,
-
-    #[account(mut)]
-    pub tweet: Account&lt;'info, Tweet>,
-
-
-    #[account(mut, seeds = [Profile::SEED_PREFIX.as_bytes(), authority.key().as_ref()], bump)]
-    pub profile: Account&lt;'info, Profile>,
-    #[account(mut)]
-    pub authority: Signer&lt;'info>,
-    pub system_program: Program&lt;'info, System>,
-
-    pub associated_token_program: Program&lt;'info, AssociatedToken>,
-
-    pub token_program: Program&lt;'info, Token>, // 新增的Token程序字段
-&#125;
-
-tweet结构体修改
-#[account]
-#[derive(InitSpace)]
-pub struct Tweet &#123;
-    #[max_len(50)]
-    pub body: String,
-
-    pub like_count: u64,
-    pub author: Pubkey,
-&#125;
-impl Tweet &#123;
-    pub const SEED_PREFIX: &amp;'static str = "tweet";
-
-    pub fn new(body: String, author: Pubkey) -> Self &#123;
-        Self &#123;
-            body,
-            like_count: 0,
-            author,
-        &#125;
-    &#125;
-&#125;
-
-添加author属性记录要mint to的author token account 地址
-同时需要修改create_tweet函数的细节：
-pub fn create_tweet(ctx: Context&lt;CreateTweet>, body: String) -> Result&lt;()> &#123;
-    let profile = &amp;mut ctx.accounts.profile;
-    profile.tweet_count += 1;
-    let tweet = Tweet::new(body, ctx.accounts.tweet.key()); // 这里添加tweet的地址
-    ctx.accounts.tweet.set_inner(tweet.clone());
-    Ok(())
-&#125;
-
-修改createLike方法
-pub fn create_like(ctx: Context&lt;CreateLike>) -> Result&lt;()> &#123;
-    let tweet = &amp;mut ctx.accounts.tweet;
-    tweet.like_count += 1;
-
-    let like = Like::new(ctx.accounts.profile.key(), tweet.key());
-    ctx.accounts.like.set_inner(like);
-    // 打印mint_account的地址
-    msg!("mint_account: &#123;&#125;", ctx.accounts.mint_account.key());
-    msg!(
-        "author_token_account: &#123;&#125;",
-        ctx.accounts.author_token_account.key()
-    );
-
-    mint_to(
-        CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            MintTo &#123;
-                mint: ctx.accounts.mint_account.to_account_info(),
-                to: ctx.accounts.author_token_account.to_account_info(),
-                authority: ctx.accounts.mint_account.to_account_info(),
-            &#125;,
-            &amp;[&amp;[b"mint_v3", &amp;[ctx.bumps.mint_account]]],
-        ),
-        100,
-    )?;
-    Ok(())
-&#125;
-关键参数解析：
-
-
-CpiContext::new_with_signer：创建跨程序调用（CPI）上下文，因为铸造代币需要调用 Solana 的 Token 程序（token_program）。
-
-
-MintTo
-结构体：指定铸造相关的账户：
-
-mint：代币的铸造账户（mint_account），负责生成新代币。
-to：接收代币的账户（author_token_account，推文作者的代币账户）。
-authority：铸造权限的拥有者（这里是mint_account自身，因为该账户的权限通过种子验证）。
-
-
-
-签名种子&amp;[&amp;[b&quot;mint_v3&quot;, &amp;[ctx.bumps.mint_account]]]：用于验证mint_account的权限（该账户是通过b&quot;mint_v3&quot;种子和 bump 值创建的，因此需要用相同种子证明有权限铸造代币）。
-
-
-最后一个参数100：指定铸造的代币数量（向作者账户铸造 100 个代币）。
-
-
-api重新调用这部分代码
-// 创建推文
-const [pda, r3] = await createTweet(defaultWallet, "Hello, world!");
-
-const r4 = await getTweet(defaultWallet, pda);
-console.log("defaultWallet public key:", defaultWallet.publicKey);
-
-console.log(r4);
-
-// 创建点赞
-const visitorPublicKey = visitorWallet.publicKey;
-console.log("Visitor public key:", visitorPublicKey.toString());
-const r5 = await createLike(visitorWallet, pda);
-console.log("Like created:", r5);
-
-const r6 = await getTweet(defaultWallet, pda);
-console.log(r6);
-结果校验
-  anchor_social git:(main) anchor run api
-yarn run v1.22.18
-warning ../package.json: No license field
-$ /Users/tinachan/anchor_social/node_modules/.bin/ts-node app/index.ts
-defaultWallet public key: PublicKey [PublicKey(FcKkQZRxD5P6JwGv58vGRAcX3CkjbX8oqFiygz6ohceU)] &#123;
-  _bn: &lt;BN: d91024e709f54d65b29c9328658d06a488414c4cabc36522130c330322428769>
-&#125;
-&#123;
-  body: 'Hello, world!',
-  likeCount: &lt;BN: 0>,
-  author: PublicKey [PublicKey(BiQgNLwkejkdYyvbSSCjKhTsdK6tmn6YZiXhApX88L1q)] &#123;
-    _bn: &lt;BN: 9f3074c28783b31efe51bdc42e5a0a6a8c2314d017da6a8ed713ccecd1aee164>
-  &#125;
-&#125;
-Visitor public key: 7rQKPb1bPLS4xU93a43GYmBK7MfY3ChSTSVfA8fcxbRF
-Like created: 59rjviQxEK68USP6VfPjqpciwKNcf98jTUpv7CBWEdFqNbAvh9FBTwH3RCcwviK8Wu92G3WACgwv6rafsWgitWDT
-&#123;
-  body: 'Hello, world!',
-  likeCount: &lt;BN: 1>,
-  author: PublicKey [PublicKey(BiQgNLwkejkdYyvbSSCjKhTsdK6tmn6YZiXhApX88L1q)] &#123;
-    _bn: &lt;BN: 9f3074c28783b31efe51bdc42e5a0a6a8c2314d017da6a8ed713ccecd1aee164>
-  &#125;
-&#125;
-✨  Done in 2.45s.
-成功后查看author token account的账户
-
 ]]></content>
       <categories>
         <category>Solana</category>
@@ -8088,6 +7666,961 @@ createTokenMintAccount 功能通过 Anchor 框架整合了 SPL Token 和 Metaple
 前端需正确生成 PDA 并传入完整账户参数才能触发交易。
 
 测试时需重点关注环境配置、PDA 种子一致性和账户参数完整性，避免因链上程序依赖或权限问题导致失败。
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Solana</tag>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Rust进阶[part10]_并发-概念、线程、通信、共享内存</title>
+    <url>/2025/08/01/Rust%E8%BF%9B%E9%98%B6-part10-%E5%B9%B6%E5%8F%91-%E6%A6%82%E5%BF%B5%E3%80%81%E7%BA%BF%E7%A8%8B%E3%80%81%E9%80%9A%E4%BF%A1/</url>
+    <content><![CDATA[Rust进阶[part10]_并发
+基本概述
+在Rust中，通过std::thread::spawn函数可以创建新线程，该函数接收一个闭包作为参数，闭包中包含线程要执行的代码。
+基础线程创建
+子线程的生命周期依赖于主线程：当主线程结束时，无论子线程是否执行完毕，都会被强制终止。
+use std::thread;
+use std::time::Duration;
+
+fn main() &#123;
+    // 创建子线程
+    thread::spawn(|| &#123;
+        for i in 1..10 &#123;
+            println!("spawn thread: &#123;&#125;", i);
+            thread::sleep(Duration::from_millis(1)); // 模拟耗时操作
+        &#125;
+    &#125;);
+
+    // 主线程逻辑
+    for i in 1..5 &#123;
+        println!("main thread: &#123;&#125;", i);
+        thread::sleep(Duration::from_millis(1));
+    &#125;
+&#125;
+输出结果（可能因调度顺序略有不同）：
+main thread: 1
+spawn thread: 1
+main thread: 2
+spawn thread: 2
+main thread: 3
+spawn thread: 3
+main thread: 4
+spawn thread: 4
+spawn thread: 5  &#x2F;&#x2F; 主线程已结束，子线程可能被中断
+等待线程完成：JoinHandle
+通过thread::spawn返回的JoinHandle类型，可以让主线程等待子线程执行完毕。调用join方法会阻塞当前线程，直到子线程完成。
+use std::thread;
+use std::time::Duration;
+
+fn main() &#123;
+    // 获取子线程的JoinHandle
+    let handle = thread::spawn(|| &#123;
+        for i in 1..10 &#123;
+            println!("spawn thread: &#123;&#125;", i);
+            thread::sleep(Duration::from_millis(1));
+        &#125;
+    &#125;);
+
+    // 主线程逻辑
+    for i in 1..5 &#123;
+        println!("main thread: &#123;&#125;", i);
+        thread::sleep(Duration::from_millis(1));
+    &#125;
+
+    // 等待子线程完成（阻塞主线程）
+    handle.join().unwrap(); // join返回Result，unwrap处理成功情况
+&#125;
+输出结果：主线程会等待子线程打印到9后再结束。
+使用move闭包
+move闭包用于将外部变量的所有权转移到子线程中，解决多线程中变量生命周期的问题（避免子线程访问已被释放的变量）。
+示例：不使用move导致的错误
+use std::thread;
+
+fn main() &#123;
+    let s = String::from("hello");
+    // 错误：子线程可能比主线程生命周期长，s可能被提前释放
+    thread::spawn(|| &#123;
+        println!("&#123;&#125;", s); // 编译错误：`s` does not live long enough
+    &#125;);
+&#125;
+使用move闭包解决
+use std::thread;
+
+fn main() &#123;
+    let s = String::from("hello");
+    // move闭包将s的所有权转移到子线程
+    thread::spawn(move || &#123;
+        println!("&#123;&#125;", s); // 正确：子线程拥有s的所有权
+    &#125;).join().unwrap();
+&#125;
+多线程通信
+Rust推荐通过消息传递实现安全并发，标准库提供的channel（通道）是实现这一机制的核心工具。
+Channel（通道）基础
+通道由发送端（Sender） 和接收端（Receiver） 组成，数据从发送端发送，接收端接收，实现线程间通信。
+
+导入：use std::sync::mpsc;（mpsc：多生产者单消费者，支持多个发送端向一个接收端发送数据）
+创建：let (tx, rx) = mpsc::channel();（返回包含发送端和接收端的元组）
+
+基本使用示例
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
+
+fn main() &#123;
+    let (tx, rx) = mpsc::channel();
+
+    // 子线程发送数据
+    thread::spawn(move || &#123;
+        let vals = vec![
+            String::from("hi"),
+            String::from("from"),
+            String::from("the"),
+            String::from("thread"),
+        ];
+        for val in vals &#123;
+            tx.send(val).unwrap(); // 发送数据，失败时unwrap panic
+            thread::sleep(Duration::from_millis(500)); // 模拟间隔发送
+        &#125;
+    &#125;);
+
+    // 主线程接收数据
+    for received in rx &#123; // 迭代接收，直到发送端全部关闭
+        println!("Got: &#123;&#125;", received);
+    &#125;
+&#125;
+输出结果：
+Got: hi
+Got: from
+Got: the
+Got: thread
+发送端与接收端方法
+
+
+发送端（Sender）：
+
+send(T) -&gt; Result&lt;(), SendError&lt;T&gt;&gt;：发送数据，成功返回Ok(())，失败（如接收端已关闭）返回Err。
+
+
+
+接收端（Receiver）：
+
+recv() -&gt; Result&lt;T, RecvError&gt;：阻塞当前线程，直到收到数据或发送端关闭（返回Err）。
+try_recv() -&gt; Result&lt;T, TryRecvError&gt;：非阻塞，立即返回：
+
+有数据：Ok(T)
+无数据：Err(TryRecvError::Empty)
+发送端关闭：Err(TryRecvError::Disconnected)
+
+
+
+
+
+多生产者示例
+通过Sender::clone可以创建多个发送端，实现多线程向同一接收端发送数据。
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
+
+fn main() &#123;
+    let (tx, rx) = mpsc::channel();
+    let tx2 = tx.clone(); // 克隆发送端
+
+    // 线程1发送数据
+    thread::spawn(move || &#123;
+        let vals = vec![
+            String::from("thread1: hi"),
+            String::from("thread1: hello"),
+        ];
+        for val in vals &#123;
+            tx.send(val).unwrap();
+            thread::sleep(Duration::from_millis(500));
+        &#125;
+    &#125;);
+
+    // 线程2发送数据
+    thread::spawn(move || &#123;
+        let vals = vec![
+            String::from("thread2: bye"),
+            String::from("thread2: goodbye"),
+        ];
+        for val in vals &#123;
+            tx2.send(val).unwrap();
+            thread::sleep(Duration::from_millis(500));
+        &#125;
+    &#125;);
+
+    // 接收数据
+    for received in rx &#123;
+        println!("Got: &#123;&#125;", received);
+    &#125;
+&#125;
+练习
+练习1——实现多线程文件处理器
+任务描述
+你需要编写一个多线程文件处理器，它从一个通道（channel）中接收文件路径，并在线程池中处理这些文件。文件处理的具体任务可以是读取文件内容并打印到控制台。你需要使用 Rust 的带缓冲区的 channel 来控制并发线程的数量，从而限制同时处理的文件数量。
+具体要求
+1.文件处理任务：定义一个函数process_file，该函数接受一个文件路径，读取文件内容，并将内容打印到控制台。
+2.多线程控制：
+
+创建一个带缓冲区的channel，用于在主线程和工作线程之间传递文件路径。
+使用多线程来实现文件处理的并发性，限制线程的并发数量（例如，最多同时处理 4 个文件）。
+
+3.主线程作为生产者：主线程负责向通道发送文件路径。假设我们有 10 个文件路径要处理。
+4.工作线程作为消费者：创建多个工作线程，每个线程从通道中接收文件路径，并调用process_file函数来处理文件。
+use crossbeam_channel::bounded;
+use std::fs;
+use std::path::Path;
+
+// 实现多线程文件处理器,同时可以处理4个文件读取，说明有四个接受端 ，一个发送端
+/* */
+fn process_file(filename: &amp;str) &#123;
+    match fs::read_to_string(filename) &#123;
+        Ok(content) => &#123;
+            println!("Processing file: &#123;&#125;", filename);
+            println!("Content: &#123;&#125;", content);
+        &#125;
+        Err(error) => &#123;
+            eprintln!("Error reading file &#123;&#125;: &#123;&#125;", filename, error);
+        &#125;
+    &#125;
+&#125;
+
+#[test]
+fn test_thread_file_processor() &#123;
+    let (tx, rx) = bounded(4);
+    let num_threads = 4;
+    let file_paths = vec![
+        "file1.txt",
+        "file2.txt",
+        "file3.txt",
+        "file4.txt",
+        "file5.txt",
+        "file6.txt",
+        "file7.txt",
+        "file8.txt",
+        "file9.txt",
+        "file10.txt",
+    ];
+
+    let mut handles = vec![];
+    // 启动 4 个工作线程
+    for i in 0..num_threads &#123;
+        let rx: crossbeam_channel::Receiver&lt;String> = rx.clone();
+        let handle: thread::JoinHandle&lt;()> = thread::spawn(move || &#123;
+            for path in rx &#123;
+                let content = fs::read_to_string(path).unwrap_or_else(|e| format!("Error: &#123;&#125;", e));
+                println!("Worker &#123;&#125;: &#123;&#125;", i, content);
+            &#125;
+        &#125;);
+        handles.push(handle);
+    &#125;
+
+    // 发送文件路径
+    for path in file_paths &#123;
+        tx.send(path.to_string()).unwrap();
+    &#125;
+  
+    
+    drop(tx);
+
+    for h in handles &#123;
+        h.join().unwrap()
+    &#125;
+&#125;
+
+
+坑⚠️：
+需要使用use crossbeam_channel::bounded; 才能满足接收者可以克隆，mpsc::channel()不能克隆接收者，只能克隆发送者
+let (tx, rx) = bounded(4);
+需要 drop(tx);来显式关闭发送端，使接收端退出 for path in rx 循环
+for path in rx这是一个阻塞循环，只有在发送端关闭时才会退出
+
+练习2——使用 Channel 实现程序的优雅停止
+任务描述
+
+任务描述
+○ 在这道练习中，你需要编写一个多线程程序，该程序会创建多个工作线程，持续处理任务。在接收到停止信号时，所有工作线程应该优雅地停止工作，并确保所有未完成的任务都被处理完毕。
+○ 你将使用 Rust 的 channel 来实现任务的调度和优雅停止机制。
+
+具体要求
+
+工作线程：
+○ 创建一个工作线程池，工作线程从通道接收任务并处理。
+○ 工作线程应能够响应停止信号，并在完成当前任务后优雅地退出。
+任务结构：
+○ 任务可以是简单的打印操作，模拟一些耗时工作，例如打印任务 ID 并暂停一段时间。
+优雅停止：
+○ 通过发送一个特殊的停止信号，通知所有工作线程停止接收新的任务，并在完成当前任务后退出。
+○ 确保所有已接收的任务都被处理完毕。
+主线程控制：
+○ 主线程应当能够发送任务，也能够在适当的时候发送停止信号，触发工作线程的优雅停止。
+
+答案：
+
+优雅停止：工作线程处理完当前任务后退出，不中断正在执行的任务。
+实现：通过特殊信号（如Option::None）通知线程停止，或关闭发送端触发接收端退出。
+
+实现代码
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
+
+// 任务类型：包含任务ID和模拟耗时
+type Task = Option&lt;u32>; // None作为停止信号
+
+// 处理任务
+fn process_task(task_id: u32) &#123;
+    println!("处理任务&#123;&#125;...", task_id);
+    thread::sleep(Duration::from_secs(1)); // 模拟耗时1秒
+    println!("任务&#123;&#125;处理完成", task_id);
+&#125;
+
+fn main() &#123;
+    let (tx, rx) = bounded(4);
+    let num_workers = 3;
+    let mut handles = vec![];
+
+    // 创建工作线程
+    for i in 0..num_workers &#123;
+        let rx = rx.clone();
+        let handle = thread::spawn(move || &#123;
+            println!("工作线程&#123;&#125;启动", i);
+            // 循环接收任务，直到收到None（停止信号）
+            while let Ok(task) = rx.recv() &#123;
+                match task &#123;
+                    Some(task_id) => process_task(task_id),
+                    None => &#123;
+                        println!("工作线程&#123;&#125;收到停止信号，退出", i);
+                        break; // 退出循环，线程结束
+                    &#125;
+                &#125;
+            &#125;
+        &#125;);
+        handles.push(handle);
+    &#125;
+
+    // 主线程发送任务
+    for task_id in 1..=5 &#123;
+        tx.send(Some(task_id)).unwrap();
+    &#125;
+
+    // 发送停止信号（每个线程一个）
+    for _ in 0..num_workers &#123;
+        tx.send(None).unwrap();
+    &#125;
+
+    // 等待所有工作线程退出
+    for handle in handles &#123;
+        handle.join().unwrap();
+    &#125;
+    println!("所有线程已优雅退出");
+&#125;
+✅ 总结
+
+
+
+方案
+支持克隆 Receiver
+是否推荐
+说明
+
+
+
+
+mpsc::sync_channel
+❌
+❌
+不支持克隆 Receiver
+
+
+mpsc::channel
+❌
+✅
+可克隆 Sender，适合多发送者单接收者
+
+
+crossbeam-channel
+✅
+✅✅
+支持克隆 Receiver，适合多消费者
+
+
+Arc&lt;Mutex&lt;Receiver&gt;&gt;
+❌
+❌
+不推荐，性能差，易出错
+
+
+select! + bounded
+✅
+✅
+适合多线程监听同一通道
+
+
+
+
+📌 推荐方案
+优先使用 crossbeam-channel 的 bounded 或 unbounded 通道，它不仅支持克隆 Receiver，还提供了更强大的功能，如 select!、try_recv、recv_timeout 等
+共享内存实现并发
+除了消息传递，还可以通过共享内存实现并发。Rust通过Mutex（互斥锁）和Arc（原子引用计数）保证共享内存的线程安全。
+Mutex&lt;T&gt;（互斥锁）
+Mutex确保同一时间只有一个线程能访问共享数据，通过“锁”机制实现：
+
+访问数据前需调用lock()获取锁（返回MutexGuard，智能指针）。
+MutexGuard离开作用域时自动释放锁，避免死锁。
+
+基本使用
+use std::sync::Mutex;
+
+fn main() &#123;
+    let m = Mutex::new(5); // 创建包含i32的Mutex
+
+    &#123;
+        let mut num = m.lock().unwrap(); // 获取锁，返回MutexGuard
+        *num = 6; // 通过解引用修改数据
+    &#125; // MutexGuard离开作用域，自动释放锁
+
+    println!("m = &#123;:?&#125;", m.lock().unwrap()); // 输出：m = 6
+&#125;
+Arc&lt;T&gt;（原子引用计数）
+Rc&lt;T&gt;不适合多线程（非线程安全），Arc&lt;T&gt;是线程安全版本的引用计数指针，通过原子操作保证计数的线程安全。常与Mutex配合，实现多线程共享数据。
+多线程共享计数器示例
+use std::sync::&#123;Arc, Mutex&#125;;
+use std::thread;
+
+fn main() &#123;
+    let counter = Arc::new(Mutex::new(0)); // Arc包裹Mutex，实现多线程共享
+    let mut handles = vec![];
+
+    for _ in 0..10 &#123;
+        let counter = Arc::clone(&amp;counter); // 克隆Arc，增加引用计数
+        let handle = thread::spawn(move || &#123;
+            let mut num = counter.lock().unwrap(); // 获取锁
+            *num += 1; // 修改计数器
+        &#125;);
+        handles.push(handle);
+    &#125;
+
+    // 等待所有线程完成
+    for handle in handles &#123;
+        handle.join().unwrap();
+    &#125;
+
+    println!("Result: &#123;&#125;", *counter.lock().unwrap()); // 输出：Result: 10
+&#125;
+Send 和 Sync  trait
+Rust通过这两个标记 trait 保证线程安全：
+
+Send：标记类型可以安全地转移到另一个线程（所有权转移）。
+Sync：标记类型可以安全地被多个线程共享（即&amp;T是Send的）。
+
+默认实现：
+
+基本类型（i32、bool等）和大多数标准库类型（String、Vec等）都实现了Send和Sync。
+Rc&lt;T&gt;不实现Send和Sync（非线程安全）。
+Arc&lt;T&gt;实现Send和Sync（线程安全）。
+Mutex&lt;T&gt;当T是Send时，Mutex&lt;T&gt;实现Sync。
+
+练习3——实现多线程任务调度器
+任务描述
+你需要编写一个简单的多线程任务调度器，它能够接收多个任务，并将这些任务分发到多个工作线程中执行。调度器使用 Channel 进行任务的分发和结果的收集。你需要使用 Rust 的Send和Sync特性来确保任务调度器在多线程环境中的安全性。
+具体要求
+定义一个Task结构体，表示需要执行的任务。任务包含一个唯一的id和一个用于执行的闭包。
+调度器结构：
+创建一个Scheduler结构体，包含一个任务队列和一个线程池。调度器应当使用channel来分发任务到不同的工作线程。
+功能实现：
+调度器应当具有以下功能：
+
+添加任务：向调度器添加一个任务。
+启动调度器：启动多个线程，开始从任务队列中获取任务并执行。
+获取结果：在所有任务完成后，收集并打印每个任务的执行结果。
+
+多线程安全：
+
+通过使用Arc和Mutex确保任务队列在多个线程之间的安全访问。
+确保任务的结果能够正确地在线程之间传递和收集。
+
+任务分析
+
+核心：用channel分发任务，用Arc+Mutex管理任务队列和结果收集。
+结构：Scheduler包含任务发送端、结果接收端和工作线程句柄。
+
+实现代码
+use crossbeam_channel as channel;
+use std::sync::Mutex;
+use std::thread;
+use std::time::Duration;
+
+// ------------------实现多线程任务调度器------------------------
+/**
+ * 多线程任务调度器，能够接收多个任务，并将多个任务分配给多个线程执行。需要使用send和sync trait
+ * 来确保任务调度器可以安全地被多个线程访问。
+ */
+use std::sync::Arc;
+// 任务结构体：包含ID和执行闭包（返回结果）
+struct Task &#123;
+    id: u32,
+    func: Box&lt;dyn FnOnce() -> String + Send + 'static>, // 闭包需实现Send
+&#125;
+
+// 调度器结构体
+struct Scheduler &#123;
+    task_tx: Option&lt;channel::Sender&lt;Task>>, // 任务发送端 (使用Option便于take)
+    result_rx: Arc&lt;Mutex&lt;channel::Receiver&lt;String>>>, // 结果接收端（共享）
+    workers: Option&lt;Vec&lt;thread::JoinHandle&lt;()>>>, // 工作线程句柄队列 (使用Option便于take)
+&#125;
+
+impl Scheduler &#123;
+    // 创建新调度器
+    fn new(num_workers: usize) -> Self &#123;
+        let (task_tx, task_rx) = channel::unbounded();
+        let (result_tx, result_rx) = channel::unbounded();
+        let result_rx = Arc::new(Mutex::new(result_rx));
+        let mut workers = vec![];
+
+        // 创建工作线程
+        for _ in 0..num_workers &#123;
+            // 注意：crossbeam-channel的Receiver支持clone
+            let task_rx_clone: channel::Receiver&lt;Task> = task_rx.clone();
+            let result_tx: channel::Sender&lt;String> = result_tx.clone();
+
+            let handle = thread::spawn(move || &#123;
+                // 循环接收任务并执行
+                while let Ok(task) = task_rx_clone.recv() &#123;
+                    println!("执行任务&#123;&#125;", task.id);
+                    let result = (task.func)(); // 执行任务
+                    result_tx.send(result).unwrap(); // 发送结果
+                &#125;
+            &#125;);
+            workers.push(handle);
+        &#125;
+
+        Scheduler &#123;
+            task_tx: Some(task_tx),
+            result_rx,
+            workers: Some(workers),
+        &#125;
+    &#125;
+
+    // 添加任务
+    fn add_task(&amp;self, id: u32, func: Box&lt;dyn FnOnce() -> String + Send + 'static>) &#123;
+        if let Some(ref tx) = self.task_tx &#123;
+            tx.send(Task &#123; id, func &#125;).unwrap();
+        &#125;
+    &#125;
+
+    // 等待所有任务完成并收集结果
+    fn wait_and_collect_results(&amp;mut self) -> Vec&lt;String> &#123;
+        // 关闭任务发送端，让工作线程接收完毕后退出
+        self.task_tx.take(); // 使用take获取所有权并使原位置为None
+
+        // 等待所有工作线程完成
+        if let Some(workers) = self.workers.take() &#123;
+            // 使用take获取所有权
+            for handle in workers &#123;
+                handle.join().unwrap();
+            &#125;
+        &#125;
+
+        // 收集结果
+        let mut results = vec![];
+        let result_rx = self.result_rx.lock().unwrap();
+        // 使用try_iter()来获取已有的结果，避免阻塞
+        for result in result_rx.try_iter() &#123;
+            results.push(result);
+        &#125;
+        results
+    &#125;
+&#125;
+
+fn main() &#123;
+    let mut scheduler = Scheduler::new(2); // 创建2个工作线程
+
+    // 添加任务
+    for i in 1..=5 &#123;
+        scheduler.add_task(
+            i,
+            Box::new(move || &#123;
+                thread::sleep(Duration::from_secs(1)); // 模拟耗时
+                format!("任务&#123;&#125;执行完成", i)
+            &#125;),
+        );
+    &#125;
+
+    // 收集结果
+    let results = scheduler.wait_and_collect_results();
+    println!("所有任务结果：");
+    for res in results &#123;
+        println!("&#123;&#125;", res);
+    &#125;
+&#125;
+
+总结
+Rust通过所有权系统、Send/Sync trait、channel和Mutex/Arc等工具，在编译期保证并发安全，避免数据竞争。开发中应根据场景选择消息传递（channel）或共享内存（Mutex+Arc）模式，优先使用消息传递（更易保证安全）。
+]]></content>
+      <categories>
+        <category>Rust</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Docker + Rust 构建问题分析</title>
+    <url>/2025/11/04/Docker%20+%20Rust%20%E6%9E%84%E5%BB%BA%E8%B8%A9%E5%9D%91%E8%A1%80%E6%B3%AA%E5%8F%B2/</url>
+    <content><![CDATA[Docker + Rust 构建问题分析
+问题
+
+容器启动后立即退出 (exited with code 0)
+完全没有任何日志输出（连 main() 第一行都没打印）
+改小版本号无效 (v3.1.9 → v3.2.0 都失败)
+改大版本号就好了 (v3.x → v4.0.0 突然成功)
+不同机器构建结果不一致（本地失败，服务器成功）
+
+关键线索：二进制文件大小
+正常启动的：22MB ~ 24MB
+启动失败的：443KB ~ 450KB  ← 这是损坏的！
+
+根本原因
+Cargo 增量编译 + Docker 缓存的潜在问题
+Dockerfile 中常见的&quot;依赖缓存优化&quot;会导致问题：
+# 步骤 1：缓存依赖
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src &amp;&amp; echo "fn main() &#123;&#125;" > src/main.rs &amp;&amp; cargo build --release
+# ↑ 这里生成了一个 450KB 的 dummy 二进制
+
+# 步骤 2：删除假源码
+RUN rm -rf src
+
+# 步骤 3：复制真实源码
+COPY . .
+
+# 步骤 4：真正构建
+RUN cargo build --release
+# ↑ 问题出现在这里！
+关键问题
+
+Cargo 检测到 target/release/ 已存在 dummy 二进制
+增量编译判断：源码没变化（因为 Docker 缓存）
+Cargo 决定：不需要重新编译，直接复用旧二进制
+结果：最终镜像里是那个 450KB 的废物二进制！
+
+
+为什么版本号变更有时能解决问题？
+v3.1.9 → v3.2.0 无效
+Docker 认为这是&quot;小改动&quot;
+→ 继续使用缓存层
+→ 继续使用损坏的二进制
+v3.x → v4.0.0 有效
+Docker 认为这是&quot;重大变更&quot;（主版本号变化）
+→ 某些缓存策略被重置
+→ 意外触发了完全重新构建
+→ 生成了正确的 24MB 二进制
+但这不是可靠的修复！下次 v4.1.0 可能又会失败！
+
+为什么这个问题如此隐蔽？
+1. 编译成功，没有错误
+[builder 8/8] RUN cargo build --release   ✓ 0.6s
+2. 容器启动成功，立即退出
+solji_indexer_sonia exited with code 0
+
+exit 0 = “正常退出”（误导性结果！）
+实际：二进制损坏，连 main() 都没执行
+
+3. 完全没有日志
+fn main() &#123;
+    println!("Starting..."); // ← 这行永远不会执行
+&#125;
+因为二进制根本就是假的 fn main() &#123;&#125;
+4. 本地和服务器表现不一致
+
+本地 Mac (arm64)：缓存污染，生成 450KB
+服务器 (amd64)：重新构建，生成 107MB
+造成错觉：“是不是架构问题？”
+
+
+最终解决方案
+核心思路：强制清理旧二进制，禁止增量编译复用
+FROM rust:1.83-bookworm AS builder
+
+RUN apt-get update &amp;&amp; apt-get install -y \
+    pkg-config libssl-dev build-essential ca-certificates \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ===== 步骤 1：缓存依赖（这个没问题）=====
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src &amp;&amp; \
+    echo "fn main() &#123;&#125;" > src/main.rs &amp;&amp; \
+    cargo build --release --locked
+
+# ===== 步骤 2：清理旧二进制（关键！）=====
+RUN rm -rf target/release/solji-indexer \
+           target/release/deps/solji_indexer* \
+           target/release/.fingerprint/solji-indexer-*
+
+# ===== 步骤 3：复制真实代码 =====
+COPY . .
+
+# ===== 步骤 4：完整构建 =====
+RUN cargo build --release --locked
+
+# ===== 步骤 5：验证二进制大小（重要！）=====
+RUN SIZE=$(stat -c%s target/release/solji-indexer 2>/dev/null || stat -f%z target/release/solji-indexer) &amp;&amp; \
+    echo "Binary size: $SIZE bytes" &amp;&amp; \
+    if [ $SIZE -lt 5000000 ]; then \
+        echo "ERROR: Binary too small ($SIZE bytes), build failed!" &amp;&amp; exit 1; \
+    fi
+
+# ===== Runtime 镜像 =====
+FROM debian:bookworm-slim
+
+RUN apt-get update &amp;&amp; apt-get install -y \
+    libssl3 ca-certificates \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/target/release/solji-indexer /usr/local/bin/solji-indexer
+COPY .env /usr/local/bin/.env
+
+WORKDIR /usr/local/bin
+EXPOSE 8080
+
+CMD ["/usr/local/bin/solji-indexer"]
+
+防御措施
+1. 构建时验证二进制大小
+RUN SIZE=$(stat -c%s target/release/solji-indexer) &amp;&amp; \
+    [ $SIZE -gt 5000000 ] || (echo "Build failed: binary too small" &amp;&amp; exit 1)
+2. 使用 --locked 参数
+RUN cargo build --release --locked
+确保使用 Cargo.lock 中的精确版本
+3. 构建后立即测试
+# 在 builder 阶段测试二进制能否运行
+RUN ./target/release/solji-indexer --version || \
+    (echo "Binary is broken!" &amp;&amp; exit 1)
+4. 清理 Docker 缓存
+# 每次重要构建前执行
+docker builder prune -af
+docker build --no-cache -t myimage:tag .
+5. CI/CD 中固定构建环境
+# GitHub Actions
+- name: Build Docker Image
+  run: |
+    docker build --no-cache \
+      --build-arg BUILDKIT_INLINE_CACHE=1 \
+      -t sonia831/solji-indexer:$&#123;&#123; github.sha &#125;&#125; .
+
+检测清单
+# 1. 检查镜像大小
+docker images | grep solji-indexer
+# 应该 > 100MB
+
+# 2. 检查二进制大小
+docker run --rm --entrypoint ls myimage:tag -lh /usr/local/bin/solji-indexer
+# 应该 > 20MB
+
+# 3. 测试启动
+docker run --rm myimage:tag --version
+# 应该有输出
+
+# 4. 查看依赖库
+docker run --rm --entrypoint ldd myimage:tag /usr/local/bin/solji-indexer
+# 应该能看到 libssl, libc 等
+]]></content>
+      <categories>
+        <category>Rust</category>
+      </categories>
+      <tags>
+        <tag>Rust</tag>
+        <tag>Docker</tag>
+        <tag>Bug</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solana[part13]_Anchor实战：为用户Mint Spl TOKEN</title>
+    <url>/2025/08/19/Solana-part13-Anchor%E5%AE%9E%E6%88%98%EF%BC%9A%E4%B8%BA%E7%94%A8%E6%88%B7Mint-Spl-TOKEN/</url>
+    <content><![CDATA[Solana[part13]_Anchor实战：为用户Mint Spl TOKEN
+该部分代码见：https://github.com/SoniaChan33/anchor_social/commit/5abd954500f2926d999ac644c18a97c91cde9fb6
+createLike指令添加需要的account
+/anchor_social/src/instructions/tweet.rs
+#[derive(Accounts)]
+pub struct CreateLike&lt;'info> &#123;
+    #[account(
+        mut,
+        seeds = [b"mint_v3",],
+        bump,
+    )]
+    pub mint_account: Account&lt;'info, Mint>,
+
+    #[account(
+        init_if_needed,
+        payer = authority,
+        associated_token::mint = mint_account,
+        associated_token::authority = author_wallet,
+    )]
+    pub author_token_account: Account&lt;'info, TokenAccount>,
+
+    /// CHECK : THIS IS AUTHOR WALLET
+    pub author_wallet: AccountInfo&lt;'info>,
+
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + Like::INIT_SPACE,
+        seeds = [
+            Like::SEED_PREFIX.as_bytes().as_ref(),
+            profile.key().as_ref(),
+            tweet.key().as_ref()
+        ],
+        bump
+    )]
+    pub like: Account&lt;'info, Like>,
+
+    #[account(mut)]
+    pub tweet: Account&lt;'info, Tweet>,
+
+
+    #[account(mut, seeds = [Profile::SEED_PREFIX.as_bytes(), authority.key().as_ref()], bump)]
+    pub profile: Account&lt;'info, Profile>,
+    #[account(mut)]
+    pub authority: Signer&lt;'info>,
+    pub system_program: Program&lt;'info, System>,
+
+    pub associated_token_program: Program&lt;'info, AssociatedToken>,
+
+    pub token_program: Program&lt;'info, Token>, // 新增的Token程序字段
+&#125;
+
+tweet结构体修改
+#[account]
+#[derive(InitSpace)]
+pub struct Tweet &#123;
+    #[max_len(50)]
+    pub body: String,
+
+    pub like_count: u64,
+    pub author: Pubkey,
+&#125;
+impl Tweet &#123;
+    pub const SEED_PREFIX: &amp;'static str = "tweet";
+
+    pub fn new(body: String, author: Pubkey) -> Self &#123;
+        Self &#123;
+            body,
+            like_count: 0,
+            author,
+        &#125;
+    &#125;
+&#125;
+
+添加author属性记录要mint to的author token account 地址
+同时需要修改create_tweet函数的细节：
+pub fn create_tweet(ctx: Context&lt;CreateTweet>, body: String) -> Result&lt;()> &#123;
+    let profile = &amp;mut ctx.accounts.profile;
+    profile.tweet_count += 1;
+    let tweet = Tweet::new(body, ctx.accounts.tweet.key()); // 这里添加tweet的地址
+    ctx.accounts.tweet.set_inner(tweet.clone());
+    Ok(())
+&#125;
+
+修改createLike方法
+pub fn create_like(ctx: Context&lt;CreateLike>) -> Result&lt;()> &#123;
+    let tweet = &amp;mut ctx.accounts.tweet;
+    tweet.like_count += 1;
+
+    let like = Like::new(ctx.accounts.profile.key(), tweet.key());
+    ctx.accounts.like.set_inner(like);
+    // 打印mint_account的地址
+    msg!("mint_account: &#123;&#125;", ctx.accounts.mint_account.key());
+    msg!(
+        "author_token_account: &#123;&#125;",
+        ctx.accounts.author_token_account.key()
+    );
+
+    mint_to(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            MintTo &#123;
+                mint: ctx.accounts.mint_account.to_account_info(),
+                to: ctx.accounts.author_token_account.to_account_info(),
+                authority: ctx.accounts.mint_account.to_account_info(),
+            &#125;,
+            &amp;[&amp;[b"mint_v3", &amp;[ctx.bumps.mint_account]]],
+        ),
+        100,
+    )?;
+    Ok(())
+&#125;
+关键参数解析：
+
+
+CpiContext::new_with_signer：创建跨程序调用（CPI）上下文，因为铸造代币需要调用 Solana 的 Token 程序（token_program）。
+
+
+MintTo
+结构体：指定铸造相关的账户：
+
+mint：代币的铸造账户（mint_account），负责生成新代币。
+to：接收代币的账户（author_token_account，推文作者的代币账户）。
+authority：铸造权限的拥有者（这里是mint_account自身，因为该账户的权限通过种子验证）。
+
+
+
+签名种子&amp;[&amp;[b&quot;mint_v3&quot;, &amp;[ctx.bumps.mint_account]]]：用于验证mint_account的权限（该账户是通过b&quot;mint_v3&quot;种子和 bump 值创建的，因此需要用相同种子证明有权限铸造代币）。
+
+
+最后一个参数100：指定铸造的代币数量（向作者账户铸造 100 个代币）。
+
+
+api重新调用这部分代码
+// 创建推文
+const [pda, r3] = await createTweet(defaultWallet, "Hello, world!");
+
+const r4 = await getTweet(defaultWallet, pda);
+console.log("defaultWallet public key:", defaultWallet.publicKey);
+
+console.log(r4);
+
+// 创建点赞
+const visitorPublicKey = visitorWallet.publicKey;
+console.log("Visitor public key:", visitorPublicKey.toString());
+const r5 = await createLike(visitorWallet, pda);
+console.log("Like created:", r5);
+
+const r6 = await getTweet(defaultWallet, pda);
+console.log(r6);
+结果校验
+  anchor_social git:(main) anchor run api
+yarn run v1.22.18
+warning ../package.json: No license field
+$ /Users/tinachan/anchor_social/node_modules/.bin/ts-node app/index.ts
+defaultWallet public key: PublicKey [PublicKey(FcKkQZRxD5P6JwGv58vGRAcX3CkjbX8oqFiygz6ohceU)] &#123;
+  _bn: &lt;BN: d91024e709f54d65b29c9328658d06a488414c4cabc36522130c330322428769>
+&#125;
+&#123;
+  body: 'Hello, world!',
+  likeCount: &lt;BN: 0>,
+  author: PublicKey [PublicKey(BiQgNLwkejkdYyvbSSCjKhTsdK6tmn6YZiXhApX88L1q)] &#123;
+    _bn: &lt;BN: 9f3074c28783b31efe51bdc42e5a0a6a8c2314d017da6a8ed713ccecd1aee164>
+  &#125;
+&#125;
+Visitor public key: 7rQKPb1bPLS4xU93a43GYmBK7MfY3ChSTSVfA8fcxbRF
+Like created: 59rjviQxEK68USP6VfPjqpciwKNcf98jTUpv7CBWEdFqNbAvh9FBTwH3RCcwviK8Wu92G3WACgwv6rafsWgitWDT
+&#123;
+  body: 'Hello, world!',
+  likeCount: &lt;BN: 1>,
+  author: PublicKey [PublicKey(BiQgNLwkejkdYyvbSSCjKhTsdK6tmn6YZiXhApX88L1q)] &#123;
+    _bn: &lt;BN: 9f3074c28783b31efe51bdc42e5a0a6a8c2314d017da6a8ed713ccecd1aee164>
+  &#125;
+&#125;
+✨  Done in 2.45s.
+成功后查看author token account的账户
+
 ]]></content>
       <categories>
         <category>Solana</category>
@@ -8511,6 +9044,153 @@ Validator not found：确认验证者投票账户地址正确，且已通过add-
       </tags>
   </entry>
   <entry>
+    <title>Solana[part17]_Solana质押-编写应用级别的质押合约-解质押部分</title>
+    <url>/2025/08/22/Solana-part17-Solana%E8%B4%A8%E6%8A%BC-%E7%BC%96%E5%86%99%E5%BA%94%E7%94%A8%E7%BA%A7%E5%88%AB%E7%9A%84%E8%B4%A8%E6%8A%BC%E5%90%88%E7%BA%A6-%E8%A7%A3%E8%B4%A8%E6%8A%BC%E9%83%A8%E5%88%86/</url>
+    <content><![CDATA[Solana质押-编写应用级别的质押合约-解质押部分
+
+核心代码地址提交：
+https://github.com/SoniaChan33/anchor_social/commit/b6ca707c33992ef5e72d1be5e4b6edc14e385b98
+
+1. 解质押功能核心逻辑
+解质押是质押流程的反向操作，核心目标是将质押的 NFT 归还给用户，并销毁质押时获得的流动性代币。具体流程通过 nft_unstake 函数实现，步骤如下：
+1.1 权限校验
+函数首先验证解质押操作的合法性，确保：
+
+解质押的 NFT 与质押记录中的 NFT 匹配（stake_info.nft_mint_account == nft_mint_account.key()）；
+发起解质押的用户是原质押人（stake_info.staker == authority.key()）。
+若不满足，返回 UnstakeError::NoAuthority 错误。
+
+// 权限校验代码（源自nft_unstake.rs）
+require!(
+    &amp;ctx.accounts.stake_info.nft_mint_account == &amp;ctx.accounts.nft_mint_account.key(),
+    UnstakeError::NoAuthority,
+);
+require!(
+    &amp;ctx.accounts.stake_info.staker == &amp;ctx.accounts.authority.key(),
+    UnstakeError::NoAuthority,
+);
+1.2 NFT 转回用户账户
+通过 transfer 操作将暂存于合约托管账户（program_receipt_ata）的 NFT 转回用户的关联账户（nft_associated_token_account）。
+
+由于合约托管账户的权限归 stake_info（PDA 账户），需使用 stake_info 的种子（StakeInfo::SEED_PREFIX + nft_mint_account.key() + bump）生成签名，确保操作合法性。
+
+// NFT 转移代码（源自nft_unstake.rs）
+let nft_mint_account = ctx.accounts.nft_mint_account.key();
+let signer_seeds: &amp;[&amp;[&amp;[u8]]] = &amp;[&amp;[
+    StakeInfo::SEED_PREFIX.as_bytes(),
+    nft_mint_account.as_ref(),
+    &amp;[ctx.bumps.stake_info],
+]];
+transfer(
+    CpiContext::new(
+        ctx.accounts.token_program.to_account_info(),
+        Transfer &#123;
+            from: ctx.accounts.program_receipt_ata.to_account_info(),
+            to: ctx.accounts.nft_associated_token_account.to_account_info(),
+            authority: ctx.accounts.stake_info.to_account_info(),
+        &#125;,
+    )
+    .with_signer(signer_seeds),
+    1, // NFT 数量固定为1
+)?;
+1.3 流动性代币销毁
+用户解质押时，需销毁质押时获得的流动性代币（通过 burn 操作），数量通过 stake_info.salvage_value(10000) 计算（基于质押时长）。
+// 代币销毁代码（源自nft_unstake.rs）
+let amount = ctx.accounts.stake_info.salvage_value(10000);
+burn(
+    CpiContext::new(
+        ctx.accounts.token_program.to_account_info(),
+        Burn &#123;
+            mint: ctx.accounts.token_mint_account.to_account_info(),
+            from: ctx.accounts.associated_token_account.to_account_info(),
+            authority: ctx.accounts.authority.to_account_info(),
+        &#125;,
+    ),
+    amount,
+)?;
+2. 账户结构说明（NFTUnStake）
+NFTUnStake 结构体定义了解质押所需的所有账户，各账户作用如下：
+
+
+
+账户名
+作用描述
+
+
+
+
+stake_info
+存储质押记录（质押人、NFT 地址、质押时间），以 StakeInfo::SEED_PREFIX + NFT Mint 地址 为种子的 PDA 账户。
+
+
+program_receipt_ata
+合约托管 NFT 的关联账户，权限归 stake_info，用于暂存质押的 NFT。
+
+
+token_mint_account
+流动性代币的 Mint 账户，以 MyToken::SEED_PREFIX 为种子的 PDA 账户，用于销毁代币。
+
+
+associated_token_account
+用户持有的流动性代币账户，用于销毁质押时获得的代币。
+
+
+nft_mint_account
+被质押 NFT 的 Mint 账户，标识唯一 NFT。
+
+
+nft_associated_token_account
+用户接收 NFT 的关联账户，解质押后 NFT 转回此处。
+
+
+authority
+解质押发起者（原质押人），需签名授权操作。
+
+
+系统程序（token_program 等）
+提供代币转移、销毁等基础功能的系统程序。
+
+
+
+3. 利息计算逻辑（salvage_value 方法）
+解质押时销毁的代币数量通过 StakeInfo::salvage_value 计算，逻辑为：基于质押时长（当前 Epoch 与质押时 Epoch 的差值），按每 Epoch 2% 的比例计算（原代码实现）。
+// 利息计算代码（源自stake.rs）
+pub fn salvage_value(&amp;self, amount: u64) -> u64 &#123;
+    let now = Clock::get().unwrap().epoch;
+    // 每一个epoch减2%（原代码逻辑）
+    let p = max(0, (now - self.staked_at) * 2) as f64 / 100.0;
+    (amount as f64 * p) as u64
+&#125;
+4. 关键注意事项
+4.1 利息计算的潜在问题
+
+浮点数精度风险：原代码使用 f64 计算比例（如 (now - staked_at) * 2 as f64 / 100.0），可能导致精度丢失（例如 10000 * 0.02 理论为 200，但浮点数运算可能产生偏差）。
+Epoch 差值为 0 的问题：若测试网络中 Epoch 长期未更新（默认配置 slots-per-epoch 较大），now - self.staked_at 为 0，导致 salvage_value 返回 0，用户无实际获利。
+
+4.2 测试网络配置建议
+为解决 Epoch 不更新的问题，启动本地测试网时需手动设置较小的 slots-per-epoch，确保 Epoch 能快速推进：
+# 每32个slot为1个Epoch（加速Epoch更新，便于测试利息计算）
+solana-test-validator --slots-per-epoch 32 -r \
+  --bpf-program metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s metadata.so
+可通过以下命令验证 Epoch 状态：
+solana epoch-info --url localhost # 查看当前Epoch和slot数
+4.3 权限与安全性
+
+解质押必须验证 stake_info 中的质押人与发起者一致，防止非所有者操作。
+NFT 转移时需使用 stake_info 的 PDA 签名（signer_seeds），确保只有合约有权限操作托管的 NFT，避免权限泄露。
+
+总结
+解质押功能通过权限校验、NFT 转回、流动性代币销毁完成闭环，核心依赖 stake_info 记录的质押关系和 salvage_value 计算的销毁数量。需特别注意浮点数计算精度和测试网 Epoch 配置，以确保用户获利逻辑可正常验证。
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Solana</tag>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Solana[part16]_Solana质押-编写应用级别的质押合约-质押部分</title>
     <url>/2025/08/22/Solana-part16-Solana%E8%B4%A8%E6%8A%BC-%E7%BC%96%E5%86%99%E5%BA%94%E7%94%A8%E7%BA%A7%E5%88%AB%E7%9A%84%E8%B4%A8%E6%8A%BC%E5%90%88%E7%BA%A6-%E8%B4%A8%E6%8A%BC%E9%83%A8%E5%88%86/</url>
     <content><![CDATA[Solana质押-编写应用级别的质押合约-质押部分
@@ -8848,153 +9528,6 @@ MPL 元数据标准：遵循 Metaplex Token Metadata 标准创建 NFT 元数据�
 验证
 查看账号，发现我的nft已经转移走了，取而代之的是token发放到我的账户中
 
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Solana</tag>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Solana[part17]_Solana质押-编写应用级别的质押合约-解质押部分</title>
-    <url>/2025/08/22/Solana-part17-Solana%E8%B4%A8%E6%8A%BC-%E7%BC%96%E5%86%99%E5%BA%94%E7%94%A8%E7%BA%A7%E5%88%AB%E7%9A%84%E8%B4%A8%E6%8A%BC%E5%90%88%E7%BA%A6-%E8%A7%A3%E8%B4%A8%E6%8A%BC%E9%83%A8%E5%88%86/</url>
-    <content><![CDATA[Solana质押-编写应用级别的质押合约-解质押部分
-
-核心代码地址提交：
-https://github.com/SoniaChan33/anchor_social/commit/b6ca707c33992ef5e72d1be5e4b6edc14e385b98
-
-1. 解质押功能核心逻辑
-解质押是质押流程的反向操作，核心目标是将质押的 NFT 归还给用户，并销毁质押时获得的流动性代币。具体流程通过 nft_unstake 函数实现，步骤如下：
-1.1 权限校验
-函数首先验证解质押操作的合法性，确保：
-
-解质押的 NFT 与质押记录中的 NFT 匹配（stake_info.nft_mint_account == nft_mint_account.key()）；
-发起解质押的用户是原质押人（stake_info.staker == authority.key()）。
-若不满足，返回 UnstakeError::NoAuthority 错误。
-
-// 权限校验代码（源自nft_unstake.rs）
-require!(
-    &amp;ctx.accounts.stake_info.nft_mint_account == &amp;ctx.accounts.nft_mint_account.key(),
-    UnstakeError::NoAuthority,
-);
-require!(
-    &amp;ctx.accounts.stake_info.staker == &amp;ctx.accounts.authority.key(),
-    UnstakeError::NoAuthority,
-);
-1.2 NFT 转回用户账户
-通过 transfer 操作将暂存于合约托管账户（program_receipt_ata）的 NFT 转回用户的关联账户（nft_associated_token_account）。
-
-由于合约托管账户的权限归 stake_info（PDA 账户），需使用 stake_info 的种子（StakeInfo::SEED_PREFIX + nft_mint_account.key() + bump）生成签名，确保操作合法性。
-
-// NFT 转移代码（源自nft_unstake.rs）
-let nft_mint_account = ctx.accounts.nft_mint_account.key();
-let signer_seeds: &amp;[&amp;[&amp;[u8]]] = &amp;[&amp;[
-    StakeInfo::SEED_PREFIX.as_bytes(),
-    nft_mint_account.as_ref(),
-    &amp;[ctx.bumps.stake_info],
-]];
-transfer(
-    CpiContext::new(
-        ctx.accounts.token_program.to_account_info(),
-        Transfer &#123;
-            from: ctx.accounts.program_receipt_ata.to_account_info(),
-            to: ctx.accounts.nft_associated_token_account.to_account_info(),
-            authority: ctx.accounts.stake_info.to_account_info(),
-        &#125;,
-    )
-    .with_signer(signer_seeds),
-    1, // NFT 数量固定为1
-)?;
-1.3 流动性代币销毁
-用户解质押时，需销毁质押时获得的流动性代币（通过 burn 操作），数量通过 stake_info.salvage_value(10000) 计算（基于质押时长）。
-// 代币销毁代码（源自nft_unstake.rs）
-let amount = ctx.accounts.stake_info.salvage_value(10000);
-burn(
-    CpiContext::new(
-        ctx.accounts.token_program.to_account_info(),
-        Burn &#123;
-            mint: ctx.accounts.token_mint_account.to_account_info(),
-            from: ctx.accounts.associated_token_account.to_account_info(),
-            authority: ctx.accounts.authority.to_account_info(),
-        &#125;,
-    ),
-    amount,
-)?;
-2. 账户结构说明（NFTUnStake）
-NFTUnStake 结构体定义了解质押所需的所有账户，各账户作用如下：
-
-
-
-账户名
-作用描述
-
-
-
-
-stake_info
-存储质押记录（质押人、NFT 地址、质押时间），以 StakeInfo::SEED_PREFIX + NFT Mint 地址 为种子的 PDA 账户。
-
-
-program_receipt_ata
-合约托管 NFT 的关联账户，权限归 stake_info，用于暂存质押的 NFT。
-
-
-token_mint_account
-流动性代币的 Mint 账户，以 MyToken::SEED_PREFIX 为种子的 PDA 账户，用于销毁代币。
-
-
-associated_token_account
-用户持有的流动性代币账户，用于销毁质押时获得的代币。
-
-
-nft_mint_account
-被质押 NFT 的 Mint 账户，标识唯一 NFT。
-
-
-nft_associated_token_account
-用户接收 NFT 的关联账户，解质押后 NFT 转回此处。
-
-
-authority
-解质押发起者（原质押人），需签名授权操作。
-
-
-系统程序（token_program 等）
-提供代币转移、销毁等基础功能的系统程序。
-
-
-
-3. 利息计算逻辑（salvage_value 方法）
-解质押时销毁的代币数量通过 StakeInfo::salvage_value 计算，逻辑为：基于质押时长（当前 Epoch 与质押时 Epoch 的差值），按每 Epoch 2% 的比例计算（原代码实现）。
-// 利息计算代码（源自stake.rs）
-pub fn salvage_value(&amp;self, amount: u64) -> u64 &#123;
-    let now = Clock::get().unwrap().epoch;
-    // 每一个epoch减2%（原代码逻辑）
-    let p = max(0, (now - self.staked_at) * 2) as f64 / 100.0;
-    (amount as f64 * p) as u64
-&#125;
-4. 关键注意事项
-4.1 利息计算的潜在问题
-
-浮点数精度风险：原代码使用 f64 计算比例（如 (now - staked_at) * 2 as f64 / 100.0），可能导致精度丢失（例如 10000 * 0.02 理论为 200，但浮点数运算可能产生偏差）。
-Epoch 差值为 0 的问题：若测试网络中 Epoch 长期未更新（默认配置 slots-per-epoch 较大），now - self.staked_at 为 0，导致 salvage_value 返回 0，用户无实际获利。
-
-4.2 测试网络配置建议
-为解决 Epoch 不更新的问题，启动本地测试网时需手动设置较小的 slots-per-epoch，确保 Epoch 能快速推进：
-# 每32个slot为1个Epoch（加速Epoch更新，便于测试利息计算）
-solana-test-validator --slots-per-epoch 32 -r \
-  --bpf-program metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s metadata.so
-可通过以下命令验证 Epoch 状态：
-solana epoch-info --url localhost # 查看当前Epoch和slot数
-4.3 权限与安全性
-
-解质押必须验证 stake_info 中的质押人与发起者一致，防止非所有者操作。
-NFT 转移时需使用 stake_info 的 PDA 签名（signer_seeds），确保只有合约有权限操作托管的 NFT，避免权限泄露。
-
-总结
-解质押功能通过权限校验、NFT 转回、流动性代币销毁完成闭环，核心依赖 stake_info 记录的质押关系和 salvage_value 计算的销毁数量。需特别注意浮点数计算精度和测试网 Epoch 配置，以确保用户获利逻辑可正常验证。
 ]]></content>
       <categories>
         <category>Solana</category>
@@ -10120,161 +10653,6 @@ export async function etfAmount(
       </tags>
   </entry>
   <entry>
-    <title>Solana[part22]_DeFi项目拆解</title>
-    <url>/2025/08/26/Solana-part22-DeFi%E9%A1%B9%E7%9B%AE%E6%8B%86%E8%A7%A3/</url>
-    <content><![CDATA[
-DeFi相关概念
-什么是 DeFi?
-
-定义：去中心化金融（Decentralized Finance，简称 DeFi）是基于区块链技术，提供无需中介的金融服务，如借贷、交易、保险等。
-特点：
-○ 去中心化：无需传统金融机构
-○ 开放性：任何人都可以参与
-○ 透明性：所有交易记录公开可查
-
-什么是 Swap?
-
-定义：Swap 是一种去中心化交易功能，允许用户在无需中介的情况下直接交换两种加密资产。
-常见场景：
-○ 兑换小额代币（如将 USDC 换成 ETH）。
-○ 调整投资组合。
-○ 提供交易流动性。
-
-其他概念
-1. AMM（Automated Market Maker，自动做市商）
-
-权威定义：
-一种基于算法的去中心化交易机制，通过数学公式（如恒定乘积公式 x*y=k）自动匹配买卖订单、定价资产，无需传统订单簿和中心化机构。
-通俗解释：
-把“交易”变成“从资金池里取币”。比如你想拿ETH换USDT，不用等有人卖USDT给你，直接从一个存着ETH和USDT的池子里兑换，价格由公式自动算（池里ETH少了，价格就涨；USDT少了，价格就跌）。
-
-2. 流动性池（Liquidity Pool）
-
-权威定义：
-去中心化交易所中，用户存入的两种（或多种）代币组成的资金池，为交易提供流动性（即交易的“货源”），支撑AMM的运行。
-通俗解释：
-大家凑钱建的“公共钱包”，里面存着两种币（比如ETH和USDT）。有人交易时，就从这个钱包里拿币、放币。你往池子里存钱，就能分交易手续费。
-
-3. LP Token（Liquidity Provider Token，流动性提供者代币）
-
-权威定义：
-用户向流动性池提供资金后，获得的“份额凭证”，代表其在池中的资产占比，可用于赎回本金、分配交易费收益，或参与其他DeFi协议。
-通俗解释：
-你往资金池里存了1个ETH和1000 USDT，系统给你发个“存单”（比如LP Token）。拿着这个存单，你可以随时把自己的ETH和USDT拿回来，还能分到池子产生的手续费。就像银行存定期给的存单，只是更灵活。
-
-4. 滑点（Slippage）
-
-权威定义：
-交易中实际成交价格与预期价格的偏差，源于交易对流动性池的冲击（交易规模越大，滑点通常越高）。
-通俗解释：
-你以为1 ETH能换1800 USDT，结果实际只换到1790 USDT——差的10 USDT就是滑点。因为你买的时候，把池子里的USDT买走了一部分，导致USDT变贵，ETH相对贬值，价格就“滑”了。
-
-5. 交易费（Trading Fee）
-
-权威定义：
-用户在去中心化交易所交易时支付的费用，通常按交易金额的比例收取（如0.3%），大部分分配给流动性提供者（LP）作为收益。
-通俗解释：
-每次交易扣的“手续费”。比如你用1万USDT买ETH，扣0.3%就是30 USDT，这30 USDT会分给所有往池子里存钱的人（相当于给他们的“打工费”）。
-
-6. 价格影响（Price Impact）
-
-权威定义：
-单笔交易对流动性池内资产价格的影响程度，交易规模占池内资产比例越高，价格影响越大。
-通俗解释：
-你买的量越大，把池子里的币买得越“空”，价格就涨得越凶。比如池里只有10个ETH，你一下买5个，剩下的5个ETH价格会突然飙升——这就是你的交易对价格的“冲击”。
-
-7. 无常损失（Impermanent Loss，IL）
-
-权威定义：
-流动性提供者因池内代币价格波动，导致持有的LP Token价值 低于持有原始代币的价值 的损失（若价格回归，损失可能消失，故称为“无常”）。
-通俗解释：
-举个例子：
-
-你存了1 ETH（2000 USDT）和2000 USDT进池子，此时ETH价格2000 USDT。
-后来ETH涨到4000 USDT，池子里的ETH变少、USDT变多（因为公式 x*y=k 会让价格自动调整）。
-如果你当初不存池子，直接拿着1 ETH，现在能值4000 USDT；但存池子后，赎回的ETH+USDT总价值可能只有3500 USDT——差的500 USDT就是无常损失。
-但如果ETH又跌回2000 USDT，这个损失会消失（所以叫“无常”）。
-
-
-
-最容易理解的通俗解释🤔
-通过之前学习的ETF质押来进行理解
-如果用生活场景类比，二者的区别：
-
-LP 提供流动性 ≈ 开一家 “货币兑换小店”：
-你要开店，必须同时备着 “人民币” 和 “美元”（两种资产），不然客人想换美元你没货，想换人民币你也没货。客人来兑换时，会给你手续费（你的收益）；但如果人民币和美元汇率波动太大（比如人民币突然升值），你手里的美元可能贬值，导致你 “手里的钱不如当初直接拿着不开店”（这就是无常损失）。
-ETF 质押 ≈ 把钱存银行定期：
-你把 “1 万元定期存款单”（类比 ETF 份额）交给银行，银行用你的钱去放贷，给你付利息（你的收益）。期间你不能随便取走这笔钱（流动性限制），但到期后你能完整拿回 1 万元本金 + 利息，不会因为银行放贷的操作，把你的 “人民币” 变成 “美元”（不会换资产类型），也不会有 “汇率波动导致本金变相缩水” 的问题（除非存款利率跑不赢通胀，但这和无常损失是两回事）。
-
-说白了，LP 就像是在一个池子里放着两种钱，比如美元和人民币。你要是当 LP，就靠别人在这个池子里换钱（也就是 swap）赚点手续费。你的这两种钱相当于押在池子里了，人家会给你点 LP token，后面想把钱拿出来，就用这 LP token 换回去就行。
-那刚开始咋投呢？得按当时的价格比例来。就像那个公式 x*y=k 说的那样 —— 如果你是又创池子又当 LP 的人，最开始放的钱肯定得跟外面市场价对得上，比如外面 1 美元换 7 人民币，你创池子时就得放 10 美元配 70 人民币这种比例，不然一下子就被人薅羊毛了。
-要是后面再有人来当 LP，就不能看外面市场价了，得按池子里现在的比例来，这也是那个 x*y=k 算出来的。
-至于那个无常损失，这么想就对了：比如外面美元涨价了，1 美元能换 14 人民币了，但池子里的价格还没跟上，还是 1:7。这时候肯定有人来套利啊 —— 用自己的人民币，按池子里 1:7 的老比例换美元，换完去外面按 1:14 卖掉，这不就赚了吗？
-这么一来，池子里的美元就变少了，人民币变多了。就像原来池子里是 10 美元 ×70 人民币 = 700（这个 k 值不变），有人拿 28.98 人民币来换美元，合约就按 (10 - 换走的美元)×(70+28.98)=700 来算，最后他能换走大概 2.93 美元。
-交易完之后，池子里就剩 7.07 美元和 98.98 人民币了，k 还是 700，但比例变成 1:14 了（跟外面市场价对上了）。这时候你要是把池子里的钱换成外面的价，就会比最开始直接拿着这两种钱不动少点，这就是无常损失。不过还好有手续费，要是手续费赚得多，说不定还能补回来
-拆解DeFi项目——raydium-cp-swap 核心指令详解
-
-代码地址：https://github.com/SoniaChan33/raydium-cp-swap
-
-首先有四个角色需要明确：
-结合项目代码和功能设计，该项目主要涉及 4 个核心角色，各自承担不同职责并参与费用分配，具体如下：
-1. 流动性提供者（LP 持有者）
-
-角色：为交易池提供代币流动性的用户/地址。
-核心行为：通过 deposit 指令向池子里注入两种代币（如 token0 和 token1），获得对应的 LP 代币作为凭证；后续可通过 withdraw 指令销毁 LP 代币，取回对应的代币和交易费分成。
-收益来源：交易产生的手续费中，扣除协议费（protocol_fee）和资金费（fund_fee）后的剩余部分，按 LP 持有比例分配。
-
-2. 协议所有者（Protocol Owner）
-
-角色：整个 AMM 协议的管理者（如项目团队、多签地址或 DAO）。
-核心行为：通过 create_amm_config 初始化协议配置，设定 protocol_fee_rate；通过 collect_protocol_fee 指令提取累积的协议费。
-收益来源：每笔交易费按 protocol_fee_rate 比例抽取的费用，用于协议开发、维护等运营成本。
-权限：可通过 update_amm_config 更换自身地址或调整费率（需符合权限校验）。
-
-3. 资金所有者（Fund Owner）
-
-角色：管理专项基金的账户（如生态基金、社区国库）。
-核心行为：通过 collect_fund_fee 指令提取累积的资金费，用于生态建设（如补贴、激励等）。
-收益来源：每笔交易费按 fund_fee_rate 比例抽取的费用，用途受限于生态特定需求。
-权限：由 amm_config 配置指定，可独立于协议所有者更换（通过 update_amm_config）。
-
-4. 池子创建者（Pool Creator）
-
-角色：发起创建交易池的用户/地址（通过 initialize 或 initialize_with_permission 指令）。
-核心行为：设定初始流动性、选择交易对，支付创建费用（create_pool_fee）。
-特殊权限：部分场景下可通过 collect_creator_fee 指令提取特定费用（代码中明确约束“仅创建者可调用”），具体逻辑需结合业务场景判断（可能是对创建者的额外激励）。
-
-总结
-四个角色的核心区别在于 职责和收益来源：
-
-LP 持有者：提供流动性，赚剩余交易费；
-协议所有者：管理协议，赚协议运营费；
-资金所有者：管理生态基金，赚专项用途费；
-池子创建者：发起建池，可能获得创建者专属费用。
-
-这种角色拆分是为了精细化管理收益分配，适配协议运营、生态建设、用户激励等不同需求。
-admin
-create_amm_config
-update_amm_config
-update_pool_status
-collect_protocol_fee
-collect_fund_fee
-User
-initialize(创建流动池)
-deposit（添加流动性）
-withdraw（提现-减少流动性）
-swap_base_input（基于输入数量的代币交换）
-swap_base_output（基于输出数量的代币交换）
-]]></content>
-      <categories>
-        <category>Solana</category>
-      </categories>
-      <tags>
-        <tag>Solana</tag>
-        <tag>Rust</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Solana[part3]_solana账户&amp;简单的交互</title>
     <url>/2025/08/06/Solana-part3-solana%E8%B4%A6%E6%88%B7-%E7%AE%80%E5%8D%95%E7%9A%84%E4%BA%A4%E4%BA%92/</url>
     <content><![CDATA[Solana[part3]_solana账户&amp;简单的交互
@@ -10633,6 +11011,161 @@ curl https://api.devnet.solana.com -s -X \
 
 
 
+]]></content>
+      <categories>
+        <category>Solana</category>
+      </categories>
+      <tags>
+        <tag>Solana</tag>
+        <tag>Rust</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solana[part22]_DeFi项目拆解</title>
+    <url>/2025/08/26/Solana-part22-DeFi%E9%A1%B9%E7%9B%AE%E6%8B%86%E8%A7%A3/</url>
+    <content><![CDATA[
+DeFi相关概念
+什么是 DeFi?
+
+定义：去中心化金融（Decentralized Finance，简称 DeFi）是基于区块链技术，提供无需中介的金融服务，如借贷、交易、保险等。
+特点：
+○ 去中心化：无需传统金融机构
+○ 开放性：任何人都可以参与
+○ 透明性：所有交易记录公开可查
+
+什么是 Swap?
+
+定义：Swap 是一种去中心化交易功能，允许用户在无需中介的情况下直接交换两种加密资产。
+常见场景：
+○ 兑换小额代币（如将 USDC 换成 ETH）。
+○ 调整投资组合。
+○ 提供交易流动性。
+
+其他概念
+1. AMM（Automated Market Maker，自动做市商）
+
+权威定义：
+一种基于算法的去中心化交易机制，通过数学公式（如恒定乘积公式 x*y=k）自动匹配买卖订单、定价资产，无需传统订单簿和中心化机构。
+通俗解释：
+把“交易”变成“从资金池里取币”。比如你想拿ETH换USDT，不用等有人卖USDT给你，直接从一个存着ETH和USDT的池子里兑换，价格由公式自动算（池里ETH少了，价格就涨；USDT少了，价格就跌）。
+
+2. 流动性池（Liquidity Pool）
+
+权威定义：
+去中心化交易所中，用户存入的两种（或多种）代币组成的资金池，为交易提供流动性（即交易的“货源”），支撑AMM的运行。
+通俗解释：
+大家凑钱建的“公共钱包”，里面存着两种币（比如ETH和USDT）。有人交易时，就从这个钱包里拿币、放币。你往池子里存钱，就能分交易手续费。
+
+3. LP Token（Liquidity Provider Token，流动性提供者代币）
+
+权威定义：
+用户向流动性池提供资金后，获得的“份额凭证”，代表其在池中的资产占比，可用于赎回本金、分配交易费收益，或参与其他DeFi协议。
+通俗解释：
+你往资金池里存了1个ETH和1000 USDT，系统给你发个“存单”（比如LP Token）。拿着这个存单，你可以随时把自己的ETH和USDT拿回来，还能分到池子产生的手续费。就像银行存定期给的存单，只是更灵活。
+
+4. 滑点（Slippage）
+
+权威定义：
+交易中实际成交价格与预期价格的偏差，源于交易对流动性池的冲击（交易规模越大，滑点通常越高）。
+通俗解释：
+你以为1 ETH能换1800 USDT，结果实际只换到1790 USDT——差的10 USDT就是滑点。因为你买的时候，把池子里的USDT买走了一部分，导致USDT变贵，ETH相对贬值，价格就“滑”了。
+
+5. 交易费（Trading Fee）
+
+权威定义：
+用户在去中心化交易所交易时支付的费用，通常按交易金额的比例收取（如0.3%），大部分分配给流动性提供者（LP）作为收益。
+通俗解释：
+每次交易扣的“手续费”。比如你用1万USDT买ETH，扣0.3%就是30 USDT，这30 USDT会分给所有往池子里存钱的人（相当于给他们的“打工费”）。
+
+6. 价格影响（Price Impact）
+
+权威定义：
+单笔交易对流动性池内资产价格的影响程度，交易规模占池内资产比例越高，价格影响越大。
+通俗解释：
+你买的量越大，把池子里的币买得越“空”，价格就涨得越凶。比如池里只有10个ETH，你一下买5个，剩下的5个ETH价格会突然飙升——这就是你的交易对价格的“冲击”。
+
+7. 无常损失（Impermanent Loss，IL）
+
+权威定义：
+流动性提供者因池内代币价格波动，导致持有的LP Token价值 低于持有原始代币的价值 的损失（若价格回归，损失可能消失，故称为“无常”）。
+通俗解释：
+举个例子：
+
+你存了1 ETH（2000 USDT）和2000 USDT进池子，此时ETH价格2000 USDT。
+后来ETH涨到4000 USDT，池子里的ETH变少、USDT变多（因为公式 x*y=k 会让价格自动调整）。
+如果你当初不存池子，直接拿着1 ETH，现在能值4000 USDT；但存池子后，赎回的ETH+USDT总价值可能只有3500 USDT——差的500 USDT就是无常损失。
+但如果ETH又跌回2000 USDT，这个损失会消失（所以叫“无常”）。
+
+
+
+最容易理解的通俗解释🤔
+通过之前学习的ETF质押来进行理解
+如果用生活场景类比，二者的区别：
+
+LP 提供流动性 ≈ 开一家 “货币兑换小店”：
+你要开店，必须同时备着 “人民币” 和 “美元”（两种资产），不然客人想换美元你没货，想换人民币你也没货。客人来兑换时，会给你手续费（你的收益）；但如果人民币和美元汇率波动太大（比如人民币突然升值），你手里的美元可能贬值，导致你 “手里的钱不如当初直接拿着不开店”（这就是无常损失）。
+ETF 质押 ≈ 把钱存银行定期：
+你把 “1 万元定期存款单”（类比 ETF 份额）交给银行，银行用你的钱去放贷，给你付利息（你的收益）。期间你不能随便取走这笔钱（流动性限制），但到期后你能完整拿回 1 万元本金 + 利息，不会因为银行放贷的操作，把你的 “人民币” 变成 “美元”（不会换资产类型），也不会有 “汇率波动导致本金变相缩水” 的问题（除非存款利率跑不赢通胀，但这和无常损失是两回事）。
+
+说白了，LP 就像是在一个池子里放着两种钱，比如美元和人民币。你要是当 LP，就靠别人在这个池子里换钱（也就是 swap）赚点手续费。你的这两种钱相当于押在池子里了，人家会给你点 LP token，后面想把钱拿出来，就用这 LP token 换回去就行。
+那刚开始咋投呢？得按当时的价格比例来。就像那个公式 x*y=k 说的那样 —— 如果你是又创池子又当 LP 的人，最开始放的钱肯定得跟外面市场价对得上，比如外面 1 美元换 7 人民币，你创池子时就得放 10 美元配 70 人民币这种比例，不然一下子就被人薅羊毛了。
+要是后面再有人来当 LP，就不能看外面市场价了，得按池子里现在的比例来，这也是那个 x*y=k 算出来的。
+至于那个无常损失，这么想就对了：比如外面美元涨价了，1 美元能换 14 人民币了，但池子里的价格还没跟上，还是 1:7。这时候肯定有人来套利啊 —— 用自己的人民币，按池子里 1:7 的老比例换美元，换完去外面按 1:14 卖掉，这不就赚了吗？
+这么一来，池子里的美元就变少了，人民币变多了。就像原来池子里是 10 美元 ×70 人民币 = 700（这个 k 值不变），有人拿 28.98 人民币来换美元，合约就按 (10 - 换走的美元)×(70+28.98)=700 来算，最后他能换走大概 2.93 美元。
+交易完之后，池子里就剩 7.07 美元和 98.98 人民币了，k 还是 700，但比例变成 1:14 了（跟外面市场价对上了）。这时候你要是把池子里的钱换成外面的价，就会比最开始直接拿着这两种钱不动少点，这就是无常损失。不过还好有手续费，要是手续费赚得多，说不定还能补回来
+拆解DeFi项目——raydium-cp-swap 核心指令详解
+
+代码地址：https://github.com/SoniaChan33/raydium-cp-swap
+
+首先有四个角色需要明确：
+结合项目代码和功能设计，该项目主要涉及 4 个核心角色，各自承担不同职责并参与费用分配，具体如下：
+1. 流动性提供者（LP 持有者）
+
+角色：为交易池提供代币流动性的用户/地址。
+核心行为：通过 deposit 指令向池子里注入两种代币（如 token0 和 token1），获得对应的 LP 代币作为凭证；后续可通过 withdraw 指令销毁 LP 代币，取回对应的代币和交易费分成。
+收益来源：交易产生的手续费中，扣除协议费（protocol_fee）和资金费（fund_fee）后的剩余部分，按 LP 持有比例分配。
+
+2. 协议所有者（Protocol Owner）
+
+角色：整个 AMM 协议的管理者（如项目团队、多签地址或 DAO）。
+核心行为：通过 create_amm_config 初始化协议配置，设定 protocol_fee_rate；通过 collect_protocol_fee 指令提取累积的协议费。
+收益来源：每笔交易费按 protocol_fee_rate 比例抽取的费用，用于协议开发、维护等运营成本。
+权限：可通过 update_amm_config 更换自身地址或调整费率（需符合权限校验）。
+
+3. 资金所有者（Fund Owner）
+
+角色：管理专项基金的账户（如生态基金、社区国库）。
+核心行为：通过 collect_fund_fee 指令提取累积的资金费，用于生态建设（如补贴、激励等）。
+收益来源：每笔交易费按 fund_fee_rate 比例抽取的费用，用途受限于生态特定需求。
+权限：由 amm_config 配置指定，可独立于协议所有者更换（通过 update_amm_config）。
+
+4. 池子创建者（Pool Creator）
+
+角色：发起创建交易池的用户/地址（通过 initialize 或 initialize_with_permission 指令）。
+核心行为：设定初始流动性、选择交易对，支付创建费用（create_pool_fee）。
+特殊权限：部分场景下可通过 collect_creator_fee 指令提取特定费用（代码中明确约束“仅创建者可调用”），具体逻辑需结合业务场景判断（可能是对创建者的额外激励）。
+
+总结
+四个角色的核心区别在于 职责和收益来源：
+
+LP 持有者：提供流动性，赚剩余交易费；
+协议所有者：管理协议，赚协议运营费；
+资金所有者：管理生态基金，赚专项用途费；
+池子创建者：发起建池，可能获得创建者专属费用。
+
+这种角色拆分是为了精细化管理收益分配，适配协议运营、生态建设、用户激励等不同需求。
+admin
+create_amm_config
+update_amm_config
+update_pool_status
+collect_protocol_fee
+collect_fund_fee
+User
+initialize(创建流动池)
+deposit（添加流动性）
+withdraw（提现-减少流动性）
+swap_base_input（基于输入数量的代币交换）
+swap_base_output（基于输出数量的代币交换）
 ]]></content>
       <categories>
         <category>Solana</category>
@@ -12359,114 +12892,6 @@ contract SimpleStorage &#123;
       </tags>
   </entry>
   <entry>
-    <title>Twikoo评论系统的Cloudflare部署方案</title>
-    <url>/2025/06/17/Twikoo%E8%AF%84%E8%AE%BA%E7%B3%BB%E7%BB%9F%E7%9A%84Cloudflare%E9%83%A8%E7%BD%B2%E6%96%B9%E6%A1%88/</url>
-    <content><![CDATA[Twikoo评论系统的Cloudflare部署方案
-Twikoo是一款简洁、安全且免费的静态网站评论系统，在提升网站互动性方面表现出色。通常，Twikoo可部署在诸如腾讯云开发环境、Vercel等平台，但借助Cloudflare进行部署，能极大改善冷启动延迟问题，实现快速加载，为用户带来更流畅的评论体验，同时利用Cloudflare强大的全球网络提升访问速度。以下为详细的Cloudflare部署Twikoo评论系统的步骤与要点。
-一、前期准备
-在开始部署前，需提前准备好相关工具与资源：
-
-Cloudflare账户：若尚未注册，前往Cloudflare官网完成注册流程。
-Node.js环境：确保本地开发环境安装了Node.js，可通过Node.js官网下载并安装对应系统的最新版本，安装完成后，在命令行输入node -v验证是否安装成功及查看版本号。
-文本编辑器：推荐使用Visual Studio Code、Sublime Text等，方便进行代码编辑与配置文件修改。
-
-二、安装依赖包
-
-首先，创建一个新的项目目录，用于存放Twikoo相关代码与配置文件，在命令行中进入该目录，执行以下命令安装项目依赖：
-
-npm install
-
-由于Cloudflare Workers的免费套餐对捆绑包大小有严格的1MiB限制，部分与Cloudflare Workers的Node.js兼容性存在问题的包即便安装了也无法使用，为控制捆绑包大小，需手动删除这些包，在命令行中依次执行：
-
-echo "" > node_modules/jsdom/lib/api.js
-echo "" > node_modules/tencentcloud-sdk-nodejs/tencentcloud/index.js
-echo "" > node_modules/nodemailer/lib/nodemailer.js
-上述命令会清空jsdom、tencentcloud-sdk-nodejs、nodemailer这三个包中特定文件的内容，使其不占用捆绑包空间，同时规避兼容性问题。
-三、登录Cloudflare账户
-通过Wrangler工具登录Cloudflare账户，Wrangler是Cloudflare提供的用于管理Workers、D1数据库等资源的命令行工具，执行以下命令进行登录：
-npx wrangler login
-运行该命令后，系统会自动打开浏览器，跳转到Cloudflare的授权页面，按照提示完成授权操作，授权成功后，Wrangler便与你的Cloudflare账户建立连接，后续可通过它对Cloudflare资源进行操作。
-四、创建Cloudflare D1数据库并设置架构
-
-使用Wrangler创建名为twikoo的D1数据库，在命令行执行：
-
-npx wrangler d1 create twikoo
-执行此命令后，终端会输出数据库的相关信息，其中database_name和database_id这两行信息至关重要，需将其复制下来，用于后续配置。
-
-&#123;
-  "d1_databases": [
-    &#123;
-      "binding": "DB",
-      "database_name": "twikoo",
-      "database_id": "56def18d-b46a-42c8-bc99-0214e58f9a54"
-    &#125;
-  ]
-&#125;
-
-打开项目目录下的wrangler.toml文件（若不存在，可手动创建），将刚刚复制的database_name和database_id粘贴进去，替换原有的对应值，使项目与创建的D1数据库建立关联。
-为D1数据库设置架构，Twikoo项目中包含定义数据库表结构和初始数据的schema.sql文件，执行以下命令，将该架构应用到Cloudflare D1数据库：
-
-npx wrangler d1 execute twikoo --remote --file=./schema.sql
-此命令会远程连接到之前创建的twikoo数据库，并依据schema.sql文件的内容创建相应的表结构及可能的初始数据，确保数据库满足Twikoo评论系统的存储需求。
-
-五、创建Cloudflare R2存储
-Cloudflare R2可用于存储Twikoo评论系统相关的文件，如上传的图片等（尽管当前部署方案中对R2的使用存在一定限制，但创建步骤仍需完成），通过以下命令创建名为twikoo的R2存储桶：
-npx wrangler r2 bucket create twikoo
-创建完成后，找到wrangler.toml文件中r2_public_url字段，将其值更新为新创建的R2存储桶的域名，确保项目能正确访问R2存储资源。
-[vars]
-R2_PUBLIC_URL = “https://twikoo.soniachen.com”
-
-六、部署Cloudflare Worker
-完成上述配置后，即可将Twikoo评论系统部署到Cloudflare Workers，执行以下命令进行部署：
-npx wrangler deploy --minify
---minify参数用于对代码进行压缩，以进一步减小捆绑包大小，提升部署效率与性能。部署过程可能需要一些时间，完成后，命令行中会输出类似https://twikoo-cloudflare.&lt;your username&gt;.workers.dev的访问地址。若部署成功，在浏览器中访问该地址，应能看到类似于&#123;&quot;code&quot;: 100, &quot;message&quot;: &quot;twikoo云函数运行正常，请参考https://twikoo.js.org/frontend.html完成前端的配置&quot;, &quot;version&quot;: &quot;1.6.33&quot;&#125;的提示信息，这表明Twikoo的后端服务已在Cloudflare上成功部署。
-七、前端配置
-
-在博客或网站的前端代码中，找到需要添加评论功能的页面。若使用Twikoo官方提供的前端初始化代码，需将其中的envId字段值设置为第六步中得到的Cloudflare Worker访问地址（包含https://前缀）。例如：
-
-twikoo.init(&#123;
-    envId: "https://twikoo-cloudflare.&lt;your username>.workers.dev",
-    el: "#tcomment",
-    // region: 'ap-guangzhou', // 环境地域，默认为ap-shanghai，如果您的环境地域不是上海，需传此参数
-    // path: 'window.location.pathname', // 用于区分不同文章的自定义js路径，如果您的文章路径不是location.pathname，需传此参数
-    // lang: 'zh-CN', // 用于手动设定评论区语言，支持的语言列表https://github.com/imaegoo/twikoo/blob/dev/src/js/utils/i18n/index.js
-    // onCommentLoaded: function () &#123;
-    //     console.log("评论加载或评论成功");
-    // &#125;
-&#125;);
-
-确保前端页面包含用于显示评论区的HTML元素，其id需与上述代码中el字段指定的值一致（如&lt;div id=&quot;tcomment&quot;&gt;&lt;/div&gt;），这样Twikoo前端脚本才能正确渲染评论区。
-
-
-八、配置邮件通知（可选）
-Twikoo支持在有新评论时发送邮件通知管理员，由于nodemailer包的兼容性问题，在Cloudflare Workers环境中，无法直接通过SMTP集成发送邮件，而是通过SendGrid的HTTPS API实现邮件通知功能，具体步骤如下：
-
-注册一个可用的SendGrid账户（SendGrid提供免费套餐，每天可发送多达100封邮件）或Mailchannels账户（每月免费3000封邮件），并在账户设置中创建一个API Key，用于后续验证身份。
-在Twikoo的配置中设置相关邮件参数，找到配置文件中与邮件通知相关的部分，设置以下字段：
-
-sender_email: "发件人邮箱地址", // 需在SendGrid中进行验证
-sender_name: "显示的发件人名称",
-smtp_service: "sendgrid",
-smtp_user: "提供任意非空值",
-smtp_pass: "之前创建的SendGrid API Key",
-此外，还可根据需求设置其他配置值，以自定义通知邮件的外观和内容。完成设置后，在配置页面点击“发送测试邮件”按钮，检查邮件通知功能是否正常工作，同时需确保邮件提供商不会将收到的通知邮件归类为垃圾邮件。
-九、常见问题及解决方法
-
-捆绑包大小超限：若在部署时遇到捆绑包大小超过Cloudflare Workers免费套餐1MiB限制的问题，除了前文提到的删除特定包文件内容外，还可检查项目中是否引入了不必要的大型依赖，精简代码，减少不必要的资源加载。
-数据库连接问题：若出现无法连接到Cloudflare D1数据库的情况，首先确认wrangler.toml文件中database_name和database_id是否填写正确，其次检查网络连接是否正常，确保能访问Cloudflare的服务。
-前端评论区无法显示：前端评论区无法正常显示时，检查浏览器控制台是否有报错信息，可能是envId配置错误、前端脚本加载失败或HTML元素id不匹配等原因导致，根据具体错误提示进行排查修复。
-
-通过以上详细的Cloudflare部署方案，可将Twikoo评论系统高效地集成到网站中，利用Cloudflare的优质服务提升评论系统的性能与稳定性，为网站访客打造良好的互动交流环境。
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>hexo</tag>
-        <tag>CloudFlare</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>BlockChain Basic 1</title>
     <url>/2025/06/17/WEB3%20Day1%20%E2%80%94%E2%80%94%20BlockChain%20Basic%201/</url>
     <content><![CDATA[WEB3 Day1—BlockChain Basic 1
@@ -12933,116 +13358,6 @@ mapping (string => uint256) public nameToFavoriteNumber;
       </tags>
   </entry>
   <entry>
-    <title>Solidity基础[part4]</title>
-    <url>/2025/07/01/WEB3-Day5%E2%80%94Solidity%E5%9F%BA%E7%A1%80-part4/</url>
-    <content><![CDATA[WEB3-Day5—Solidity基础[part4]
-通过函数发送ETH
-新建合约 FundMe.sol，在本合约中会通过fund()函数向智能合约转移以太币。该函数将要求最低数量的ETH确保交易正常。
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
-
-contract FundMe&#123;
-
-
-    function fund() public &#123;
-        
-    &#125;
-&#125;
-我们还需要一个Withdraw函数，这样合约的owner(拥有者)可以提取不同的funder 发送的资金。
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
-
-contract FundMe&#123;
-
-
-    function fund() public &#123;
-        
-    &#125;
-
-    function withDraw() public &#123;
-        
-    &#125;
-&#125;
-当交易被发送到区块链时，交易数据中始终包含一个value字段。该字段表示该交易中转账的原生加密货币数量。
-要使fund函数可以接受ether，必须将其声明为payable。同时在remix界面中部署了可以看到，这个关键字会使函数显示为红色，表示它可以接受加密货币。
-function fund() public payable &#123;
-        
-    &#125;
-msy.value 属性
-在solidity中，交易的数值可以通过这个属性进行访问，是全局对象msg的一部分，表示当前交易中传输的Wei的数量。【Wei是ETH的最小单位】
-function fund() public payable &#123;
-    
-    msg.value;
-&#125;
-交易字段
-以太坊上发送的每笔交易都包含一些必要字段，这些字段包括：
-
-Nonce：这是发送地址的交易计数器。它确保交易按顺序执行，并防止重播攻击。
-Gas Price：这是发送者愿意支付的 gas 单价，以太坊网络会根据 gas price 和 gas limit 来计算手续费。
-Gas Limit：这是交易执行所需的最大 gas 数量。它决定了交易的复杂程度和成本。
-To：这是接收以太币或者调用智能合约的目标地址。
-Value：这是发送的以太币数量。
-Data：这是可选字段，用于向智能合约发送数据。
-v、r、s：这些字段用于交易的签名验证，确保交易的安全性和完整性。
-
-在转账的时候，我们可以填充其中一些字段，例如，gas limit中填充的21,000，data是空的，然后to是我们想要将交易发送到的地址，在函数调用的交易中，仍然可以以这种方式填写to，我们可以调用一个函数，并同时进行转账。
-Value
-每当我们在任何一个兼容EVM的区块链上创建一笔交易时，这个value的值，代表我们将通过这笔交易发送多少ETH，当我们在不同账户间转移ETH时，实际上就是在value中填充不同的ETH数量。
-
-撤销交易[Reverting Transactions]
-我们可以使用requires关键字作为检查器，强制要求函数接收至少value个完整的以太币, 不满足就会回滚。
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
-
-contract FundMe&#123;
-
-
-    function fund() public payable &#123;
-        require(msg.value > 1 ether, "Didn't send enough ETH"); //if the condition is false, revert with the error message    &#125;
-    &#125;
-    function withDraw() public &#123;
-        
-    &#125;
-&#125;
-msg.value &gt; 1 ether等同于 msg.value &gt; 1e18
-
-👀❗提示
-1 Ether = 1e9 Gwei = 1e18 Wei
-Gwei是Gas费用的单位。
-
-在线转换单位的工具 ：Ethconverter
-回滚操作会撤销之前的所有操作，并将剩余gas费返还给交易者，我们在fund函数中添加一些逻辑：
-myvalue  += 2;
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
-
-contract FundMe&#123;
-
-
-    uint256 public  myvalue = 1;
-    function fund() public payable &#123;
-        myvalue  += 2;
-        require(msg.value > 1 ether, "Didn't send enough ETH"); //if the condition is false, revert with the error message    &#125;
-    &#125;
-
-    function withDraw() public &#123;
-
-    &#125;
-&#125;
-部署合约，点击fund函数，报错信息成功返回：
-
-
-⚠️ 回滚以后交易消耗的gas费不会返回的
-
-]]></content>
-      <categories>
-        <category>Solidity</category>
-      </categories>
-      <tags>
-        <tag>BlockChain</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Solidity基础[part3]</title>
     <url>/2025/07/01/WEB3%20Day4%20%E2%80%94%20Solidity%E5%9F%BA%E7%A1%80%5Bpart3%5D/</url>
     <content><![CDATA[WEB3 Day4—Solidity基础[part3]
@@ -13171,6 +13486,116 @@ override 关键字表示重写
       </categories>
       <tags>
         <tag>Solidity</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Solidity基础[part4]</title>
+    <url>/2025/07/01/WEB3-Day5%E2%80%94Solidity%E5%9F%BA%E7%A1%80-part4/</url>
+    <content><![CDATA[WEB3-Day5—Solidity基础[part4]
+通过函数发送ETH
+新建合约 FundMe.sol，在本合约中会通过fund()函数向智能合约转移以太币。该函数将要求最低数量的ETH确保交易正常。
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+contract FundMe&#123;
+
+
+    function fund() public &#123;
+        
+    &#125;
+&#125;
+我们还需要一个Withdraw函数，这样合约的owner(拥有者)可以提取不同的funder 发送的资金。
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+contract FundMe&#123;
+
+
+    function fund() public &#123;
+        
+    &#125;
+
+    function withDraw() public &#123;
+        
+    &#125;
+&#125;
+当交易被发送到区块链时，交易数据中始终包含一个value字段。该字段表示该交易中转账的原生加密货币数量。
+要使fund函数可以接受ether，必须将其声明为payable。同时在remix界面中部署了可以看到，这个关键字会使函数显示为红色，表示它可以接受加密货币。
+function fund() public payable &#123;
+        
+    &#125;
+msy.value 属性
+在solidity中，交易的数值可以通过这个属性进行访问，是全局对象msg的一部分，表示当前交易中传输的Wei的数量。【Wei是ETH的最小单位】
+function fund() public payable &#123;
+    
+    msg.value;
+&#125;
+交易字段
+以太坊上发送的每笔交易都包含一些必要字段，这些字段包括：
+
+Nonce：这是发送地址的交易计数器。它确保交易按顺序执行，并防止重播攻击。
+Gas Price：这是发送者愿意支付的 gas 单价，以太坊网络会根据 gas price 和 gas limit 来计算手续费。
+Gas Limit：这是交易执行所需的最大 gas 数量。它决定了交易的复杂程度和成本。
+To：这是接收以太币或者调用智能合约的目标地址。
+Value：这是发送的以太币数量。
+Data：这是可选字段，用于向智能合约发送数据。
+v、r、s：这些字段用于交易的签名验证，确保交易的安全性和完整性。
+
+在转账的时候，我们可以填充其中一些字段，例如，gas limit中填充的21,000，data是空的，然后to是我们想要将交易发送到的地址，在函数调用的交易中，仍然可以以这种方式填写to，我们可以调用一个函数，并同时进行转账。
+Value
+每当我们在任何一个兼容EVM的区块链上创建一笔交易时，这个value的值，代表我们将通过这笔交易发送多少ETH，当我们在不同账户间转移ETH时，实际上就是在value中填充不同的ETH数量。
+
+撤销交易[Reverting Transactions]
+我们可以使用requires关键字作为检查器，强制要求函数接收至少value个完整的以太币, 不满足就会回滚。
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+contract FundMe&#123;
+
+
+    function fund() public payable &#123;
+        require(msg.value > 1 ether, "Didn't send enough ETH"); //if the condition is false, revert with the error message    &#125;
+    &#125;
+    function withDraw() public &#123;
+        
+    &#125;
+&#125;
+msg.value &gt; 1 ether等同于 msg.value &gt; 1e18
+
+👀❗提示
+1 Ether = 1e9 Gwei = 1e18 Wei
+Gwei是Gas费用的单位。
+
+在线转换单位的工具 ：Ethconverter
+回滚操作会撤销之前的所有操作，并将剩余gas费返还给交易者，我们在fund函数中添加一些逻辑：
+myvalue  += 2;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+contract FundMe&#123;
+
+
+    uint256 public  myvalue = 1;
+    function fund() public payable &#123;
+        myvalue  += 2;
+        require(msg.value > 1 ether, "Didn't send enough ETH"); //if the condition is false, revert with the error message    &#125;
+    &#125;
+
+    function withDraw() public &#123;
+
+    &#125;
+&#125;
+部署合约，点击fund函数，报错信息成功返回：
+
+
+⚠️ 回滚以后交易消耗的gas费不会返回的
+
+]]></content>
+      <categories>
+        <category>Solidity</category>
+      </categories>
+      <tags>
+        <tag>BlockChain</tag>
       </tags>
   </entry>
   <entry>
@@ -14173,12 +14598,133 @@ PicGo + Typora 图床写作：Typora 上传图片设置、PicGo 图床配置。
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>hexo</tag>
-        <tag>CloudFlare</tag>
         <tag>Git</tag>
+        <tag>CloudFlare</tag>
         <tag>Typora</tag>
+        <tag>hexo</tag>
         <tag>PicGo</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>加密基础巩固</title>
+    <url>/2025/09/16/%E5%8A%A0%E5%AF%86%E5%9F%BA%E7%A1%80%E5%B7%A9%E5%9B%BA/</url>
+    <content><![CDATA[加密基础巩固1
+历史发展总结
+一、底层协议：从比特币到以太坊的范式跃迁
+
+
+比特币（2009年）：
+
+中本聪在白皮书中提出“点对点电子现金系统”，通过工作量证明（PoW）解决拜占庭容错问题，区块奖励每4年减半（2009年50 BTC/块→2024年3.125 BTC/块）。
+早期仅支持转账功能，2013年通过“多重签名”实现简单智能合约（如联名账户），但脚本语言非图灵完备。
+
+
+
+以太坊（2015年）：
+
+Vitalik Buterin受《魔兽世界》道具中心化事件启发，提出“世界计算机”概念，通过**以太坊虚拟机（EVM）**支持图灵完备的智能合约。
+2016年因“The DAO事件”硬分叉为ETH（以太坊）和ETC（以太坊经典），催生了“代码即法律”的争议与反思。
+
+
+
+二、智能合约与标准：ERC-20/ERC-721开启生态爆发
+
+
+智能合约进化：
+
+2017年，ERC-20标准（同质化代币）由Fabian Vogelsteller提出，允许代币跨平台兼容（如USDT、UNI），直接推动ICO热潮（EOS通过ICO融资40亿美元）。
+2018年，ERC-721标准（非同质化代币）由CryptoKitties团队落地，实现数字资产唯一性（如NFT头像、虚拟土地），2021年OpenSea交易额突破100亿美元。
+
+
+
+技术痛点与升级：
+
+以太坊早期因智能合约漏洞频发（如2022年Nomad Bridge被盗1.9亿美元），催生静态分析工具（如MythX）和形式化验证技术。
+2023年上海升级（Shapella）允许ETH质押解锁，推动LSDfi（流动性质押衍生品）赛道爆发，TVL超200亿美元。
+
+
+
+三、高性能公链：突破“不可能三角”的技术竞赛
+
+
+Solana（2020年主网）：
+
+由高通工程师Anatoly Yakovenko创立，通过**历史证明（PoH）+权益证明（PoS）**实现6500 TPS（ Visa级别），2021年因FTX投资爆发，2022年FTX崩盘后生态复苏，2024年总费用超以太坊。
+
+
+
+BNB Chain（2019年币安链→2020年BSC）：
+
+采用“质押+DPoS”共识，2020年兼容EVM后成为DeFi第二大生态（TVL超600亿美元），2023年合并信标链与智能链，推出Layer2方案opBNB（4000 TPS）。
+
+
+
+Avalanche（2020年主网）：
+
+康奈尔大学团队开发的“三链架构”（X/P/C链），通过雪崩共识实现1秒确认，2024年与阿里云合作推出企业元宇宙解决方案，2025年因节点门槛高（质押2000 AVAX）引发去中心化争议。
+
+
+
+EOS（2018年主网）：
+
+由Block.one开发，采用“委托PoS”（21个超级节点），曾因“CPU战争”暴露资源分配问题，2023年通过EVM兼容层和跨链协议重生，日交易量超1亿笔。
+
+
+
+NEO（2016年主网）：
+
+中国首个智能合约平台，早期通过“双通证模型”（NEO+GAS）激励生态，2021年N3升级支持原生存储和预言机，成为亚洲DeFi重要基础设施。
+
+
+
+四、应用层：从金融到实体的场景革命
+图中“智能合约→DeFi/NFT/GameFi/DePIN”的分支，代表区块链从“代币投机”到“产业落地”的进化：
+
+
+DeFi（去中心化金融）：
+
+2020年“DeFi Summer”爆发，Uniswap（AMM模式）、Aave（闪电贷）、Curve（稳定币兑换）等协议TVL从10亿增至1000亿美元。
+2023年转向“真实世界资产（RWA）”，如朗新科技将充电桩资产上链融资1亿元，高盛发行1亿欧元数字债券。
+
+
+
+NFT与GameFi：
+
+2017年CryptoKitties（NFT）导致以太坊拥堵，2021年Bored Ape Yacht Club（BAYC）开启“头像经济”，地板价超100 ETH。
+GameFi通过“Play-to-Earn”模式（如Axie Infinity）在东南亚普及，2022年因代币通胀（如DeFi Kingdoms代币超发）陷入低潮，2024年转向AI+元宇宙融合（如Decentraland的AI土地生成）。
+
+
+
+DePIN（去中心化物理基础设施）：
+
+2023年兴起的新赛道，通过区块链激励物理资源共享，如Helium（去中心化5G网络，HNT代币）、Filecoin（分布式存储，FIL代币）、Power Ledger（P2P能源交易）。
+
+
+
+五、历史逻辑：技术、市场与监管的三重博弈
+
+技术驱动：从PoW（比特币）到PoS（以太坊2.0），从单链到Layer2（如Optimism），从EVM到多链互操作（如Cosmos），核心是解决“ scalability（可扩展性）、security（安全性）、decentralization（去中心化）”的不可能三角。
+市场周期：2017年ICO泡沫→2020年DeFi Summer→2021年NFT狂潮→2022年Luna崩盘→2023年RWA与AI融合，每轮周期都伴随旧模式淘汰与新范式诞生。
+监管影响：2023年美国SEC起诉Binance和Coinbase，加速行业合规化；2024年香港允许零售投资者交易代币化证券（如广发证券“GF Token”），推动传统金融与Web3融合。
+
+区块链应用技术的三层技术关系
+
+L1/L2（底层区块链）：相当于 “地基”。
+
+L1（Layer 1，第一层公链）：比如比特币、以太坊，是区块链的 “根”，负责最核心的安全（如记账、共识）。
+L2（Layer 2，第二层网络）：比如以太坊上的 Optimism、Arbitrum，是 “地基的延伸”，用来解决 L1 速度慢、手续费高的问题，让应用跑得更快更便宜。
+
+
+Protocol（协议）：相当于 “建筑图纸”。
+比如 DeFi 里的 Uniswap（交易规则）、Aave（借贷规则），它定义了 “去中心化业务该怎么运行”（比如怎么兑换代币、怎么借还钱）。
+dApp（去中心化应用）：相当于 “用户住的房子”。
+比如你用来买卖代币的 Uniswap App、玩链游的 Axie Infinity，是直接给用户用的界面。用户通过 dApp，就能使用 protocol 规定的功能，而 dApp 的所有操作，最终都靠 L1/L2 来记录和保障安全。
+
+简单说：L1/L2 打基础，protocol 定规则，dApp 给用户用，三层配合让去中心化应用能落地
+]]></content>
+      <categories>
+        <category>Web3</category>
+      </categories>
   </entry>
   <entry>
     <title>深度解析：AMM 流动性模型的&quot;三代同堂&quot; (CPMM vs CLMM vs DLMM)</title>
@@ -14446,125 +14992,112 @@ DLMM通过自动化和智能化，降低了用户使用门槛
       </tags>
   </entry>
   <entry>
-    <title>加密基础巩固</title>
-    <url>/2025/09/16/%E5%8A%A0%E5%AF%86%E5%9F%BA%E7%A1%80%E5%B7%A9%E5%9B%BA/</url>
-    <content><![CDATA[加密基础巩固1
-历史发展总结
-一、底层协议：从比特币到以太坊的范式跃迁
+    <title>Twikoo评论系统的Cloudflare部署方案</title>
+    <url>/2025/06/17/Twikoo%E8%AF%84%E8%AE%BA%E7%B3%BB%E7%BB%9F%E7%9A%84Cloudflare%E9%83%A8%E7%BD%B2%E6%96%B9%E6%A1%88/</url>
+    <content><![CDATA[Twikoo评论系统的Cloudflare部署方案
+Twikoo是一款简洁、安全且免费的静态网站评论系统，在提升网站互动性方面表现出色。通常，Twikoo可部署在诸如腾讯云开发环境、Vercel等平台，但借助Cloudflare进行部署，能极大改善冷启动延迟问题，实现快速加载，为用户带来更流畅的评论体验，同时利用Cloudflare强大的全球网络提升访问速度。以下为详细的Cloudflare部署Twikoo评论系统的步骤与要点。
+一、前期准备
+在开始部署前，需提前准备好相关工具与资源：
+
+Cloudflare账户：若尚未注册，前往Cloudflare官网完成注册流程。
+Node.js环境：确保本地开发环境安装了Node.js，可通过Node.js官网下载并安装对应系统的最新版本，安装完成后，在命令行输入node -v验证是否安装成功及查看版本号。
+文本编辑器：推荐使用Visual Studio Code、Sublime Text等，方便进行代码编辑与配置文件修改。
+
+二、安装依赖包
+
+首先，创建一个新的项目目录，用于存放Twikoo相关代码与配置文件，在命令行中进入该目录，执行以下命令安装项目依赖：
+
+npm install
+
+由于Cloudflare Workers的免费套餐对捆绑包大小有严格的1MiB限制，部分与Cloudflare Workers的Node.js兼容性存在问题的包即便安装了也无法使用，为控制捆绑包大小，需手动删除这些包，在命令行中依次执行：
+
+echo "" > node_modules/jsdom/lib/api.js
+echo "" > node_modules/tencentcloud-sdk-nodejs/tencentcloud/index.js
+echo "" > node_modules/nodemailer/lib/nodemailer.js
+上述命令会清空jsdom、tencentcloud-sdk-nodejs、nodemailer这三个包中特定文件的内容，使其不占用捆绑包空间，同时规避兼容性问题。
+三、登录Cloudflare账户
+通过Wrangler工具登录Cloudflare账户，Wrangler是Cloudflare提供的用于管理Workers、D1数据库等资源的命令行工具，执行以下命令进行登录：
+npx wrangler login
+运行该命令后，系统会自动打开浏览器，跳转到Cloudflare的授权页面，按照提示完成授权操作，授权成功后，Wrangler便与你的Cloudflare账户建立连接，后续可通过它对Cloudflare资源进行操作。
+四、创建Cloudflare D1数据库并设置架构
+
+使用Wrangler创建名为twikoo的D1数据库，在命令行执行：
+
+npx wrangler d1 create twikoo
+执行此命令后，终端会输出数据库的相关信息，其中database_name和database_id这两行信息至关重要，需将其复制下来，用于后续配置。
+
+&#123;
+  "d1_databases": [
+    &#123;
+      "binding": "DB",
+      "database_name": "twikoo",
+      "database_id": "56def18d-b46a-42c8-bc99-0214e58f9a54"
+    &#125;
+  ]
+&#125;
+
+打开项目目录下的wrangler.toml文件（若不存在，可手动创建），将刚刚复制的database_name和database_id粘贴进去，替换原有的对应值，使项目与创建的D1数据库建立关联。
+为D1数据库设置架构，Twikoo项目中包含定义数据库表结构和初始数据的schema.sql文件，执行以下命令，将该架构应用到Cloudflare D1数据库：
+
+npx wrangler d1 execute twikoo --remote --file=./schema.sql
+此命令会远程连接到之前创建的twikoo数据库，并依据schema.sql文件的内容创建相应的表结构及可能的初始数据，确保数据库满足Twikoo评论系统的存储需求。
+
+五、创建Cloudflare R2存储
+Cloudflare R2可用于存储Twikoo评论系统相关的文件，如上传的图片等（尽管当前部署方案中对R2的使用存在一定限制，但创建步骤仍需完成），通过以下命令创建名为twikoo的R2存储桶：
+npx wrangler r2 bucket create twikoo
+创建完成后，找到wrangler.toml文件中r2_public_url字段，将其值更新为新创建的R2存储桶的域名，确保项目能正确访问R2存储资源。
+[vars]
+R2_PUBLIC_URL = “https://twikoo.soniachen.com”
+
+六、部署Cloudflare Worker
+完成上述配置后，即可将Twikoo评论系统部署到Cloudflare Workers，执行以下命令进行部署：
+npx wrangler deploy --minify
+--minify参数用于对代码进行压缩，以进一步减小捆绑包大小，提升部署效率与性能。部署过程可能需要一些时间，完成后，命令行中会输出类似https://twikoo-cloudflare.&lt;your username&gt;.workers.dev的访问地址。若部署成功，在浏览器中访问该地址，应能看到类似于&#123;&quot;code&quot;: 100, &quot;message&quot;: &quot;twikoo云函数运行正常，请参考https://twikoo.js.org/frontend.html完成前端的配置&quot;, &quot;version&quot;: &quot;1.6.33&quot;&#125;的提示信息，这表明Twikoo的后端服务已在Cloudflare上成功部署。
+七、前端配置
+
+在博客或网站的前端代码中，找到需要添加评论功能的页面。若使用Twikoo官方提供的前端初始化代码，需将其中的envId字段值设置为第六步中得到的Cloudflare Worker访问地址（包含https://前缀）。例如：
+
+twikoo.init(&#123;
+    envId: "https://twikoo-cloudflare.&lt;your username>.workers.dev",
+    el: "#tcomment",
+    // region: 'ap-guangzhou', // 环境地域，默认为ap-shanghai，如果您的环境地域不是上海，需传此参数
+    // path: 'window.location.pathname', // 用于区分不同文章的自定义js路径，如果您的文章路径不是location.pathname，需传此参数
+    // lang: 'zh-CN', // 用于手动设定评论区语言，支持的语言列表https://github.com/imaegoo/twikoo/blob/dev/src/js/utils/i18n/index.js
+    // onCommentLoaded: function () &#123;
+    //     console.log("评论加载或评论成功");
+    // &#125;
+&#125;);
+
+确保前端页面包含用于显示评论区的HTML元素，其id需与上述代码中el字段指定的值一致（如&lt;div id=&quot;tcomment&quot;&gt;&lt;/div&gt;），这样Twikoo前端脚本才能正确渲染评论区。
 
 
-比特币（2009年）：
+八、配置邮件通知（可选）
+Twikoo支持在有新评论时发送邮件通知管理员，由于nodemailer包的兼容性问题，在Cloudflare Workers环境中，无法直接通过SMTP集成发送邮件，而是通过SendGrid的HTTPS API实现邮件通知功能，具体步骤如下：
 
-中本聪在白皮书中提出“点对点电子现金系统”，通过工作量证明（PoW）解决拜占庭容错问题，区块奖励每4年减半（2009年50 BTC/块→2024年3.125 BTC/块）。
-早期仅支持转账功能，2013年通过“多重签名”实现简单智能合约（如联名账户），但脚本语言非图灵完备。
+注册一个可用的SendGrid账户（SendGrid提供免费套餐，每天可发送多达100封邮件）或Mailchannels账户（每月免费3000封邮件），并在账户设置中创建一个API Key，用于后续验证身份。
+在Twikoo的配置中设置相关邮件参数，找到配置文件中与邮件通知相关的部分，设置以下字段：
 
+sender_email: "发件人邮箱地址", // 需在SendGrid中进行验证
+sender_name: "显示的发件人名称",
+smtp_service: "sendgrid",
+smtp_user: "提供任意非空值",
+smtp_pass: "之前创建的SendGrid API Key",
+此外，还可根据需求设置其他配置值，以自定义通知邮件的外观和内容。完成设置后，在配置页面点击“发送测试邮件”按钮，检查邮件通知功能是否正常工作，同时需确保邮件提供商不会将收到的通知邮件归类为垃圾邮件。
+九、常见问题及解决方法
 
+捆绑包大小超限：若在部署时遇到捆绑包大小超过Cloudflare Workers免费套餐1MiB限制的问题，除了前文提到的删除特定包文件内容外，还可检查项目中是否引入了不必要的大型依赖，精简代码，减少不必要的资源加载。
+数据库连接问题：若出现无法连接到Cloudflare D1数据库的情况，首先确认wrangler.toml文件中database_name和database_id是否填写正确，其次检查网络连接是否正常，确保能访问Cloudflare的服务。
+前端评论区无法显示：前端评论区无法正常显示时，检查浏览器控制台是否有报错信息，可能是envId配置错误、前端脚本加载失败或HTML元素id不匹配等原因导致，根据具体错误提示进行排查修复。
 
-以太坊（2015年）：
-
-Vitalik Buterin受《魔兽世界》道具中心化事件启发，提出“世界计算机”概念，通过**以太坊虚拟机（EVM）**支持图灵完备的智能合约。
-2016年因“The DAO事件”硬分叉为ETH（以太坊）和ETC（以太坊经典），催生了“代码即法律”的争议与反思。
-
-
-
-二、智能合约与标准：ERC-20/ERC-721开启生态爆发
-
-
-智能合约进化：
-
-2017年，ERC-20标准（同质化代币）由Fabian Vogelsteller提出，允许代币跨平台兼容（如USDT、UNI），直接推动ICO热潮（EOS通过ICO融资40亿美元）。
-2018年，ERC-721标准（非同质化代币）由CryptoKitties团队落地，实现数字资产唯一性（如NFT头像、虚拟土地），2021年OpenSea交易额突破100亿美元。
-
-
-
-技术痛点与升级：
-
-以太坊早期因智能合约漏洞频发（如2022年Nomad Bridge被盗1.9亿美元），催生静态分析工具（如MythX）和形式化验证技术。
-2023年上海升级（Shapella）允许ETH质押解锁，推动LSDfi（流动性质押衍生品）赛道爆发，TVL超200亿美元。
-
-
-
-三、高性能公链：突破“不可能三角”的技术竞赛
-
-
-Solana（2020年主网）：
-
-由高通工程师Anatoly Yakovenko创立，通过**历史证明（PoH）+权益证明（PoS）**实现6500 TPS（ Visa级别），2021年因FTX投资爆发，2022年FTX崩盘后生态复苏，2024年总费用超以太坊。
-
-
-
-BNB Chain（2019年币安链→2020年BSC）：
-
-采用“质押+DPoS”共识，2020年兼容EVM后成为DeFi第二大生态（TVL超600亿美元），2023年合并信标链与智能链，推出Layer2方案opBNB（4000 TPS）。
-
-
-
-Avalanche（2020年主网）：
-
-康奈尔大学团队开发的“三链架构”（X/P/C链），通过雪崩共识实现1秒确认，2024年与阿里云合作推出企业元宇宙解决方案，2025年因节点门槛高（质押2000 AVAX）引发去中心化争议。
-
-
-
-EOS（2018年主网）：
-
-由Block.one开发，采用“委托PoS”（21个超级节点），曾因“CPU战争”暴露资源分配问题，2023年通过EVM兼容层和跨链协议重生，日交易量超1亿笔。
-
-
-
-NEO（2016年主网）：
-
-中国首个智能合约平台，早期通过“双通证模型”（NEO+GAS）激励生态，2021年N3升级支持原生存储和预言机，成为亚洲DeFi重要基础设施。
-
-
-
-四、应用层：从金融到实体的场景革命
-图中“智能合约→DeFi/NFT/GameFi/DePIN”的分支，代表区块链从“代币投机”到“产业落地”的进化：
-
-
-DeFi（去中心化金融）：
-
-2020年“DeFi Summer”爆发，Uniswap（AMM模式）、Aave（闪电贷）、Curve（稳定币兑换）等协议TVL从10亿增至1000亿美元。
-2023年转向“真实世界资产（RWA）”，如朗新科技将充电桩资产上链融资1亿元，高盛发行1亿欧元数字债券。
-
-
-
-NFT与GameFi：
-
-2017年CryptoKitties（NFT）导致以太坊拥堵，2021年Bored Ape Yacht Club（BAYC）开启“头像经济”，地板价超100 ETH。
-GameFi通过“Play-to-Earn”模式（如Axie Infinity）在东南亚普及，2022年因代币通胀（如DeFi Kingdoms代币超发）陷入低潮，2024年转向AI+元宇宙融合（如Decentraland的AI土地生成）。
-
-
-
-DePIN（去中心化物理基础设施）：
-
-2023年兴起的新赛道，通过区块链激励物理资源共享，如Helium（去中心化5G网络，HNT代币）、Filecoin（分布式存储，FIL代币）、Power Ledger（P2P能源交易）。
-
-
-
-五、历史逻辑：技术、市场与监管的三重博弈
-
-技术驱动：从PoW（比特币）到PoS（以太坊2.0），从单链到Layer2（如Optimism），从EVM到多链互操作（如Cosmos），核心是解决“ scalability（可扩展性）、security（安全性）、decentralization（去中心化）”的不可能三角。
-市场周期：2017年ICO泡沫→2020年DeFi Summer→2021年NFT狂潮→2022年Luna崩盘→2023年RWA与AI融合，每轮周期都伴随旧模式淘汰与新范式诞生。
-监管影响：2023年美国SEC起诉Binance和Coinbase，加速行业合规化；2024年香港允许零售投资者交易代币化证券（如广发证券“GF Token”），推动传统金融与Web3融合。
-
-区块链应用技术的三层技术关系
-
-L1/L2（底层区块链）：相当于 “地基”。
-
-L1（Layer 1，第一层公链）：比如比特币、以太坊，是区块链的 “根”，负责最核心的安全（如记账、共识）。
-L2（Layer 2，第二层网络）：比如以太坊上的 Optimism、Arbitrum，是 “地基的延伸”，用来解决 L1 速度慢、手续费高的问题，让应用跑得更快更便宜。
-
-
-Protocol（协议）：相当于 “建筑图纸”。
-比如 DeFi 里的 Uniswap（交易规则）、Aave（借贷规则），它定义了 “去中心化业务该怎么运行”（比如怎么兑换代币、怎么借还钱）。
-dApp（去中心化应用）：相当于 “用户住的房子”。
-比如你用来买卖代币的 Uniswap App、玩链游的 Axie Infinity，是直接给用户用的界面。用户通过 dApp，就能使用 protocol 规定的功能，而 dApp 的所有操作，最终都靠 L1/L2 来记录和保障安全。
-
-简单说：L1/L2 打基础，protocol 定规则，dApp 给用户用，三层配合让去中心化应用能落地
+通过以上详细的Cloudflare部署方案，可将Twikoo评论系统高效地集成到网站中，利用Cloudflare的优质服务提升评论系统的性能与稳定性，为网站访客打造良好的互动交流环境。
 ]]></content>
       <categories>
-        <category>Web3</category>
+        <category>hexo</category>
       </categories>
+      <tags>
+        <tag>CloudFlare</tag>
+        <tag>hexo</tag>
+      </tags>
   </entry>
   <entry>
     <title>算法高频题总结</title>
