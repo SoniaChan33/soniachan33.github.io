@@ -1,0 +1,666 @@
+<!DOCTYPE html><html lang="[&quot;zh-CN&quot;,&quot;en&quot;,&quot;default&quot;]" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>Move学习: 基础part3 | Sonia33</title><meta name="keywords" content="Move, Sui, 智能合约, 盲盒NFT, 区块链"><meta name="author" content="SoniaChen"><meta name="copyright" content="SoniaChen"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="Move学习: 基础part3"><meta name="application-name" content="Move学习: 基础part3"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="Move学习: 基础part3"><meta property="og:url" content="https://blog.soniachen.com/2025/11/12/Move%E5%AD%A6%E4%B9%A0-%E5%9F%BA%E7%A1%80part3/index.html"><meta property="og:site_name" content="Sonia33"><meta property="og:description" content="本文详细介绍如何使用Move语言编写盲盒NFT程序，包括数据结构设计、管理员功能、主函数实现以及Move操作的关键概念和注意点。"><meta property="og:locale" content="[&quot;zh-CN&quot;,&quot;en&quot;,&quot;default&quot;]"><meta property="og:image" content="https://img.soniachen.com/IMG_5493.jpg?_r_=6c386900-6009-cac0-f3b6-0c129b50194f"><meta property="article:author" content="SoniaChen"><meta property="article:tag"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img.soniachen.com/IMG_5493.jpg?_r_=6c386900-6009-cac0-f3b6-0c129b50194f"><meta name="description" content="本文详细介绍如何使用Move语言编写盲盒NFT程序，包括数据结构设计、管理员功能、主函数实现以及Move操作的关键概念和注意点。"><link rel="shortcut icon" href="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png"><link rel="canonical" href="https://blog.soniachen.com/2025/11/12/Move%E5%AD%A6%E4%B9%A0-%E5%9F%BA%E7%A1%80part3/"><link rel="preconnect" href="//cdn.cbd.int"/><meta name="google-site-verification" content="xxx"/><meta name="baidu-site-verification" content="code-xxx"/><meta name="msvalidate.01" content="xxx"/><link rel="manifest" href="/manifest.json"/><meta name="msapplication-TileColor" content="var(--anzhiyu-main)"/><link rel="mask-icon" href="/img/siteicon/apple-icon-180.png" color="#5bbad5"/><link rel="apple-touch-icon" sizes="180x180" href="/img/siteicon/apple-icon-180.png"/><link rel="apple-touch-icon-precomposed" sizes="180x180" href="/img/siteicon/apple-icon-180.png"/><link rel="icon" type="image/png" sizes="32x32" href="/img/siteicon/32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/img/siteicon/16.png"/><link rel="bookmark" href="/img/siteicon/apple-icon-180.png"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2048-2732.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2732-2048.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1668-2388.jpg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2388-1668.jpg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1536-2048.jpg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2048-1536.jpg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1668-2224.jpg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2224-1668.jpg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1620-2160.jpg" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2160-1620.jpg" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1290-2796.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2796-1290.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1179-2556.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2556-1179.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1284-2778.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2778-1284.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1170-2532.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2532-1170.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1125-2436.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2436-1125.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1242-2688.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2688-1242.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-828-1792.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1792-828.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1242-2208.jpg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-2208-1242.jpg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-750-1334.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1334-750.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-640-1136.jpg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/><link rel="apple-touch-startup-image" href="/img/siteicon/apple-splash-1136-640.jpg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@5.0.28/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: undefined,
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"sonia33","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: undefined,
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":6,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://twikoo-cloudflare.soniachan0831.workers.dev',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: undefined,
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","📖 读万卷书","🧗 徒步爱好者","🏀 篮球狂热爱好者","🚴 公路车爱好者","🏃 跑步爱好者"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":true,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"prismjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: SoniaChen","link":"链接: ","source":"来源: Sonia33","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"bottom-right"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.1.2/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.1.2/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: true
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Sonia33',
+  title: 'Move学习: 基础part3',
+  postAI: '本文详细介绍如何使用Move语言编写盲盒NFT程序，包括数据结构设计、管理员功能、主函数实现以及Move操作的关键概念和注意点。',
+  pageFillDescription: '盲盒NFT程序, 1. 必要结构和对象, 2. 管理员指令, 2.1 创建Collection, 2.2 提取资金, 3. 主函数entry, 4. 涉及的Move操作和注意点, 4.1 UID、对象与资产, 4.2 Transfer操作, 4.3 Entry函数参数顺序, 4.4 NFT铸造行为, 与Rust的区别, 传统Rust语言, Sui Move语言, 4.5 Object相关操作, 4.6 Balance相关操作, 4.7 Coin相关操作, 4.8 Coin与Balance对比盲盒程序本文将介绍如何使用语言编写一个盲盒程序该程序允许用户支付资产并随机生成具有不同稀有度的盲盒必要结构和对象在实现盲盒程序之前我们需要定义以下核心数据结构盲盒管理的铸造规则统计信息和资金代表生成的盲盒对象管理员权限用于管理的权限对象事件记录购买和铸造的事件以下是这些结构的代码定义数据结构事件管理员指令管理员拥有特殊的权限来管理盲盒以下是两个主要的管理员函数创建函数用于创建对象该对象作为规则和统计的中央数据中心并设置为共享状态以供所有用户访问创建了一个可供所有用户交互的中央数据中心用来管理规则统计和资金原本是现在设为共享任何人都可以访问提取资金函数允许管理员从中提取所有累积的资金到自己的钱包主函数是用户购买和打开盲盒的主要入口函数该函数执行以下步骤校验供应量确保中仍有可铸造的校验支付金额确认用户支付的足够购买处理支付将用户支付的存入的余额生成随机稀有度使用随机数生成器确定的稀有度铸造创建新的对象发送事件记录购买事件更新统计增加已铸造的数量转移将发送给购买者发送事件更新计数转移给买家涉及的操作和注意点对象与资产在中任何具有能力的结构体只要内部包含一个字段就会被视为一个链上对象这些对象具有持久化和唯一性是区块链资产的基础操作模块提供了针对不同所有权类型的存储操作将对象发送到某个地址使其进入地址所有状态将对象置为不可变成为对外公开且永不改变的常量将对象置为共享状态任何人都可访问修改函数参数顺序在的函数中参数顺序有特定的约定对象总是排在简单数据前面运行时提供的特殊对象如总是排在交易上下文的前面永远是最后一位铸造行为与的区别传统语言在传统中创建结构体实例只是在内存中创建数据结构没有持久化或所有权转移机制语言是以对象为中心的设计哲学对象和持久化带有的结构体被视为链上对象分配全局唯一所有权语义创建对象后必须明确处理否则编译失败在中创建对象的代码就是铸造行为铸造定义在区块链上首次创建具有唯一身份和持久化存储的新资产对象赋予唯一的链上相关操作在链上创建新对象如获取对象的唯一相关操作是模块内部管理总资金的容器创建空的容器用于初始化获取中的余额将合并到中消耗这是收款的标准第二步从中取出指定金额返回新的相关操作是可交易的资产对象获取的面值从中取出需要铸造新对象消耗返回其这是存入余额的标准第一步其他操作分割例如找零合并多个与对比操作目标输入需求核心区别提现给用户需要铸造新对象返回可交易对象内部拆分价值不需要返回不可交易容器简单来说想让用户拿到钱去花使用想在内部账户间分钱使用',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2025-11-13 19:25:08',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+          const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+          const isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+          const hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+          if (t === undefined) {
+            if (isLightMode) activateLightMode()
+            else if (isDarkMode) activateDarkMode()
+            else if (isNotSpecified || hasNoSupport) {
+              const now = new Date()
+              const hour = now.getHours()
+              const isNight = hour <= 6 || hour >= 18
+              isNight ? activateDarkMode() : activateLightMode()
+            }
+            window.matchMedia('(prefers-color-scheme: dark)').addListener(e => {
+              if (saveToLocal.get('theme') === undefined) {
+                e.matches ? activateDarkMode() : activateLightMode()
+              }
+            })
+          } else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><meta name="generator" content="Hexo 7.3.0"></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img.soniachen.com/cover2.gif"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><div class="back-home-button"><i class="anzhiyufont anzhiyu-icon-grip-vertical"></i><div class="back-menu-list-groups"><div class="back-menu-list-group"><div class="back-menu-list-title">网页</div><div class="back-menu-list"><a class="back-menu-item" href="https://blog.soniachen.com/" title="博客"><img class="back-menu-item-icon" src="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png" alt="博客"/><span class="back-menu-item-text">博客</span></a></div></div></div></div><a id="site-name" href="/" accesskey="h"><div class="title">Sonia33</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a><div id="he-plugin-simple"></div><script>var WIDGET = {
+  "CONFIG": {
+    "modules": "0124",
+    "background": "2",
+    "tmpColor": "FFFFFF",
+    "tmpSize": "16",
+    "cityColor": "FFFFFF",
+    "citySize": "16",
+    "aqiColor": "E8D87B",
+    "aqiSize": "16",
+    "weatherIconSize": "24",
+    "alertIconSize": "18",
+    "padding": "10px 10px 10px 10px",
+    "shadow": "0",
+    "language": "auto",
+    "borderRadius": "20",
+    "fixed": "true",
+    "vertical": "top",
+    "horizontal": "left",
+    "left": "20",
+    "top": "7.1",
+    "key": "df245676fb434a0691ead1c63341cd94"
+  }
+}
+</script><link rel="stylesheet" href="https://widget.qweather.net/simple/static/css/he-simple.css?v=1.4.0"/><script src="https://widget.qweather.net/simple/static/js/he-simple.js?v=1.4.0"></script></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/?id=447363601&amp;server=netease"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/bangumis/"><i class="anzhiyufont anzhiyu-icon-bilibili faa-tada" style="font-size: 0.9em;"></i><span> 追番页</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5543.JPG" target="_blank"><img class="post-qr-code-img" alt="微信" src="https://img.soniachen.com/blog/IMG_5543.JPG"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5544.JPG" target="_blank"><img class="post-qr-code-img" alt="支付宝" src="https://img.soniachen.com/blog/IMG_5544.JPG"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AMM/" style="font-size: 1.05rem;">AMM<sup>3</sup></a><a href="/tags/API/" style="font-size: 1.05rem;">API<sup>1</sup></a><a href="/tags/BlockChain/" style="font-size: 1.05rem;">BlockChain<sup>4</sup></a><a href="/tags/Bug/" style="font-size: 1.05rem;">Bug<sup>3</sup></a><a href="/tags/CLMM/" style="font-size: 1.05rem;">CLMM<sup>1</sup></a><a href="/tags/CPMM/" style="font-size: 1.05rem;">CPMM<sup>1</sup></a><a href="/tags/CloudFlare/" style="font-size: 1.05rem;">CloudFlare<sup>2</sup></a><a href="/tags/DEX/" style="font-size: 1.05rem;">DEX<sup>3</sup></a><a href="/tags/DLMM/" style="font-size: 1.05rem;">DLMM<sup>2</sup></a><a href="/tags/DeFi/" style="font-size: 1.05rem;">DeFi<sup>4</sup></a><a href="/tags/Docker/" style="font-size: 1.05rem;">Docker<sup>1</sup></a><a href="/tags/EVM/" style="font-size: 1.05rem;">EVM<sup>1</sup></a><a href="/tags/Foundry/" style="font-size: 1.05rem;">Foundry<sup>1</sup></a><a href="/tags/Git/" style="font-size: 1.05rem;">Git<sup>1</sup></a><a href="/tags/JUP/" style="font-size: 1.05rem;">JUP<sup>1</sup></a><a href="/tags/Java/" style="font-size: 1.05rem; font-weight: 500; color: var(--anzhiyu-lighttext)">Java<sup>1</sup></a><a href="/tags/Meteora/" style="font-size: 1.05rem;">Meteora<sup>2</sup></a><a href="/tags/Move/" style="font-size: 1.05rem;">Move<sup>3</sup></a><a href="/tags/OpenAPI/" style="font-size: 1.05rem;">OpenAPI<sup>1</sup></a><a href="/tags/Orca/" style="font-size: 1.05rem;">Orca<sup>1</sup></a><a href="/tags/PicGo/" style="font-size: 1.05rem;">PicGo<sup>1</sup></a><a href="/tags/RPC/" style="font-size: 1.05rem;">RPC<sup>1</sup></a><a href="/tags/Raydium/" style="font-size: 1.05rem;">Raydium<sup>1</sup></a><a href="/tags/Rust/" style="font-size: 1.05rem;">Rust<sup>47</sup></a><a href="/tags/Solana/" style="font-size: 1.05rem;">Solana<sup>31</sup></a><a href="/tags/Solidity/" style="font-size: 1.05rem;">Solidity<sup>5</sup></a><a href="/tags/Sui/" style="font-size: 1.05rem;">Sui<sup>3</sup></a><a href="/tags/TypeScript/" style="font-size: 1.05rem;">TypeScript<sup>2</sup></a><a href="/tags/Typora/" style="font-size: 1.05rem;">Typora<sup>1</sup></a><a href="/tags/Uniswap/" style="font-size: 1.05rem;">Uniswap<sup>1</sup></a><a href="/tags/Web3/" style="font-size: 1.05rem; font-weight: 500; color: var(--anzhiyu-lighttext)">Web3<sup>1</sup></a><a href="/tags/Whirlpool/" style="font-size: 1.05rem;">Whirlpool<sup>1</sup></a><a href="/tags/hexo/" style="font-size: 1.05rem;">hexo<sup>2</sup></a><a href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" style="font-size: 1.05rem;">区块链<sup>2</sup></a><a href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD/" style="font-size: 1.05rem;">区块链基础设施<sup>1</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/11/"><span class="card-archive-list-date">十一月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">4</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/10/"><span class="card-archive-list-date">十月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">九月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/08/"><span class="card-archive-list-date">八月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">24</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/07/"><span class="card-archive-list-date">七月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">23</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/06/"><span class="card-archive-list-date">六月 2025</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2022/02/"><span class="card-archive-list-date">二月 2022</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/Sui/" itemprop="url">Sui</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Solana/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Solana</span></a><a class="article-meta__tags" href="/tags/Rust/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Rust</span></a><a class="article-meta__tags" href="/tags/Move/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Move</span></a><a class="article-meta__tags" href="/tags/Sui/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Sui</span></a></span></div></div><h1 class="post-title" itemprop="name headline">Move学习: 基础part3</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2025-11-12T09:17:08.000Z" title="发表于 2025-11-12 17:17:08">2025-11-12</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2025-11-13T11:25:08.531Z" title="更新于 2025-11-13 19:25:08">2025-11-13</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">1.7k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>6分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为四川"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>四川</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img.soniachen.com/IMG_5493.jpg?_r_=6c386900-6009-cac0-f3b6-0c129b50194f"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><div class="post-ai-description"><div class="ai-title"><i class="anzhiyufont anzhiyu-icon-bilibili"></i><div class="ai-title-text">AI-摘要</div><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right"></i><i class="anzhiyufont anzhiyu-icon-circle-dot" title="朗读摘要"></i><div id="ai-tag">sonia33 GPT</div></div><div class="ai-explanation">AI初始化中...</div><div class="ai-btn-box"><div class="ai-btn-item">介绍自己 🙈</div><div class="ai-btn-item">生成本文简介 👋</div><div class="ai-btn-item">推荐相关文章 📖</div><div class="ai-btn-item">前往主页 🏠</div><div class="ai-btn-item" id="go-tianli-blog">前往爱发电购买</div></div><script data-pjax src="/js/anzhiyu/ai_abstract.js"></script></div><article class="post-content" id="article-container" itemscope itemtype="https://blog.soniachen.com/2025/11/12/Move学习-基础part3/"><header><a class="post-meta-categories" href="/categories/Sui/" itemprop="url">Sui</a><a href="/tags/Solana/" tabindex="-1" itemprop="url">Solana</a><a href="/tags/Rust/" tabindex="-1" itemprop="url">Rust</a><a href="/tags/Move/" tabindex="-1" itemprop="url">Move</a><a href="/tags/Sui/" tabindex="-1" itemprop="url">Sui</a><h1 id="CrawlerTitle" itemprop="name headline">Move学习: 基础part3</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">SoniaChen</span><time itemprop="dateCreated datePublished" datetime="2025-11-12T09:17:08.000Z" title="发表于 2025-11-12 17:17:08">2025-11-12</time><time itemprop="dateCreated datePublished" datetime="2025-11-13T11:25:08.531Z" title="更新于 2025-11-13 19:25:08">2025-11-13</time></header><h1>盲盒NFT程序</h1>
+<p>本文将介绍如何使用Move语言编写一个盲盒NFT程序。该程序允许用户支付SUI资产，并随机生成具有不同稀有度的盲盒NFT。</p>
+<h2 id="1-必要结构和对象">1. 必要结构和对象</h2>
+<p>在实现盲盒NFT程序之前，我们需要定义以下核心数据结构：</p>
+<ul>
+<li><strong>盲盒Collection</strong>：管理NFT的铸造规则、统计信息和资金。</li>
+<li><strong>NFT</strong>：代表生成的盲盒NFT对象。</li>
+<li><strong>管理员权限</strong>：用于管理Collection的权限对象。</li>
+<li><strong>事件</strong>：记录购买和铸造NFT的事件。</li>
+</ul>
+<p>以下是这些结构的Move代码定义：</p>
+<pre class="language-move" data-language="move"><code class="language-move">&#x2F;&#x2F; &#x3D;&#x3D;&#x3D; 数据结构 &#x3D;&#x3D;&#x3D;
+public struct Collection has key &#123;
+    id: UID,
+    name: String,
+    price: u64,
+    total_supply: u64,
+    minted: u64,
+    balance: Balance&lt;SUI&gt;,
+&#125;
+
+public struct AdminCap has key, store &#123;
+    id:UID,
+&#125;
+
+public struct NFT has key, store &#123;
+    id: UID,
+    name: String,
+    rarity: String,  &#x2F;&#x2F; TODO enum Common&#x2F;Rare&#x2F;Legendary
+    image_url: String,
+&#125;
+
+&#x2F;&#x2F; 事件
+public struct BoxPurchased has copy, drop &#123;
+    buyer: address,
+    nft_id: ID,
+    rarity: String,
+&#125;
+</code></pre>
+<h2 id="2-管理员指令">2. 管理员指令</h2>
+<p>管理员拥有特殊的权限来管理盲盒Collection。以下是两个主要的管理员函数：</p>
+<h3 id="2-1-创建Collection">2.1 创建Collection</h3>
+<p><code>create_collection</code> 函数用于创建Collection对象，该对象作为Minting规则和统计的中央数据中心，并设置为共享状态以供所有用户访问。</p>
+<pre class="language-move" data-language="move"><code class="language-move">&#x2F;&#x2F; &#x3D;&#x3D;&#x3D;&#x3D; admin functions
+&#x2F;&#x2F;&#x2F; create collection
+&#x2F;&#x2F;&#x2F; 创建了一个可供所有用户交互的“中央数据中心”，用来管理 Minting 规则、统计和资金
+public fun create_collection(
+    _: &amp;AdminCap,
+    name: String,
+    price: u64,
+    total_supply: u64,
+    ctx: &amp;mut TxContext
+)  &#123;
+    let collection &#x3D; Collection &#123;
+        id: object::new(ctx),
+        name,
+        price,
+        total_supply,
+        minted: 0,
+        balance: balance::zero(),
+    &#125;;
+    transfer::share_object(collection); &#x2F;&#x2F; 原本是owned 现在设为共享；任何人都可以访问
+&#125;</code></pre>
+<h3 id="2-2-提取资金">2.2 提取资金</h3>
+<p><code>withdraw</code> 函数允许管理员从Collection中提取所有累积的资金到自己的钱包。</p>
+<pre class="language-move" data-language="move"><code class="language-move">&#x2F;&#x2F;&#x2F; withdraw
+public fun withdraw(
+    _: &amp;AdminCap,
+    collection: &amp;mut Collection,
+    ctx: &amp;mut TxContext
+) &#123;
+    let amount &#x3D; balance::value(&amp;collection.balance);
+    let coin &#x3D; coin::take(&amp;mut collection.balance, amount, ctx);
+    transfer::public_transfer(coin, tx_context::sender(ctx));
+&#125;</code></pre>
+<h2 id="3-主函数entry">3. 主函数entry</h2>
+<p><code>buy_and_open</code> 是用户购买和打开盲盒NFT的主要入口函数。该函数执行以下步骤：</p>
+<ol>
+<li><strong>校验供应量</strong>：确保Collection中仍有可铸造的NFT。</li>
+<li><strong>校验支付金额</strong>：确认用户支付的SUI足够购买NFT。</li>
+<li><strong>处理支付</strong>：将用户支付的SUI存入Collection的余额。</li>
+<li><strong>生成随机稀有度</strong>：使用随机数生成器确定NFT的稀有度（Common: 60%, Rare: 30%, Legendary: 10%）。</li>
+<li><strong>铸造NFT</strong>：创建新的NFT对象。</li>
+<li><strong>发送事件</strong>：记录购买事件。</li>
+<li><strong>更新统计</strong>：增加已铸造NFT的数量。</li>
+<li><strong>转移NFT</strong>：将NFT发送给购买者。</li>
+</ol>
+<pre class="language-move" data-language="move"><code class="language-move">&#x2F;&#x2F;&#x2F; purchase_and_open
+public entry fun buy_and_open(
+    collection: &amp;mut Collection,
+    r: &amp;Random,
+    payment: Coin&lt;SUI&gt;,
+    ctx: &amp;mut TxContext,
+) &#123;
+    &#x2F;&#x2F; check supply
+    assert!(collection.total_supply &gt; collection.minted,EBoxSoldOut);
+
+    &#x2F;&#x2F; check payment
+    let paid &#x3D; coin::value(&amp;payment);
+    assert!(paid &gt;&#x3D; collection.price, EInsufficientPayment);
+
+    &#x2F;&#x2F; pay
+    balance::join(&amp;mut collection.balance, coin::into_balance(payment));
+    &#x2F;&#x2F; collection
+    let mut generator &#x3D; random::new_generator(r, ctx);
+    let rarity_roll &#x3D; random::generate_u8_in_range(&amp;mut generator, 1, 100);
+
+    let (rarity, name) &#x3D; if (rarity_roll &lt;&#x3D; 60) &#123;
+        (b&quot;Common&quot;.to_string(), b&quot;Common Mystery NFT&quot;.to_string())
+    &#125; else if (rarity_roll &lt;&#x3D; 90) &#123;
+        (b&quot;Rare&quot;.to_string(), b&quot;Rare Mystery NFT&quot;.to_string())
+    &#125; else &#123;
+        (b&quot;Legendary&quot;.to_string(), b&quot;Legendary Mystery NFT&quot;.to_string())
+    &#125;;
+
+    &#x2F;&#x2F; mint NFT
+    let nft &#x3D; NFT &#123;
+        id:object::new(ctx),
+        name,
+        rarity,
+        image_url: b&quot;ipfs:&#x2F;&#x2F;placeholder&quot;.to_string(),
+    &#125;;
+
+    let nft_id &#x3D; object::id(&amp;nft);
+
+    &#x2F;&#x2F; 发送事件
+    event::emit(BoxPurchased&#123;
+        buyer: tx_context::sender(ctx),
+        nft_id,
+        rarity: rarity,
+    &#125;);
+
+    &#x2F;&#x2F; 更新计数
+    collection.minted &#x3D; collection.minted + 1;
+
+    &#x2F;&#x2F; 转移NFT给买家
+    transfer::public_transfer(nft, tx_context::sender(ctx));
+&#125;</code></pre>
+<h2 id="4-涉及的Move操作和注意点">4. 涉及的Move操作和注意点</h2>
+<h3 id="4-1-UID、对象与资产">4.1 UID、对象与资产</h3>
+<p>在Move中，任何具有<code>key</code>能力的结构体，只要内部包含一个<code>UID</code>字段，就会被Sui视为一个链上对象。这些对象具有持久化和唯一性，是区块链资产的基础。</p>
+<h3 id="4-2-Transfer操作">4.2 Transfer操作</h3>
+<p><code>sui::transfer::&#123;&#125;</code>模块提供了针对不同所有权类型的存储操作：</p>
+<ul>
+<li><strong>Transfer</strong>：将对象发送到某个地址，使其进入地址所有（address owned）状态。</li>
+<li><strong>Freeze</strong>：将对象置为不可变（immutable），成为对外公开且永不改变的常量。</li>
+<li><strong>Share</strong>：将对象置为共享（shared）状态，任何人都可访问/修改。</li>
+</ul>
+<h3 id="4-3-Entry函数参数顺序">4.3 Entry函数参数顺序</h3>
+<p>在Move的entry函数中，参数顺序有特定的约定：</p>
+<blockquote>
+<ul>
+<li><strong>“对象（Objects）”</strong> 总是排在 <strong>“简单数据（Primitives）”</strong> 前面；</li>
+<li><strong>“运行时提供的特殊对象”</strong>（如 <code>&amp;Random</code>）总是排在 <strong>“交易上下文”</strong> (<code>&amp;mut TxContext</code>) 的前面；</li>
+<li><strong><code>&amp;mut TxContext</code> 永远是最后一位。</strong></li>
+</ul>
+</blockquote>
+<h3 id="4-4-NFT铸造行为">4.4 NFT铸造行为</h3>
+<h4 id="与Rust的区别">与Rust的区别</h4>
+<h5 id="传统Rust语言">传统Rust语言</h5>
+<p>在传统Rust中，创建结构体实例只是在内存中创建数据结构，没有持久化或所有权转移机制。</p>
+<h5 id="Sui-Move语言">Sui Move语言</h5>
+<p>Sui Move是以对象为中心的设计哲学：</p>
+<ol>
+<li><strong>对象ID和持久化</strong>：带有<code>id: object::new(ctx)</code>的结构体被视为链上对象，<code>object::new(ctx)</code>分配全局唯一ID。</li>
+<li><strong>所有权语义</strong>：创建对象后必须明确处理，否则编译失败。</li>
+</ol>
+<p>在Move中，创建NFT对象的代码就是&quot;铸造(Minting)&quot;行为：</p>
+<p><strong>铸造定义</strong>：在区块链上首次创建具有唯一身份和持久化存储的新资产对象。</p>
+<pre class="language-move" data-language="move"><code class="language-move">&#x2F;&#x2F; mint NFT
+let nft &#x3D; NFT &#123;
+    id: object::new(ctx), &#x2F;&#x2F; 赋予唯一的链上ID
+    name,
+    rarity,
+    image_url: b&quot;ipfs:&#x2F;&#x2F;placeholder&quot;.to_string(),
+&#125;;</code></pre>
+<h3 id="4-5-Object相关操作">4.5 Object相关操作</h3>
+<ul>
+<li><code>object::new(ctx)</code>：在链上创建新对象（如AdminCap）。</li>
+<li><code>object::id(&amp;object)</code>：获取对象的唯一ID。</li>
+</ul>
+<h3 id="4-6-Balance相关操作">4.6 Balance相关操作</h3>
+<p>Balance是模块内部管理总资金的容器：</p>
+<ul>
+<li><code>balance::zero()</code>：创建空的Balance容器，用于初始化。</li>
+<li><code>balance::value(&amp;balance)</code>：获取Balance中的余额。</li>
+<li><code>balance::join(&amp;mut target, source)</code>：将source合并到target中，消耗source。这是收款的标准第二步。</li>
+<li><code>balance::withdraw(&amp;mut balance, amount)</code>：从Balance中取出指定金额，返回新的Balance。</li>
+</ul>
+<h3 id="4-7-Coin相关操作">4.7 Coin相关操作</h3>
+<p>Coin是可交易的资产对象：</p>
+<ul>
+<li><code>coin::value(&amp;coin)</code>：获取Coin的面值。</li>
+<li><code>coin::take(&amp;mut balance, amount, ctx)</code>：从Balance中取出Coin，需要TxContext铸造新Coin对象。</li>
+<li><code>coin::into_balance(coin)</code>：消耗Coin，返回其Balance。这是存入Collection余额的标准第一步。</li>
+</ul>
+<p><strong>其他Coin操作</strong>：</p>
+<ul>
+<li><code>coin::split</code>：分割Coin（例如找零）。</li>
+<li><code>coin::join</code>：合并多个Coin。</li>
+</ul>
+<h3 id="4-8-Coin与Balance对比">4.8 Coin与Balance对比</h3>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>目标</th>
+<th>输入需求</th>
+<th>核心区别</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>coin::take</code></td>
+<td>提现给用户</td>
+<td>需要<code>&amp;mut TxContext</code>铸造新Coin对象</td>
+<td>返回<code>Coin</code>（可交易对象）</td>
+</tr>
+<tr>
+<td><code>balance::withdraw</code></td>
+<td>内部拆分价值</td>
+<td>不需要<code>&amp;mut TxContext</code></td>
+<td>返回<code>Balance</code>（不可交易容器）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>简单来说</strong>：</p>
+<ul>
+<li>想让用户拿到钱去花？ → 使用<code>coin::take</code></li>
+<li>想在内部账户间分钱？ → 使用<code>balance::withdraw</code></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src="https://img.soniachen.com/IMG_0151.JPG" title="头像" alt="头像"><img class="post-copyright__author_img_front" src="https://img.soniachen.com/IMG_0151.JPG" title="头像" alt="头像"></a><div class="post-copyright__author_name">SoniaChen</div><div class="post-copyright__author_desc"></div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.soniachen.com/2025/11/12/Move学习-基础part3/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.soniachen.com/2025/11/12/Move学习-基础part3/')">Move学习: 基础part3</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"><div class="post-reward" onclick="anzhiyu.addRewardMask()"><div class="reward-button button--animated" title="赞赏作者"><i class="anzhiyufont anzhiyu-icon-hand-heart-fill"></i>打赏作者</div><div class="reward-main"><div class="reward-all"><span class="reward-title">感谢你赐予我前进的力量</span><ul class="reward-group"><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5543.JPG" target="_blank"><img class="post-qr-code-img" src="https://img.soniachen.com/blog/IMG_5543.JPG" alt="微信"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://img.soniachen.com/blog/IMG_5544.JPG" target="_blank"><img class="post-qr-code-img" src="https://img.soniachen.com/blog/IMG_5544.JPG" alt="支付宝"/></a><div class="post-qr-code-desc">支付宝</div></li></ul><a class="reward-main-btn" href="/about/#about-reward" target="_blank"><div class="reward-text">赞赏者名单</div><div class="reward-dec">因为你们的支持让我意识到写文章的价值🙏</div></a></div></div></div><div id="quit-box" onclick="anzhiyu.removeRewardMask()" style="display: none"></div></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.soniachen.com/2025/11/12/Move学习-基础part3/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><div class="share-link weibo"><a class="share-button" target="_blank" href="https://service.weibo.com/share/share.php?title=Move学习: 基础part3&amp;url=https://blog.soniachen.com/2025/11/12/Move学习-基础part3/&amp;pic=https://img.soniachen.com/IMG_5493.jpg?_r_=6c386900-6009-cac0-f3b6-0c129b50194f" rel="external nofollow noreferrer noopener"><i class="anzhiyufont anzhiyu-icon-weibo"></i></a></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.soniachen.com" target="_blank">Sonia33</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Solana/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Solana<span class="tagsPageCount">31</span></a><a class="post-meta__box__tags" href="/tags/Rust/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Rust<span class="tagsPageCount">47</span></a><a class="post-meta__box__tags" href="/tags/Move/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Move<span class="tagsPageCount">3</span></a><a class="post-meta__box__tags" href="/tags/Sui/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Sui<span class="tagsPageCount">3</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img.soniachen.com/IMG_5493.jpg?_r_=d21239de-4041-6b4e-841a-465f3c8fc131" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-full"><a href="/2025/11/11/Move%E5%AD%A6%E4%B9%A0-%E5%9F%BA%E7%A1%80part2/"><img class="prev-cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=d21239de-4041-6b4e-841a-465f3c8fc131" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Move语言入门教程Part2：所有权、能力和数据类型详解</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/2025/10/20/Rust%20Axum%20%E6%A1%86%E6%9E%B6%E4%B8%AD%E9%9B%86%E6%88%90%20OpenAPI%20(Swagger)/" title="Rust Axum 框架中集成 OpenAPI (Swagger)"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=b266ad6a-b26e-97eb-65b9-3b9dfad0157a" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-10-20</div><div class="title">Rust Axum 框架中集成 OpenAPI (Swagger)</div></div></a></div><div><a href="/2025/10/12/Meteora-Solana%E4%B8%8A%E7%9A%84%E4%B8%8B%E4%B8%80%E4%BB%A3%E5%8A%A8%E6%80%81%E6%B5%81%E5%8A%A8%E6%80%A7AMM/" title="Meteora技术深潜：Solana生态的下一代动态AMM协议"><img class="cover" src="https://img.soniachen.com/blog/posts/2025/10/meteora-logo.png" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-10-12</div><div class="title">Meteora技术深潜：Solana生态的下一代动态AMM协议</div></div></a></div><div><a href="/2025/10/07/Orca-Solana%E4%B8%8A%E7%9A%84%E5%8E%BB%E4%B8%AD%E5%BF%83%E5%8C%96%E4%BA%A4%E6%98%93%E6%89%80/" title="Orca技术内幕：多链时代的DEX新范式"><img class="cover" src="https://img.soniachen.com/blog/posts/2025/10/image-20251007221550399.png" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-10-07</div><div class="title">Orca技术内幕：多链时代的DEX新范式</div></div></a></div><div><a href="/2025/08/26/Solana-part22-DeFi%E9%A1%B9%E7%9B%AE%E6%8B%86%E8%A7%A3/" title="Solana[part22]_DeFi项目拆解"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=d679cc29-07c7-11d5-2092-05f8492da752" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-26</div><div class="title">Solana[part22]_DeFi项目拆解</div></div></a></div><div><a href="/2025/08/26/Solana-part21-ETF%E7%9A%84%E8%B5%8E%E5%9B%9E/" title="Solana[part21]_ETF的赎回"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=ae3afb52-877e-7b54-3de5-2446171fd056" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-26</div><div class="title">Solana[part21]_ETF的赎回</div></div></a></div><div><a href="/2025/08/25/Solana-part20-ETF%E7%9A%84%E8%B4%AD%E4%B9%B0/" title="Solana[part20]_ETF的购买"><img class="cover" src="https://img.soniachen.com/IMG_5493.jpg?_r_=ff557fda-b55c-d57a-933f-519e7536fa87" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2025-08-25</div><div class="title">Solana[part20]_ETF的购买</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content is-expand"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link"><span class="toc-number">1.</span> <span class="toc-text">盲盒NFT程序</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E5%BF%85%E8%A6%81%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1"><span class="toc-number">1.1.</span> <span class="toc-text">1. 必要结构和对象</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E7%AE%A1%E7%90%86%E5%91%98%E6%8C%87%E4%BB%A4"><span class="toc-number">1.2.</span> <span class="toc-text">2. 管理员指令</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E5%88%9B%E5%BB%BACollection"><span class="toc-number">1.2.1.</span> <span class="toc-text">2.1 创建Collection</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E6%8F%90%E5%8F%96%E8%B5%84%E9%87%91"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.2 提取资金</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E4%B8%BB%E5%87%BD%E6%95%B0entry"><span class="toc-number">1.3.</span> <span class="toc-text">3. 主函数entry</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E6%B6%89%E5%8F%8A%E7%9A%84Move%E6%93%8D%E4%BD%9C%E5%92%8C%E6%B3%A8%E6%84%8F%E7%82%B9"><span class="toc-number">1.4.</span> <span class="toc-text">4. 涉及的Move操作和注意点</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-UID%E3%80%81%E5%AF%B9%E8%B1%A1%E4%B8%8E%E8%B5%84%E4%BA%A7"><span class="toc-number">1.4.1.</span> <span class="toc-text">4.1 UID、对象与资产</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-Transfer%E6%93%8D%E4%BD%9C"><span class="toc-number">1.4.2.</span> <span class="toc-text">4.2 Transfer操作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-Entry%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0%E9%A1%BA%E5%BA%8F"><span class="toc-number">1.4.3.</span> <span class="toc-text">4.3 Entry函数参数顺序</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-NFT%E9%93%B8%E9%80%A0%E8%A1%8C%E4%B8%BA"><span class="toc-number">1.4.4.</span> <span class="toc-text">4.4 NFT铸造行为</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%8ERust%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="toc-number">1.4.4.1.</span> <span class="toc-text">与Rust的区别</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BC%A0%E7%BB%9FRust%E8%AF%AD%E8%A8%80"><span class="toc-number">1.4.4.1.1.</span> <span class="toc-text">传统Rust语言</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Sui-Move%E8%AF%AD%E8%A8%80"><span class="toc-number">1.4.4.1.2.</span> <span class="toc-text">Sui Move语言</span></a></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-5-Object%E7%9B%B8%E5%85%B3%E6%93%8D%E4%BD%9C"><span class="toc-number">1.4.5.</span> <span class="toc-text">4.5 Object相关操作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-6-Balance%E7%9B%B8%E5%85%B3%E6%93%8D%E4%BD%9C"><span class="toc-number">1.4.6.</span> <span class="toc-text">4.6 Balance相关操作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-7-Coin%E7%9B%B8%E5%85%B3%E6%93%8D%E4%BD%9C"><span class="toc-number">1.4.7.</span> <span class="toc-text">4.7 Coin相关操作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-8-Coin%E4%B8%8EBalance%E5%AF%B9%E6%AF%94"><span class="toc-number">1.4.8.</span> <span class="toc-text">4.8 Coin与Balance对比</span></a></li></ol></li></ol></li></ol></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div id="footer_deal"><a class="deal_link" href="/soniachan0831@gmail.com" title="email"><i class="anzhiyufont anzhiyu-icon-envelope"></i></a><img class="footer_mini_logo" title="返回顶部" alt="返回顶部" onclick="anzhiyu.scrollToDest(0, 500)" src="https://img.soniachen.com/IMG_0151.JPG" size="50px"/><a class="deal_link" target="_blank" rel="noopener" href="https://github.com/SoniaChan33" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://space.bilibili.com/360939620" title="Bilibili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="deal_link" href="/copyright" title="CC"><i class="anzhiyufont anzhiyu-icon-copyright-line"></i></a></div><div class="copyright">&copy;2021 - 2025 By SoniaChen</div><div id="workboard"><div id="runtimeTextTip"></div></div><p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo_v5.4.0" title="博客框架为Hexo_v5.4.0"><img src="https://npm.elemecdn.com/anzhiyu-blog@2.1.5/img/badge/Frame-Hexo.svg" alt="博客框架为Hexo_v5.4.0"/></a></p></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">67</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">35</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">9</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="back-menu-list-groups"><div class="back-menu-list-group"><div class="back-menu-list-title">网页</div><div class="back-menu-list"><a class="back-menu-item" href="https://blog.soniachen.com/" title="博客"><img class="back-menu-item-icon" src="https://img.soniachen.com/%E9%92%A2%E9%93%81%E8%9C%98%E8%9B%9B%E4%BE%A0.png" alt="博客"/><span class="back-menu-item-text">博客</span></a></div></div></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/?id=447363601&amp;server=netease"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/bangumis/"><i class="anzhiyufont anzhiyu-icon-bilibili faa-tada" style="font-size: 0.9em;"></i><span> 追番页</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AMM/" style="font-size: 0.88rem;">AMM<sup>3</sup></a><a href="/tags/API/" style="font-size: 0.88rem;">API<sup>1</sup></a><a href="/tags/BlockChain/" style="font-size: 0.88rem;">BlockChain<sup>4</sup></a><a href="/tags/Bug/" style="font-size: 0.88rem;">Bug<sup>3</sup></a><a href="/tags/CLMM/" style="font-size: 0.88rem;">CLMM<sup>1</sup></a><a href="/tags/CPMM/" style="font-size: 0.88rem;">CPMM<sup>1</sup></a><a href="/tags/CloudFlare/" style="font-size: 0.88rem;">CloudFlare<sup>2</sup></a><a href="/tags/DEX/" style="font-size: 0.88rem;">DEX<sup>3</sup></a><a href="/tags/DLMM/" style="font-size: 0.88rem;">DLMM<sup>2</sup></a><a href="/tags/DeFi/" style="font-size: 0.88rem;">DeFi<sup>4</sup></a><a href="/tags/Docker/" style="font-size: 0.88rem;">Docker<sup>1</sup></a><a href="/tags/EVM/" style="font-size: 0.88rem;">EVM<sup>1</sup></a><a href="/tags/Foundry/" style="font-size: 0.88rem;">Foundry<sup>1</sup></a><a href="/tags/Git/" style="font-size: 0.88rem;">Git<sup>1</sup></a><a href="/tags/JUP/" style="font-size: 0.88rem;">JUP<sup>1</sup></a><a href="/tags/Java/" style="font-size: 0.88rem;">Java<sup>1</sup></a><a href="/tags/Meteora/" style="font-size: 0.88rem;">Meteora<sup>2</sup></a><a href="/tags/Move/" style="font-size: 0.88rem;">Move<sup>3</sup></a><a href="/tags/OpenAPI/" style="font-size: 0.88rem;">OpenAPI<sup>1</sup></a><a href="/tags/Orca/" style="font-size: 0.88rem;">Orca<sup>1</sup></a><a href="/tags/PicGo/" style="font-size: 0.88rem;">PicGo<sup>1</sup></a><a href="/tags/RPC/" style="font-size: 0.88rem;">RPC<sup>1</sup></a><a href="/tags/Raydium/" style="font-size: 0.88rem;">Raydium<sup>1</sup></a><a href="/tags/Rust/" style="font-size: 0.88rem;">Rust<sup>47</sup></a><a href="/tags/Solana/" style="font-size: 0.88rem;">Solana<sup>31</sup></a><a href="/tags/Solidity/" style="font-size: 0.88rem;">Solidity<sup>5</sup></a><a href="/tags/Sui/" style="font-size: 0.88rem;">Sui<sup>3</sup></a><a href="/tags/TypeScript/" style="font-size: 0.88rem;">TypeScript<sup>2</sup></a><a href="/tags/Typora/" style="font-size: 0.88rem;">Typora<sup>1</sup></a><a href="/tags/Uniswap/" style="font-size: 0.88rem;">Uniswap<sup>1</sup></a><a href="/tags/Web3/" style="font-size: 0.88rem;">Web3<sup>1</sup></a><a href="/tags/Whirlpool/" style="font-size: 0.88rem;">Whirlpool<sup>1</sup></a><a href="/tags/hexo/" style="font-size: 0.88rem;">hexo<sup>2</sup></a><a href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" style="font-size: 0.88rem;">区块链<sup>2</sup></a><a href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD/" style="font-size: 0.88rem;">区块链基础设施<sup>1</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="447363601" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=447363601&amp;userid=321481294&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@5.0.28/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><canvas id="universe"></canvas><script async src="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/dark/dark.js"></script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("04/01/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎使用安知鱼!`,
+    `生活明朗, 万物可爱`,
+    `
+        
+       █████╗ ███╗   ██╗███████╗██╗  ██╗██╗██╗   ██╗██╗   ██╗
+      ██╔══██╗████╗  ██║╚══███╔╝██║  ██║██║╚██╗ ██╔╝██║   ██║
+      ███████║██╔██╗ ██║  ███╔╝ ███████║██║ ╚████╔╝ ██║   ██║
+      ██╔══██║██║╚██╗██║ ███╔╝  ██╔══██║██║  ╚██╔╝  ██║   ██║
+      ██║  ██║██║ ╚████║███████╗██║  ██║██║   ██║   ╚██████╔╝
+      ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝╚═╝   ╚═╝    ╚═════╝
+        
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By 安知鱼 V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by 安知鱼 %c 你正在访问 SoniaChen 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script async="async">(function () {
+  var grt = new Date("04/01/2021 00:00:00"); //设置网站上线时间
+  var now = new Date();
+  var dnum;
+  var hnum;
+  var mnum;
+  var snum;
+  var nowHour;
+
+  // 计算并更新天数、小时数、分钟数和秒数
+  function updateTime() {
+    now = new Date(); // 更新 now 的值
+    nowHour = now.getHours(); // 更新 nowHour 的值
+    var days = (now - grt) / 1000 / 60 / 60 / 24;
+    dnum = Math.floor(days);
+    var hours = (now - grt) / 1000 / 60 / 60 - 24 * dnum;
+    hnum = Math.floor(hours);
+    if (String(hnum).length == 1) {
+      hnum = "0" + hnum;
+    }
+    var minutes = (now - grt) / 1000 / 60 - 24 * 60 * dnum - 60 * hnum;
+    mnum = Math.floor(minutes);
+    if (String(mnum).length == 1) {
+      mnum = "0" + mnum;
+    }
+    var seconds = (now - grt) / 1000 - 24 * 60 * 60 * dnum - 60 * 60 * hnum - 60 * mnum;
+    snum = Math.round(seconds);
+    if (String(snum).length == 1) {
+      snum = "0" + snum;
+    }
+  }
+
+  // 更新网页中显示的网站运行时间
+  function updateHtml() {
+    const footer = document.getElementById("footer");
+    if (!footer) return
+    let currentTimeHtml = "";
+    if (nowHour < 18 && nowHour >= 9) {
+      // 如果是上班时间，默认就是"安知鱼-上班摸鱼中.svg"图片，不需要更改
+      currentTimeHtml = `本站居然运行了 ${dnum} 天<span id='runtime'> ${hnum} 小时 ${mnum} 分 ${snum} 秒 </span><i class='anzhiyufont anzhiyu-icon-heartbeat' style='color:red'></i>`;
+    } else {
+      // 如果是下班时间，插入"安知鱼-下班啦.svg"图片
+      let img = document.querySelector("#workboard .workSituationImg");
+      if (img != null) {
+        img.src = "";
+        img.title = "";
+        img.alt = "";
+      }
+
+      currentTimeHtml = `本站居然运行了 ${dnum} 天<span id='runtime'> ${hnum} 小时 ${mnum} 分 ${snum} 秒 </span><i class='anzhiyufont anzhiyu-icon-heartbeat' style='color:red'></i>`;
+    }
+
+    if (document.getElementById("runtimeTextTip")) {
+      document.getElementById("runtimeTextTip").innerHTML = currentTimeHtml;
+    }
+  }
+
+  setInterval(() => {
+    updateTime();
+    updateHtml();
+  }, 1000);
+})();</script><script src="/js/search/local-search.js"></script><div class="js-pjax"><input type="hidden" name="page-type" id="page-type" value="post"></div><script>var visitorMail = "visitor@soniachen.com";
+</script><script async data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><script src="/js/anzhiyu/right_click_menu.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="true" src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/dist/click-show-text.min.js" data-mobile="false" data-text="Don't,Click,Me" data-fontsize="15px" data-random="false" async="async"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404.html')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div><script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"left","width":150,"height":300},"mobile":{"show":true},"log":false});</script></body></html>
